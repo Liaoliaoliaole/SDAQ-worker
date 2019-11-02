@@ -11,12 +11,13 @@
 #include <ncurses.h> 
 #include <signal.h>
 #include <pthread.h> 
+#include <sys/ioctl.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
 #include "sdaq_drv.h"
-#include "modes.h"
+#include "Modes.h"
 
 struct thread_arguments_passer
 {
@@ -32,8 +33,102 @@ pthread_mutex_t display_access = PTHREAD_MUTEX_INITIALIZER;
 
 //local functions
 void wclean_refresh(WINDOW *ptr);
+void * CAN_socket_RX(void *varg_pt);
 
-//threaded function. Act as CAN-bus message Receiver and decoder for SDAQ devices
+
+void Measure(int socket_num,unsigned char dev_addr)
+{
+	//Variables for ncurses
+	int row,col,last_row=0,last_col=0;
+	char user_pressed_key;
+	struct winsize term_size;
+	//variables for threads
+	pthread_t CAN_socket_RX_Thread_id; 
+	struct thread_arguments_passer thread_arg;
+	
+	thread_arg.dev_addr=dev_addr;
+	thread_arg.socket_num=socket_num;
+	//Stop any measurements on CAN-bus
+	//Stop(socket_num, 0);
+	
+	//Init Measurement mode with ncurses
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_size);// get current size of terminal window 
+	printf("\e[8;31;71t");//resize terminal window to the application's needs
+	initscr(); // start the ncurses mode
+	raw();//getch without return
+	noecho();//disable echo
+	curs_set(0);//hide cursor
+	thread_arg.status_win  = newwin(8,35, 1, 0);//create window for status
+	thread_arg.info_win    = newwin(8,35, 1, 36);//create window for info
+	thread_arg.meas_win    = newwin(19,35, 9, 0);//create window for measurements
+	thread_arg.raw_meas_win= newwin(19,35, 9, 36);//create window for measurements
+	
+	//mount the CAN-bus receiver on a thread, and load arguments 
+	pthread_create(&CAN_socket_RX_Thread_id, NULL, CAN_socket_RX, &thread_arg);
+	sleep(1);
+	//QueryDeviceInfo(socket_num,dev_addr);
+	while(running>0)
+	{
+		getmaxyx(stdscr,row,col);
+		if(last_row!=row||last_col!=col)//reset display in cases of terminal resize, clear request and on first run
+		{
+			if(col<50&&row<50)//check if the terminal is smaller that the requirement 
+				running = -1;
+			else
+			{
+				pthread_mutex_lock(&display_access);
+					clear();
+					mvprintw(0,25,"Device Address:%d",dev_addr);
+					mvprintw(row-2,0,"Function Buttons:\n");
+					printw("'q' Quit 1 Start 2 Stop 3 Dev_Info R Un-Calibrated ");
+					refresh();
+					wclean_refresh(thread_arg.status_win);
+					wclean_refresh(thread_arg.info_win);
+					wclean_refresh(thread_arg.meas_win);
+					wclean_refresh(thread_arg.raw_meas_win);
+				pthread_mutex_unlock(&display_access);
+				QueryDeviceInfo(socket_num,dev_addr);
+				last_col=col;
+				last_row=row;
+			}
+		}
+		user_pressed_key=getch();// get the user's entrance 
+		switch(user_pressed_key)
+		{
+			case '1': raw_flag=0; Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
+			case '2': raw_flag=0; Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr);  break;
+			case '3': QueryDeviceInfo(socket_num,dev_addr);break;
+			case 'q': running=0; break;
+			case  3 : running=0; break; //SIGINT or Ctrl+c
+			case 'R': raw_flag^=0x01; Raw_meas(socket_num,dev_addr,raw_flag); break;
+			case 'B': last_row=last_col=0;box_flag^=1;//toggle borders and force clean
+			case 'C': last_row=last_col=0;
+			default : break;
+		}
+		if(!raw_flag) //clean Raw_meas window if the flag is off and the measurements is off
+		{
+			pthread_mutex_lock(&display_access);
+				refresh();
+				wclean_refresh(thread_arg.raw_meas_win);
+			pthread_mutex_unlock(&display_access);
+		}
+	}
+	endwin();	
+	printf("\e[8;%d;%dt",term_size.ws_row,term_size.ws_col);//restore the terminal size
+	if(running<0)
+		printf("Terminal need to be at least %dx%d\n",71,31);
+}
+
+void wclean_refresh(WINDOW *ptr)
+{
+	wclear(ptr);
+	if(box_flag)
+		box(ptr,0,0);
+	wrefresh(ptr);
+	return;
+}
+
+//Thread function. Act as CAN-bus message Receiver and decoder for SDAQ devices
 void * CAN_socket_RX(void *varg_pt) 
 { 
 	/*
@@ -103,7 +198,7 @@ void * CAN_socket_RX(void *varg_pt)
 															,i+1,meas_value[i]/AVG_INTERVAL,unit_str[meas_dec->unit]);
 										meas_value[i]=0.0;
 									}
-									else
+						#include <sys/ioctl.h>			else
 										mvwprintw(arg->meas_win,i+2,4,"CH%2d = No sensor ",i+1);
 								}
 								wrefresh(arg->meas_win);
@@ -155,91 +250,3 @@ void * CAN_socket_RX(void *varg_pt)
 	return NULL;
 }
 
-void Measure_SDAQ(int socket_num,unsigned char dev_addr)
-{
-	//Variables for ncurses
-	int row,col,last_row=0,last_col=0;
-	char user_pressed_key;
-	//variables for threads
-	pthread_t CAN_socket_RX_Thread_id; 
-	struct thread_arguments_passer thread_arg;
-	
-	thread_arg.dev_addr=dev_addr;
-	thread_arg.socket_num=socket_num;
-	//Stop any measurements on CAN-bus
-	//Stop(socket_num, 0);
-	
-	//Init Measurement mode with ncurses
-	system("printf '\e[8;31;71t'");
-	initscr(); // start the curses mode
-	raw();//getch without return
-	noecho();//disable echo
-	cbreak();//exit on break
-	curs_set(0);//hide cursor
-	thread_arg.status_win  = newwin(8,35, 1, 0);//create window for status
-	thread_arg.info_win    = newwin(8,35, 1, 36);//create window for info
-	thread_arg.meas_win    = newwin(19,35, 9, 0);//create window for measurements
-	thread_arg.raw_meas_win= newwin(19,35, 9, 36);//create window for measurements
-	
-	//mount the CAN-bus receiver on a thread, and load arguments 
-	pthread_create(&CAN_socket_RX_Thread_id, NULL, CAN_socket_RX, &thread_arg);
-	sleep(1);
-	//QueryDeviceInfo(socket_num,dev_addr);
-	while(running>0)
-	{
-		getmaxyx(stdscr,row,col);
-		if(last_row!=row||last_col!=col)//reset display in cases of terminal resize, clear request and on first run
-		{
-			if(col<50&&row<50)//check if the terminal is smaller that the requirement 
-				running = -1;
-			else
-			{
-				pthread_mutex_lock(&display_access);
-					clear();
-					mvprintw(0,25,"Device Address:%d",dev_addr);
-					mvprintw(row-2,0,"Function Buttons:\n");
-					printw("'q' Quit 1 Start 2 Stop 3 Dev_Info R Un-Calibrated ");
-					refresh();
-					wclean_refresh(thread_arg.status_win);
-					wclean_refresh(thread_arg.info_win);
-					wclean_refresh(thread_arg.meas_win);
-					wclean_refresh(thread_arg.raw_meas_win);
-				pthread_mutex_unlock(&display_access);
-				QueryDeviceInfo(socket_num,dev_addr);
-				last_col=col;
-				last_row=row;
-			}
-		}
-		user_pressed_key=getch();// get the user's entrance 
-		switch(user_pressed_key)
-		{
-			case '1': raw_flag=0; Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
-			case '2': raw_flag=0; Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr);  break;
-			case '3': QueryDeviceInfo(socket_num,dev_addr);break;
-			case 'q': running=0; break;
-			case 'R': raw_flag^=0x01; Raw_meas(socket_num,dev_addr,raw_flag); break;
-			case 'B': last_row=last_col=0;box_flag^=1;//toggle borders and force clean
-			case 'C': last_row=last_col=0;
-			default : break;
-		}
-		if(!raw_flag) //clean Raw_meas window if the flag is off and the measurements is off
-		{
-			pthread_mutex_lock(&display_access);
-				refresh();
-				wclean_refresh(thread_arg.raw_meas_win);
-			pthread_mutex_unlock(&display_access);
-		}
-	}
-	endwin();
-	if(running<0)
-		printf("Terminal need to be at least %dx%d\n",71,31);
-}
-
-void wclean_refresh(WINDOW *ptr)
-{
-	wclear(ptr);
-	if(box_flag)
-		box(ptr,0,0);
-	wrefresh(ptr);
-	return;
-}
