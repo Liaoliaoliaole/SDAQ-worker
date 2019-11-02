@@ -16,7 +16,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "sdaq_drv.h"
+#include "SDAQ_drv.h"
 #include "Modes.h"
 
 struct thread_arguments_passer

@@ -12,7 +12,7 @@
 #include <linux/can/raw.h>
 
 //Include SDAQ Driver header
-#include "sdaq_drv.h"
+#include "SDAQ_drv.h"
 //Include Functions implementation files
 #include "Modes.h"
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 	//modes with device address requirement
 	if(!strcmp(argv[2],"discover"))
 	{
-		//Discovery(socket_num);
+		//Discover(socket_num);
 	}
 	else if(!strcmp(argv[2],"autoconf"))
 	{

@@ -1,7 +1,7 @@
 
 
 //Function for Discovery mode
-void Discovery(int socket_num);
+void Discover(int socket_num);
 
 //Function for Discovery mode
 void Autoconf(int socket_num);
