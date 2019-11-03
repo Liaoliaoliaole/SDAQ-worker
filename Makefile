@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS= -Wall
-LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses) 
+LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0) 
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src

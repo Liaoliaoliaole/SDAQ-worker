@@ -113,6 +113,8 @@ void Measure(int socket_num,unsigned char dev_addr)
 			pthread_mutex_unlock(&display_access);
 		}
 	}
+	pthread_cancel(CAN_socket_RX_Thread_id);// cancel "CAN_socket_RX_Thread_id" thread
+	//pthread_join(CAN_socket_RX_Thread_id, NULL);//wait the "CAN_socket_RX_Thread_id" thread to terminate 
 	endwin();	
 	printf("\e[8;%d;%dt",term_size.ws_row,term_size.ws_col);//restore the terminal size
 	if(running<0)
@@ -198,7 +200,7 @@ void * CAN_socket_RX(void *varg_pt)
 															,i+1,meas_value[i]/AVG_INTERVAL,unit_str[meas_dec->unit]);
 										meas_value[i]=0.0;
 									}
-						#include <sys/ioctl.h>			else
+									else
 										mvwprintw(arg->meas_win,i+2,4,"CH%2d = No sensor ",i+1);
 								}
 								wrefresh(arg->meas_win);

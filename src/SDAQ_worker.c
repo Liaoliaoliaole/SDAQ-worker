@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	*/
 	
 	// Add timeout option to the CAN Socket
-	tv.tv_sec = 25;
+	tv.tv_sec = 20;
 	tv.tv_usec = 0;
 	setsockopt(socket_num, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 	
@@ -97,18 +97,18 @@ int main(int argc, char *argv[])
 	//modes with device address requirement
 	if(!strcmp(argv[2],"discover"))
 	{
-		//Discover(socket_num);
+		Discover(socket_num);
 	}
 	else if(!strcmp(argv[2],"autoconf"))
 	{
-		//Autoconf(socket_num);
+		Autoconf(socket_num);
 	}
 	else //modes with device address requirement
 	{
 		//Sanity check of the device address arguments
 		if(argv[3]==NULL)
 		{
-			printf("Address missing\n");
+			printf("Address argument is missing\n");
 			exit(1);
 		}
 		dev_addr = atoi(argv[3]); // convert argument string to number
@@ -132,19 +132,19 @@ int main(int argc, char *argv[])
 				printf("Serial number is invalid\n");
 				exit(1);
 			}
-			//Change_address(socket_num,serial_number,dev_addr);
+			Change_address(socket_num,serial_number,dev_addr);
 		}
 		else if(!strcmp(argv[2],"info"))
 		{
-			//Dev_info(socket_num,dev_addr);
+			Dev_info(socket_num,dev_addr);
 		}
 		else if(!strcmp(argv[2],"measure"))
 		{
 			Measure(socket_num,dev_addr);
 		}
-		else if(!strcmp(argv[2],"log"))
+		else if(!strcmp(argv[2],"logging"))
 		{
-			//Logging(socket_num,dev_addr);
+			Logging(socket_num,dev_addr);
 		}
 		else
 		{
