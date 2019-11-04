@@ -13,8 +13,8 @@
 #include "Modes.h"
 
 
-void Change_address(int socket_num, unsigned int serial_number, unsigned char new_address)
+int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address)
 {
 	printf("Not implemented\n");
-
+	return 0;
 }

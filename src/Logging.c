@@ -13,8 +13,8 @@
 #include "Modes.h"
 
 
-void Logging(int socket_num,unsigned char dev_addr)
+int Logging(int socket_num,unsigned char dev_addr)
 {
 	printf("Not implemented\n");
-
+	return 0;
 }

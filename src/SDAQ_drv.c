@@ -5,8 +5,6 @@
 #include <math.h>
 #include <string.h> 
 
-#include <arpa/inet.h> //for htonl,htons
-
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
@@ -14,6 +12,7 @@
 
 const char *unit_str[]={"","V","A","°C","Pa","mV"}; 
 const char *dev_type_str[]={"","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
+const unsigned char Parking_address=63;
 
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, short time_seed)
@@ -80,7 +79,7 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 	sdaq_id_ptr->payload_type=Set_dev_address;//Payload type for change of device address command
 	sdaq_id_ptr->device_addr=0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(unsigned int) + sizeof(unsigned char);//Payload size
-	*((int *)frame_tx.data) = htonl(dev_SN); //Endianness correction 
+	*((int *)frame_tx.data) = dev_SN; //Endianness correction 
 	*(frame_tx.data + sizeof(unsigned int)) = new_dev_address;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;

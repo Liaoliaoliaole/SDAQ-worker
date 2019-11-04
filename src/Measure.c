@@ -36,7 +36,7 @@ void wclean_refresh(WINDOW *ptr);
 void * CAN_socket_RX(void *varg_pt);
 
 
-void Measure(int socket_num,unsigned char dev_addr)
+int Measure(int socket_num,unsigned char dev_addr)
 {
 	//Variables for ncurses
 	int row,col,last_row=0,last_col=0;
@@ -53,7 +53,7 @@ void Measure(int socket_num,unsigned char dev_addr)
 	
 	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_size);// get current size of terminal window 
-	printf("\e[8;31;71t");//resize terminal window to the application's needs
+	printf("\e[8;32;72t");//resize terminal window to the application's needs
 	initscr(); // start the ncurses mode
 	raw();//getch without return
 	noecho();//disable echo
@@ -119,6 +119,7 @@ void Measure(int socket_num,unsigned char dev_addr)
 	printf("\e[8;%d;%dt",term_size.ws_row,term_size.ws_col);//restore the terminal size
 	if(running<0)
 		printf("Terminal need to be at least %dx%d\n",71,31);
+	return 0;
 }
 
 void wclean_refresh(WINDOW *ptr)
@@ -213,8 +214,8 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->status_win,1,1,"Device_status & S/N:"); 
 							mvwprintw(arg->status_win,2,2,"Dev serial number = %d",status_dec->dev_sn);
 							mvwprintw(arg->status_win,3,2,"Dev status = %d",status_dec->status);
-							mvwprintw(arg->status_win,4,2,"Dev type = %s (%d)",dev_type_str[status_dec->device_type],
-																			  status_dec->device_type);
+							mvwprintw(arg->status_win,4,2,"Dev type = %s (%d)",dev_type_str[status_dec->dev_type],
+																			  status_dec->dev_type);
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))
 								wclean_refresh(arg->meas_win);

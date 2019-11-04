@@ -1,9 +1,9 @@
 
 #define PROTOCOL_ID 0x35
-#define Parking_address 63
 
 extern const char *unit_str[]; 
 extern const char *dev_type_str[]; 
+extern const unsigned char Parking_address;
 
 // enumerator for payload_type
 enum payload_type
@@ -53,7 +53,7 @@ typedef struct SDAQ_Status_Decoder
 {
 	unsigned int  dev_sn;
 	unsigned char status;
-	unsigned char device_type;
+	unsigned char dev_type;
 }sdaq_status; 
 
 /* SDAQ's CAN Device_info message decoder */
@@ -68,6 +68,7 @@ typedef struct SDAQ_Info_Decoder
 
 
 				/*TX Functions*/
+/*All the functions return 0 in success and 1 on failure */
 //Request start of measure from the SDAQ device. For all dev_addr=0
 int Start(int socket_fd,unsigned char dev_address);
 //Request stop of measure from the SDAQ device. For all dev_addr=0

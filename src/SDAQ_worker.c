@@ -13,16 +13,14 @@
 
 //Include SDAQ Driver header
 #include "SDAQ_drv.h"
-//Include Functions implementation files
+//Include Functions implementation header
 #include "Modes.h"
 
 
 //global variables
 
-
 //application functions
 void print_usage(char *prog_name);
-
 
 int main(int argc, char *argv[])
 {
@@ -97,11 +95,11 @@ int main(int argc, char *argv[])
 	//modes with device address requirement
 	if(!strcmp(argv[2],"discover"))
 	{
-		Discover(socket_num);
+		Discover(socket_num, 0);
 	}
 	else if(!strcmp(argv[2],"autoconf"))
 	{
-		Autoconf(socket_num);
+		Discover(socket_num, 1);
 	}
 	else //modes with device address requirement
 	{
@@ -111,13 +109,24 @@ int main(int argc, char *argv[])
 			printf("Address argument is missing\n");
 			exit(1);
 		}
-		dev_addr = atoi(argv[3]); // convert argument string to number
-		if(dev_addr<1||dev_addr>=Parking_address)
+		if(strcmp(argv[3],"parking")) //check address argument for parking 
 		{
-			printf("Device address: Out of range or invalid\n");
-			exit(1);
+			dev_addr = atoi(argv[3]); // convert argument string to number
+			if(dev_addr<1||dev_addr>=Parking_address)
+			{
+				printf("Device address: Out of range or invalid\n");
+				exit(1);
+			}
 		}
-		
+		else
+		{
+			dev_addr = Parking_address;
+			if(strcmp(argv[2],"address"))
+			{
+				printf("Device address: Out of range or invalid\n");
+				exit(1);
+			}	
+		}
 		//Scan for the rest of the modes
 		if(!strcmp(argv[2],"address"))
 		{
@@ -132,7 +141,8 @@ int main(int argc, char *argv[])
 				printf("Serial number is invalid\n");
 				exit(1);
 			}
-			Change_address(socket_num,serial_number,dev_addr);
+			//Change_address(socket_num,serial_number,dev_addr);
+			SetDeviceAddress(socket_num,serial_number,dev_addr);
 		}
 		else if(!strcmp(argv[2],"info"))
 		{
@@ -156,35 +166,21 @@ int main(int argc, char *argv[])
 
 void print_usage(char *prog_name)
 {
-	/*
 	const char manual[] = {
-		"commands that can be entered at runtime:\n"
-		" q<ENTER>        - quit\n"
-		" b<ENTER>        - toggle binary / HEX-ASCII output\n"
-		" B<ENTER>        - toggle binary with gap / HEX-ASCII output (exceeds 80 chars!)\n"
-		" c<ENTER>        - toggle color mode\n"
-		" #<ENTER>        - notch currently marked/changed bits (can be used repeatedly)\n"
-		" *<ENTER>        - clear notched marked\n"
-		" rMYNAME<ENTER>  - read settings file (filter/notch)\n"
-		" wMYNAME<ENTER>  - write settings file (filter/notch)\n"
-		" +FILTER<ENTER>  - add CAN-IDs to sniff\n"
-		" -FILTER<ENTER>  - remove CAN-IDs to sniff\n"
-		"\n"
-		"FILTER can be a single CAN-ID or a CAN-ID/Bitmask:\n"
-		" +1F5<ENTER>     - add CAN-ID 0x1F5\n"
-		" -42E<ENTER>     - remove CAN-ID 0x42E\n"
-		" -42E7FF<ENTER>  - remove CAN-ID 0x42E (using Bitmask)\n"
-		" -500700<ENTER>  - remove CAN-IDs 0x500 - 0x5FF\n"
-		" +400600<ENTER>  - add CAN-IDs 0x400 - 0x5FF\n"
-		" +000000<ENTER>  - add all CAN-IDs\n"
-		" -000000<ENTER>  - remove all CAN-IDs\n"
-		"\n"
-		"if (id & filter) == (sniff-id & filter) the action (+/-) is performed,\n"
-		"which is quite easy when the filter is 000\n"
+		"\tCAN-IF: The name of the CANBUS adapter\n\n"
+		"\tMODE: discover: Discovering the connected SDAQs.\n"
+		"\t      autoconf: Like discover but configure the devices on Park with a valid address.\n"
+		"\t       address: Change the address of a SDAQ. Needed arguments: Serial Number and new address\n"
+		"\t                  Call it as: address [number of new address] [Serial number of the SDAQ]\n"
+		"\t          info: Get all the available information of a SDAQ device. Needed arguments: Address of the SDAQ.\n"
+		"\t                  Call it as: info [SDAQ address]\n"
+		"\t       measure: Get the measurement, status and info of a SDAQ device. Needed arguments: Address of the SDAQ.\n"
+		"\t                  Call it as: measure [SDAQ address]\n"
+		"\t       logging: Get and log to file the measurement of a SDAQ device. Needed arguments: Address of the SDAQ, Path of the logging file.\n"
+		"\t                  Call it as: measure [SDAQ address] [Path of the logging file]\n"
 		"\n"
 	};
-	*/
-	printf("Usage: %s CAN-IF MODE [ADDRESS] [Options]\n",prog_name);
+	printf("\nUsage: %s [Options] CAN-IF MODE [ADDRESS] \n\n%s",prog_name,manual);
 	return;
 }
 

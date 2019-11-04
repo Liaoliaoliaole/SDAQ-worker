@@ -4,15 +4,12 @@ LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0)
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src
-DEP=$(WORK_dir)/Discover.o $(WORK_dir)/Autoconf.o $(WORK_dir)/Change_address.o $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o $(WORK_dir)/Dev_info.o $(WORK_dir)/SDAQ_drv.o
+DEP=$(WORK_dir)/Discover.o $(WORK_dir)/Change_address.o $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o $(WORK_dir)/Dev_info.o $(WORK_dir)/SDAQ_drv.o
 
 $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 $(WORK_dir)/Discover.o: $(SRC_dir)/Discover.c 
-	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
-
-$(WORK_dir)/Autoconf.o: $(SRC_dir)/Autoconf.c 
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 $(WORK_dir)/Change_address.o: $(SRC_dir)/Change_address.c 
