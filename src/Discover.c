@@ -48,7 +48,7 @@ void Discover(int socket_num)
 	
 	GSList *list_SDAQs=NULL;
 
-    // create a sample list of SDAQentries 
+    // create a linked list of SDAQentries 
     for (int i = 0; i < 3; i++) 
     {
         struct SDAQentry *new_sdaq = new_SDAQentry(0, 0);
