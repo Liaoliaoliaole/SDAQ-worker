@@ -235,7 +235,7 @@ GSList* find_SDAQs_inParking(GSList * head)
 	return (GSList *) ret_list;
 }
 
-GSList * find_SDAQs_Conflicts(GSList * head)
+GSList * find_SDAQs_Conflicts(GSList * head) //To be made 
 {  
 	GSList *t_lst = head, *t_lst1 = head, *ret_list=NULL;	
 	for(int i=g_slist_length(head);i;i--)//Run for all head's nodes. 
