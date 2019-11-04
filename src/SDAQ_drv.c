@@ -10,8 +10,8 @@
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"","V","A","°C","Pa","mV"}; 
-const char *dev_type_str[]={"","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
+const char *unit_str[]={"Sim","V","A","°C","Pa","mV"}; 
+const char *dev_type_str[]={"Simulator","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
 const unsigned char Parking_address=63;
 
 //Synchronize the SDAQ devices. Requested by broadcast only.
@@ -121,3 +121,31 @@ int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 		return 1;
 	return 0;
 }
+
+
+
+//The following RX Functions used on the pseudo_SDAQ Simulator 
+				/*RX Functions*/
+int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_status *p_sdaq_status;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Device_status;//Payload type for Device_status message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = sizeof(sdaq_status);//Payload size
+	p_sdaq_status = (sdaq_status*) &(frame_tx.data);
+	p_sdaq_status -> dev_sn = SN;
+	p_sdaq_status -> status = status;
+	p_sdaq_status -> dev_type = 0;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+

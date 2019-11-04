@@ -23,8 +23,8 @@ enum payload_type
 	Calibration_Date = 0x89,
 	Calibration_Point_Data = 0x8a,
 	Uncalibrated_meas = 0x8b,
-	Bootloader_Reply = 0xa0,
-	Page_Buffer_Data = 0xa1,
+	//Bootloader_Reply = 0xa0,
+	//Page_Buffer_Data = 0xa1,
 	Sync_Info = 0xc0
 };
 
@@ -84,4 +84,25 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address);
 
 //int WriteCalibrationDate(int socket_fd,unsigned char dev_address,time_t valid_until,unsigned char NumOfPoints);
 //int WriteCalibrationPoints();
+
+/*
+0x84 Measurement value
+
+0x86 Device ID/status
+
+0x88 Device Info
+
+0x89 Calibration Date
+
+0x8a Calibration Point Data
+
+0x8b Uncalibrated meas. value
+
+0xc0 Sync Info
+
+*/
+
+//The following RX Functions used on the pseudo_SDAQ Simulatior 
+				/*RX Functions*/
+int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status);
 
