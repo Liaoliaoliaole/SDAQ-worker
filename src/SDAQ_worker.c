@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -24,6 +24,8 @@ void print_usage(char *prog_name);
 
 int main(int argc, char *argv[])
 {
+	//Option parsing variables
+	char c=0;
 	//Variables for Socket CAN
 	struct timeval tv;
 	struct ifreq ifr;
@@ -35,12 +37,49 @@ int main(int argc, char *argv[])
 	unsigned char dev_addr=0;
 	unsigned int serial_number;
 	
-	if(argc <= 2)
+	
+	char *cvalue = NULL;
+	int index;
+
+	//opterr = 1;
+	while ((c = getopt (argc, argv, "abch")) != -1)
+    switch (c)
+	{
+		case 'a':
+			puts("a");
+			break;
+		case 'b':
+			puts("b");
+			break;
+		case 'c':
+			cvalue = optarg;
+			break;
+		case 'h':
+			print_usage(argv[0]);
+			exit(1);
+		/*
+		case '?':
+		if (optopt == 'c')
+		  fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+		else if (isprint (optopt))
+		  fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+		else
+		  fprintf (stderr,
+				   "Unknown option character `\\x%x'.\n",
+				   optopt);
+		return 1;
+		*/
+		default:
+		abort ();
+      }
+	
+	if(argc == 1)
 	{
 		print_usage(argv[0]);
 		exit(1);
 	}
-
+	
+	
 	//CAN Socket Opening
 	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) 
 	{
@@ -177,11 +216,11 @@ void print_usage(char *prog_name)
 		"                (Call it as: info SDAQ_address)\n"
 		"       measure: Get the measurement, status and info of a SDAQ device.\n"
 		"                (Call it as: measure SDAQ_address)\n"
-		"       logging: Get and log to file the measurement of a SDAQ device.\n"
-		"                (Call it as: logging SDAQ_address Path/of/the/logging_file)\n"
+		"       logging: Get and log the measurement of a SDAQ device to a file.\n"
+		"                (Call it as: logging SDAQ_address Path/to/the/logging_directory)\n"
 		"\n"
 	};
-	printf("\nUsage: %s [Options] CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [PATH TO LOGGING FILE]\n\n%s",prog_name,manual);
+	printf("\nUsage: %s CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [PATH TO LOGGING FILE] [Options]\n\n%s",prog_name,manual);
 	return;
 }
 
