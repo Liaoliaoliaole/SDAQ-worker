@@ -11,8 +11,10 @@
 #include "SDAQ_drv.h"
 
 const char *unit_str[]={"Sim","V","A","°C","Pa","mV"}; 
-const char *dev_type_str[]={"Simulator","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
+const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
 const unsigned char Parking_address=63;
+
+				/*TX Functions*/
 
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, short time_seed)
@@ -75,11 +77,12 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for change of device address message
 	sdaq_id_ptr->flags=4;//set the EFF
+	sdaq_id_ptr->priority=4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id=PROTOCOL_ID;
 	sdaq_id_ptr->payload_type=Set_dev_address;//Payload type for change of device address command
 	sdaq_id_ptr->device_addr=0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(unsigned int) + sizeof(unsigned char);//Payload size
-	*((int *)frame_tx.data) = dev_SN; //Endianness correction 
+	*((int *)frame_tx.data) = dev_SN; 
 	*(frame_tx.data + sizeof(unsigned int)) = new_dev_address;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
@@ -112,6 +115,7 @@ int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for "Configure Additional data" command
 	sdaq_id_ptr->flags=4;//set the EFF
+	sdaq_id_ptr->priority=4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	sdaq_id_ptr->payload_type = Configure_Additional_data;//Payload type for "Configure Additional data" command
 	sdaq_id_ptr->device_addr = dev_address;

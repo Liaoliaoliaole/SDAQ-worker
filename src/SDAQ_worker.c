@@ -95,11 +95,11 @@ int main(int argc, char *argv[])
 	//modes with device address requirement
 	if(!strcmp(argv[2],"discover"))
 	{
-		Discover(socket_num, 0);
+		Discover(socket_num);
 	}
-	else if(!strcmp(argv[2],"autoconf"))
+	else if(!strcmp(argv[2],"autoconfig"))
 	{
-		Discover(socket_num, 1);
+		Autoconf(socket_num);
 	}
 	else //modes with device address requirement
 	{
@@ -167,20 +167,21 @@ int main(int argc, char *argv[])
 void print_usage(char *prog_name)
 {
 	const char manual[] = {
-		"CAN-IF: The name of the CANBUS adapter\n\n"
-		"MODE: discover: Discovering the connected SDAQs.\n"
-		"      autoconf: Like discover but configure the devices on Park with a valid address.\n"
-		"       address: Change the address of a SDAQ. Needed arguments: Serial Number and new address\n"
-		"                  Call it as: address [number of new address] [Serial number of the SDAQ]\n"
-		"          info: Get all the available information of a SDAQ device. Needed arguments: Address of the SDAQ.\n"
-		"                  Call it as: info [SDAQ address]\n"
-		"       measure: Get the measurement, status and info of a SDAQ device. Needed arguments: Address of the SDAQ.\n"
-		"                  Call it as: measure [SDAQ address]\n"
-		"       logging: Get and log to file the measurement of a SDAQ device. Needed arguments: Address of the SDAQ, Path of the logging file.\n"
-		"                  Call it as: measure [SDAQ address] [Path of the logging file]\n"
+		"CAN-IF: The name of the CAN-Bus adapter\n\n"
+		"MODE\n"
+		"      discover: Discovering the connected SDAQs.\n\n"
+		"    autoconfig: Configure the devices in Parking with a valid address.\n\n"
+		"       address: Change the address of a SDAQ.\n"
+		"                (Call it as: address new_address Serial_number_of_SDAQ)\n"
+		"          info: Get all the available information of a SDAQ device.\n"
+		"                (Call it as: info SDAQ_address)\n"
+		"       measure: Get the measurement, status and info of a SDAQ device.\n"
+		"                (Call it as: measure SDAQ_address)\n"
+		"       logging: Get and log to file the measurement of a SDAQ device.\n"
+		"                (Call it as: logging SDAQ_address Path/of/the/logging_file)\n"
 		"\n"
 	};
-	printf("\nUsage: %s [Options] CAN-IF MODE [ADDRESS] \n\n%s",prog_name,manual);
+	printf("\nUsage: %s [Options] CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [PATH TO LOGGING FILE]\n\n%s",prog_name,manual);
 	return;
 }
 

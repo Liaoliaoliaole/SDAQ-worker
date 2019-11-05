@@ -28,6 +28,7 @@ enum payload_type
 	Sync_Info = 0xc0
 };
 
+#pragma pack(push, 1)//use pragma pack() to pack the following structs to 1 byte size (aka no zero padding)
 /* SDAQ's CAN identifier encoder/decoder */
 typedef struct SDAQ_Identifier_Encoder_Decoder
 {
@@ -66,6 +67,16 @@ typedef struct SDAQ_Info_Decoder
 	unsigned char sample_rate;
 }sdaq_info; 
 
+//The following RX Decoders used on the pseudo_SDAQ Simulator 
+				/*RX Decoders*/
+/* SDAQ's CAN Set Device Address message decoder */
+typedef struct pSDAQ_Set_new_address
+{
+	unsigned int  dev_sn;
+	unsigned char new_address;
+}sdaq_set_new_addr; 
+
+#pragma pack(pop)//Disable packing 
 
 				/*TX Functions*/
 /*All the functions return 0 in success and 1 on failure */
@@ -102,7 +113,7 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address);
 
 */
 
-//The following RX Functions used on the pseudo_SDAQ Simulatior 
+//The following RX Functions used on the pseudo_SDAQ Simulator 
 				/*RX Functions*/
 int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status);
 
