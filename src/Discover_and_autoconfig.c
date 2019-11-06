@@ -219,7 +219,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 					} 
 					else
 					{
-						printf("Memory error\n");
+						fprintf(stderr,"Memory error\n");
 						exit(1);
 					}
 				}
