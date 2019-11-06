@@ -1,3 +1,10 @@
+// enumerator for payload_type
+enum time_stamp_mode
+{
+	absolute,
+	relative,
+	absolute_with_date
+};
 
 typedef struct option_flags{
 	
@@ -10,19 +17,19 @@ typedef struct option_flags{
 
 
 //Function for Discovery mode
-int Discover(int socket_num);
+int Discover(int socket_num, opt_flags usr_flag);
 
 //Function for Autoconf mode
-int Autoconf(int socket_num);
+int Autoconfig(int socket_num, opt_flags usr_flag);
 
 //Function for Address mode
-int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address);
+int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags usr_flag);
 
 //Function for Measuring mode
-int Measure(int socket_num,unsigned char dev_addr);
+int Measure(int socket_num,unsigned char dev_addr, opt_flags usr_flag);
 
 //Function for Log mode
-int Logging(int socket_num,unsigned char dev_addr);
+int Logging(int socket_num,unsigned char dev_addr, opt_flags usr_flag);
 
 //Function for Info mode
-int Dev_info(int socket_num,unsigned char dev_addr);
+int Dev_info(int socket_num,unsigned char dev_addr, opt_flags usr_flag);

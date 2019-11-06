@@ -13,7 +13,7 @@
 #include "Modes.h"
 
 
-int Dev_info(int socket_num,unsigned char dev_addr)
+int Dev_info(int socket_num, unsigned char dev_addr, opt_flags usr_flag)
 {
 	printf("Not implemented\n");
 	return 0;

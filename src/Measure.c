@@ -36,7 +36,7 @@ void wclean_refresh(WINDOW *ptr);
 void * CAN_socket_RX(void *varg_pt);
 
 
-int Measure(int socket_num,unsigned char dev_addr)
+int Measure(int socket_num, unsigned char dev_addr, opt_flags usr_flag)
 {
 	//Variables for ncurses
 	int row,col,last_row=0,last_col=0;

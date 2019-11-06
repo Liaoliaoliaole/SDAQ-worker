@@ -34,56 +34,60 @@ struct SDAQentry {
 struct SDAQentry* new_SDAQentry();
 void free_SDAQentry(gpointer person);
 void printf_SDAQentry(gpointer SDAQ_entry, gpointer data);
-GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with the SDAQs that is on the BUS
-GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking 
-GSList * find_SDAQs_Conflicts(GSList * head);//Construct a list with the SDAQs that have the same address 
+GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with the SDAQs that is on the BUS, Sort by address.
+GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking, Sort by Serial number 
+GSList * find_SDAQs_Conflicts(GSList * head);//Construct a list of lists with SDAQs that have the same address 
 gint SDAQentry_cmp (gconstpointer a, gconstpointer b);
 gint SDAQentry_find (gconstpointer a, gconstpointer b);
 
-int Discover(int socket_num)
+int Discover(int socket_num, opt_flags usr_flag)
 {
-	//lists of devices 
-	GSList *list_SDAQs=NULL,*list_Park=NULL,*list_conflicts=NULL;
+	GSList *list_SDAQs=NULL,*list_Park=NULL,*list_with_conflict_address_lists=NULL;
+	if(!(usr_flag.silent))
+		printf("Scan the CANbus for %d sec ...\n",usr_flag.timeout);
 	//Construct the list with the SDAQs that is on the BUS
-	list_SDAQs = find_SDAQs(socket_num,1);//last argument is the scanning time
+	list_SDAQs = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
 	if (list_SDAQs)
 	{
 		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
-		list_conflicts = find_SDAQs_Conflicts(list_SDAQs);//build list_conflicts based on address that found in many SDAQs  
-		
-		if(!list_conflicts)
+		list_with_conflict_address_lists = find_SDAQs_Conflicts(list_SDAQs);//build list_with_conflict_address_lists based on address that found in many SDAQs  
+		// print list_SDAQs
+		printf("The scanning found %d SDAQ \n",g_slist_length(list_SDAQs));
+		if(!(usr_flag.silent))
 		{
-			// print list_SDAQs
-			printf("The scanning found %d SDAQ \n",g_slist_length(list_SDAQs));
 			printf("==========  List of Discovered SDAQs   ==========\n");
 			g_slist_foreach(list_SDAQs, printf_SDAQentry, NULL);
 		}
-		if(list_Park && list_conflicts == NULL)
+		if(list_Park && list_with_conflict_address_lists == NULL)
 		{
 			// print list_Park
 			if(g_slist_length(list_SDAQs)!=g_slist_length(list_Park))
 			{
-				printf("\nFrom them %d is/are in Parking\n",g_slist_length(list_Park));
-				printf("==========  List of SDAQs in Parking   ==========\n");
-				g_slist_foreach(list_Park, printf_SDAQentry, NULL);
+				printf("From them %d is/are in Parking\n",g_slist_length(list_Park));
+				if(!(usr_flag.silent))
+				{
+					printf("==========  List of SDAQs in Parking   ==========\n");
+					g_slist_foreach(list_Park, printf_SDAQentry, NULL);
+				}
 			}
 			else
-				printf("\nAll of them is in Parking\n");
-			printf("\n!!!!!!  Use mode 'autoconfig' to register them  !!!!!!\n");
+				printf("All of them is in Parking\n");
+			printf("!!!!!!  Use mode 'autoconfig' to register them  !!!!!!\n");
 		}
-		if(list_conflicts)
+		
+		if(list_with_conflict_address_lists)
 		{
-			// print list_conflicts
-			printf("\nThe following address/es found in multiple SDAQs\n");
+			// print list_with_conflict_address_lists
+			printf("The following address/es found in multiple SDAQs\n");
 			printf("==========  List of Conflict addresses  =========\n");
-			g_slist_foreach(list_conflicts, printf_SDAQentry, NULL);
-			printf("\n!!!!!!!  Use mode 'address' and correct them   !!!!!!!\n");
+			g_slist_foreach(list_with_conflict_address_lists, printf_SDAQentry, NULL);
+			printf("!!!!!!!  Use mode 'address' and correct them   !!!!!!!\n");
 		}
 		//free lists
 		g_slist_free_full(list_SDAQs, free_SDAQentry);
 		g_slist_free_full(list_Park, free_SDAQentry);
-		g_slist_free_full(list_conflicts, free_SDAQentry);
-		printf("\n");
+		//for(int i=;)
+		g_slist_free_full(list_with_conflict_address_lists, free_SDAQentry);
 	}
 	else
 		printf("No SDAQ found\n");
@@ -97,10 +101,32 @@ int Discover(int socket_num)
     return 0;
 }
 
-int Autoconf(int socket_num)
+int Autoconfig(int socket_num, opt_flags usr_flag)
 {
-	printf("Not implemented\n");
-	
+	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_with_conflict_address_lists=NULL;
+	list_SDAQs = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
+	if (list_SDAQs)
+	{
+		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
+		list_with_conflict_address_lists=find_SDAQs_Conflicts(list_SDAQs); //build list_with_conflict_address_lists 
+		if(!list_Park)//Check for no Parking SDAQs
+			printf("All the founded SDAQs have valid address. Autoconfig Quit!!!\n");
+		else if(list_with_conflict_address_lists) //Check for conflicts 
+			printf("Address conflict found. Autoconfig Give Up!!!! \n");
+		else //True Autoconfig -- to be made
+		{
+			
+			
+		}
+		//free lists
+		g_slist_free_full(list_SDAQs, free_SDAQentry);
+		g_slist_free_full(list_Park, free_SDAQentry);
+		//for(int i=;)
+		g_slist_free_full(list_with_conflict_address_lists, free_SDAQentry);
+		printf("\n");
+	}
+	else
+		printf("No SDAQ found\n");
 	return 0;
 }
 
@@ -137,40 +163,12 @@ void printf_SDAQentry(gpointer SDAQentry, gpointer arg_pass)
 												  address);
 }
 
-//Comparing function used in g_slist_insert_sorted
-gint SDAQentry_cmp (gconstpointer a, gconstpointer b)
-{
-	switch(target)
-	{
-		case CMP_Serial_Numbers : 
-			return (((struct SDAQentry *)a)->serial_number < ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
-		case CMP_Addresses : 
-			return (((struct SDAQentry *)a)->address <= ((struct SDAQentry *)b)->address) ?  0 : 1;
-		default : return 1;
-	}
-}
-
-//Comparing function used in g_list_find_custom, comparing the SN field of the node and the arg inputs. Return 1 in case they differ. 
-gint SDAQentry_find (gconstpointer node, gconstpointer arg)
-{
-	const int *arg_t = arg;
-	struct SDAQentry *node_dec = (struct SDAQentry *) node;
-	switch(target)
-	{
-		case CMP_Serial_Numbers:
-			return node_dec->serial_number == (unsigned int) *arg_t ?  0 : 1;
-		case CMP_Addresses:
-			return node_dec->address == (unsigned char)*arg_t ?  0 : 1;
-		default : return 1;
-	}
-}
-
 void timer_handler (int signum)
 {
 	 TMR_exp = 1;
 	 return;
 }
-
+/*return a list with all the SDAQs on bus, sort by address*/
 GSList * find_SDAQs(int socket_num, int scanning_time)
 {
 	//internal List with SDAQs
@@ -193,8 +191,6 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	timer.it_value.tv_usec = 0;
 	setitimer (ITIMER_REAL, &timer, NULL);
 	
-	printf("\nScan the CANbus for %ld sec\n\n",timer.it_value.tv_sec);
- 
 	//Query device info from every device
 	QueryDeviceInfo(socket_num,0);
 	while(!TMR_exp)
@@ -206,17 +202,18 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 			status_dec = (sdaq_status *)&(frame_rx.data);
 			if(id_dec->payload_type == Device_status)
 			{	
+				target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
 				// check if node with same Serial number exist in the list. if no, do store.
 				if(g_list_find_custom((GList *)ret_list,(gconstpointer)&(status_dec->dev_sn),SDAQentry_find)==NULL)  
 				{ 
 					struct SDAQentry *new_sdaq = new_SDAQentry();
 					if (new_sdaq) 
 					{
+						target = CMP_Addresses; // set SDAQentry_find and SDAQentry_cmp to sort by address
 						// set SDAQ info data
 						new_sdaq->serial_number = status_dec->dev_sn;
 						new_sdaq->address = id_dec->device_addr; 
 						new_sdaq->dev_type = dev_type_str[status_dec->dev_type];
-						target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
 						ret_list = g_slist_insert_sorted(ret_list, (gpointer) new_sdaq, SDAQentry_cmp);
 					} 
 					else
@@ -230,7 +227,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	}	
 	return (GSList *) ret_list;
 }
-
+/*return a list with all the SDAQs that be in Parking on bus, sort by Serial number*/
 GSList* find_SDAQs_inParking(GSList * head)
 {
 	GSList *t_lst = head, *ret_list=NULL;
@@ -256,30 +253,61 @@ GSList* find_SDAQs_inParking(GSList * head)
 	return (GSList *) ret_list;
 }
 
-GSList * find_SDAQs_Conflicts(GSList * head) //To be made 
+GSList * find_SDAQs_Conflicts(GSList * head)  
 {  
-	GSList *ret_list=NULL;	
-	/*
-	GSList *t_lst = head, *t_lst1 = head;
-	for(int i=g_slist_length(head);i;i--)//Run for all head's nodes. 
+	GSList *ret_list=NULL; // function's return pointer	
+	GSList *look, *start = head; //start pointer pointing the first node on list. 
+	target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to work with device address
+	
+	//Place start pointer the first SDAQ list node that does not be in parking
+	while(start && ((((struct SDAQentry *)(start->data))->address)==Parking_address))
+		start = start->next; //move start to then next node
+	
+	while(start)//Run until start pointer hit the end of the nodes. 
 	{
-		target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to sort by device address
-		if(t_lst)
+		look = start->next;//look pointer pointing the next node after the start 
+		while(look)//Run until look pointer hit the end of the nodes.
 		{
-			//look at the list t_lst (aka head, at first) for entrances with parking address
-			t_lst = (GSList *)g_list_find_custom((GList *)t_lst,(gconstpointer) &(Parking_address),SDAQentry_find);
-			if(t_lst)  
-			{ 
-				target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
-				ret_list = g_slist_insert_sorted(ret_list, (gpointer) t_lst->data, SDAQentry_cmp);//sort by serial number 
-				t_lst = t_lst->next; //goto next node 
-			}
-			else
-				break; //Break the for loop if no found list node with Parking address.
+			if(((((struct SDAQentry *)(look->data))->address)!=Parking_address) &&
+				(!SDAQentry_find(start->data, (gconstpointer)&(((struct SDAQentry *)(look->data))->address))))
+				{
+					printf("Find conflict\n");
+				} 
+			look = look->next; //move look pointer to next node
 		}
-		else
-			break;  //Break the for loop if end of list is reached.
+		printf("\n");
+		start = start->next; //move start to then next node  
 	}	
-	*/
 	return (GSList *) ret_list;
+}
+
+/*
+	Comparing function used in g_slist_insert_sorted. 
+	Controlled by target switch. 
+*/
+gint SDAQentry_cmp (gconstpointer a, gconstpointer b)
+{
+	switch(target)
+	{
+		case CMP_Serial_Numbers : 
+			return (((struct SDAQentry *)a)->serial_number > ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
+		case CMP_Addresses : 
+			return (((struct SDAQentry *)a)->address <= ((struct SDAQentry *)b)->address) ?  0 : 1;
+		default : return 1;
+	}
+}
+
+//Comparing function used in g_list_find_custom, comparing the SN field of the node and the arg inputs. Return 1 in case they differ. 
+gint SDAQentry_find (gconstpointer node, gconstpointer arg)
+{
+	const int *arg_t = arg;
+	struct SDAQentry *node_dec = (struct SDAQentry *) node;
+	switch(target)
+	{
+		case CMP_Serial_Numbers:
+			return node_dec->serial_number == (unsigned int) *arg_t ?  0 : 1;
+		case CMP_Addresses:
+			return node_dec->address == (unsigned char)*arg_t ?  0 : 1;
+		default : return 1;
+	}
 }
