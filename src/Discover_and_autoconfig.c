@@ -263,7 +263,7 @@ GSList * find_SDAQs_Conflicts(GSList * head)
 	if(g_slist_length(head)>1)
 	{
 		//Place start pointer the first SDAQ list node that does not be in parking
-		while(start && ((((struct SDAQentry *)(start->data))->address)==Parking_address))
+		while(start->next && ((((struct SDAQentry *)(start->data))->address)==Parking_address))
 		{
 			printf("new start look for parking\n");
 			start = start->next; //move start to then next node
