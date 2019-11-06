@@ -1,5 +1,6 @@
 #define CMP_Serial_Numbers 1
 #define CMP_Addresses 2
+#define CMP_Addresses_no_parking 3
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,7 +51,7 @@ int Discover(int socket_num, opt_flags usr_flag)
 	if (list_SDAQs)
 	{
 		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
-		list_with_conflict_address_lists = find_SDAQs_Conflicts(list_SDAQs);//build list_with_conflict_address_lists based on address that found in many SDAQs  
+		list_with_conflict_address_lists = find_SDAQs_Conflicts(list_SDAQs);//build list_with_conflict_address_lists  
 		// print list_SDAQs
 		printf("The scanning found %d SDAQ \n",g_slist_length(list_SDAQs));
 		if(!(usr_flag.silent))
@@ -83,11 +84,12 @@ int Discover(int socket_num, opt_flags usr_flag)
 			g_slist_foreach(list_with_conflict_address_lists, printf_SDAQentry, NULL);
 			printf("!!!!!!!  Use mode 'address' and correct them   !!!!!!!\n");
 		}
-		//free lists
+		//free lists with only links
+		g_slist_free(list_Park);
+		g_slist_free(list_with_conflict_address_lists);
+		//free lists with linked data
 		g_slist_free_full(list_SDAQs, free_SDAQentry);
-		g_slist_free_full(list_Park, free_SDAQentry);
-		//for(int i=;)
-		g_slist_free_full(list_with_conflict_address_lists, free_SDAQentry);
+
 	}
 	else
 		printf("No SDAQ found\n");
@@ -115,15 +117,14 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 			printf("Address conflict found. Autoconfig Give Up!!!! \n");
 		else //True Autoconfig -- to be made
 		{
-			
+			printf("Not implemented\n");	
 			
 		}
-		//free lists
+		//free lists with only links
+		g_slist_free(list_Park);
+		g_slist_free(list_with_conflict_address_lists);
+		//free lists with linked data
 		g_slist_free_full(list_SDAQs, free_SDAQentry);
-		g_slist_free_full(list_Park, free_SDAQentry);
-		//for(int i=;)
-		g_slist_free_full(list_with_conflict_address_lists, free_SDAQentry);
-		printf("\n");
 	}
 	else
 		printf("No SDAQ found\n");
@@ -256,27 +257,45 @@ GSList* find_SDAQs_inParking(GSList * head)
 GSList * find_SDAQs_Conflicts(GSList * head)  
 {  
 	GSList *ret_list=NULL; // function's return pointer	
-	GSList *look, *start = head; //start pointer pointing the first node on list. 
+	volatile GSList *look, *start = head; //start pointer pointing the first node on list. 
 	target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to work with device address
-	
-	//Place start pointer the first SDAQ list node that does not be in parking
-	while(start && ((((struct SDAQentry *)(start->data))->address)==Parking_address))
-		start = start->next; //move start to then next node
-	
-	while(start)//Run until start pointer hit the end of the nodes. 
+	unsigned char cur_address=0;
+	if(g_slist_length(head)>1)
 	{
-		look = start->next;//look pointer pointing the next node after the start 
-		while(look)//Run until look pointer hit the end of the nodes.
+		//Place start pointer the first SDAQ list node that does not be in parking
+		while(start && ((((struct SDAQentry *)(start->data))->address)==Parking_address))
 		{
-			if(((((struct SDAQentry *)(look->data))->address)!=Parking_address) &&
-				(!SDAQentry_find(start->data, (gconstpointer)&(((struct SDAQentry *)(look->data))->address))))
-				{
-					printf("Find conflict\n");
-				} 
-			look = look->next; //move look pointer to next node
+			printf("new start look for parking\n");
+			start = start->next; //move start to then next node
 		}
-		printf("\n");
-		start = start->next; //move start to then next node  
+		while(start->next)//Run until start pointer be one before the end of the list. 
+		{
+			printf("Start with @ %s with S/N %d and address%d\n",(((struct SDAQentry *)(start->data))->dev_type)
+																,(((struct SDAQentry *)(start->data))->serial_number)
+																,(((struct SDAQentry *)(start->data))->address));
+			
+			look = start->next;//look pointer pointing the next node after the start 
+			while(look)//Run until look pointer hit the end of the nodes.
+			{
+				if(!SDAQentry_find(start->data, (gconstpointer)&(((struct SDAQentry *)(look->data))->address)))
+				{
+					cur_address = (((struct SDAQentry *)(look->data))->address);
+					printf("Find conflict @ %s with S/N: %d and address: %d\n",(((struct SDAQentry *)(look->data))->dev_type)
+																		   ,(((struct SDAQentry *)(look->data))->serial_number)
+																		   ,cur_address);
+				} 
+				//Avoid look nodes in Parking 
+				do{
+					look = look->next; //move look pointer to next node
+				}while(look && (((struct SDAQentry *)(look->data))->address)==Parking_address);
+			}
+			//Avoid start nodes with already checked address and nodes in Parking 
+			do{
+				start = start->next;//move start to then next node
+			}while(start->next && (((((struct SDAQentry *)(start->data))->address)==cur_address)
+							   ||  ((((struct SDAQentry *)(start->data))->address)==Parking_address)));
+				  
+		}
 	}	
 	return (GSList *) ret_list;
 }
@@ -290,7 +309,7 @@ gint SDAQentry_cmp (gconstpointer a, gconstpointer b)
 	switch(target)
 	{
 		case CMP_Serial_Numbers : 
-			return (((struct SDAQentry *)a)->serial_number > ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
+			return (((struct SDAQentry *)a)->serial_number < ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
 		case CMP_Addresses : 
 			return (((struct SDAQentry *)a)->address <= ((struct SDAQentry *)b)->address) ?  0 : 1;
 		default : return 1;

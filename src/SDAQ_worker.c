@@ -25,7 +25,7 @@ void print_usage(char *prog_name);
 int main(int argc, char *argv[])
 {
 	//Option parsing variables
-	char c;
+	int c;
 	opt_flags usr_opt = {.timestamp_mode=relative,.timestamp_format=NULL,.silent=0,.timeout=1};
 	//Variables for Socket CAN
 	struct timeval tv;
@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	}
 	
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hst:S:T:")) != 0xff)
+	while ((c = getopt (argc, argv, "hst:S:T:")) != -1)
 	{
 		switch (c)
 		{
