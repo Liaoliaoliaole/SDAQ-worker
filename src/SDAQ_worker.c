@@ -212,6 +212,7 @@ int main(int argc, char *argv[])
 		else
 			printf("Unknown mode argument\n");
 	}
+	close(socket_num);
 	return 0;
 }
 

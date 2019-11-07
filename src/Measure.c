@@ -48,8 +48,6 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags usr_flag)
 	
 	thread_arg.dev_addr=dev_addr;
 	thread_arg.socket_num=socket_num;
-	//Stop any measurements on CAN-bus
-	//Stop(socket_num, 0);
 	
 	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_size);// get current size of terminal window 
