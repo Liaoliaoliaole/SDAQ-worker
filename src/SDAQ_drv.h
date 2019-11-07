@@ -2,8 +2,18 @@
 #define PROTOCOL_ID 0x35
 
 extern const char *unit_str[]; 
-extern const char *dev_type_str[]; 
+extern const char *dev_type_str[];
+extern const char *dev_status_str[][8]; 
 extern const unsigned char Parking_address;
+
+// enumerator for Status byte
+enum status_byte
+{
+	Run_Standby,
+	In_sync,
+	Error,
+	Bootloader = 7
+};
 
 // enumerator for payload_type
 enum payload_type
@@ -29,6 +39,7 @@ enum payload_type
 };
 
 #pragma pack(push, 1)//use pragma pack() to pack the following structs to 1 byte size (aka no zero padding)
+
 /* SDAQ's CAN identifier encoder/decoder */
 typedef struct SDAQ_Identifier_Encoder_Decoder
 {

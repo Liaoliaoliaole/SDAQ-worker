@@ -34,7 +34,7 @@ pthread_mutex_t display_access = PTHREAD_MUTEX_INITIALIZER;
 //local functions
 void wclean_refresh(WINDOW *ptr);
 void * CAN_socket_RX(void *varg_pt);
-
+const char * status_byte_dec(unsigned char status_byte,unsigned char field);
 
 int Measure(int socket_num, unsigned char dev_addr, opt_flags usr_flag)
 {
@@ -165,10 +165,10 @@ void * CAN_socket_RX(void *varg_pt)
 							meas_dec = (sdaq_meas *)frame_rx.data;
 							mvwprintw(arg->raw_meas_win,1,2,"Uncalibrated:");
 							if(!(meas_dec->status))
-								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%2d = %04.3f %s   "
+								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
-								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%2d = No sensor  ",id_dec->channel_num);
+								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
 							wrefresh(arg->raw_meas_win);
 							break;
 						case Measurement_value: 
@@ -176,10 +176,10 @@ void * CAN_socket_RX(void *varg_pt)
 							meas_dec = (sdaq_meas *)frame_rx.data;
 							mvwprintw(arg->meas_win,1,2,"Calibrated:");
 							if(!(meas_dec->status))
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%2d = %04.3f %s   "
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%2d = No sensor  ",id_dec->channel_num);
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
 							/*
 							if(!(meas_dec->status))
@@ -212,10 +212,11 @@ void * CAN_socket_RX(void *varg_pt)
 							//wclear(arg->status_win);
 							status_dec = (sdaq_status *)frame_rx.data;
 							mvwprintw(arg->status_win,1,1,"Device_status & S/N:"); 
-							mvwprintw(arg->status_win,2,2,"Dev serial number = %d",status_dec->dev_sn);
-							mvwprintw(arg->status_win,3,2,"Dev status = %d",status_dec->status);
-							mvwprintw(arg->status_win,4,2,"Dev type = %s (%d)",dev_type_str[status_dec->dev_type],
-																			  status_dec->dev_type);
+							mvwprintw(arg->status_win,2,2,"Type = %s",dev_type_str[status_dec->dev_type]);
+							mvwprintw(arg->status_win,3,2,"Serial number = %d",status_dec->dev_sn);
+							mvwprintw(arg->status_win,4,2,"Status : %5s, %7s, %5s",status_byte_dec(status_dec->status,Run_Standby),
+																						status_byte_dec(status_dec->status,In_sync),
+																						status_byte_dec(status_dec->status,Error));
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))
 								wclean_refresh(arg->meas_win);
@@ -228,18 +229,12 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,3,3,"Firmware rev = %d",info_dec->firm_rev);
 							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
 							mvwprintw(arg->info_win,5,3,"Number of channels = %d",info_dec->num_of_ch);
-							mvwprintw(arg->info_win,6,3,"Samplerate = %d sps",info_dec->sample_rate);
+							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							wrefresh(arg->info_win);
 							//amount_of_inputs=info_dec->num_of_ch; //used in averaging as end index 
 							break;
-						/*
-						case Calibration_Date: 
-							//wclear(arg->meas_win); 
-							mvwprintw(arg->meas_win,1,1,"Calibration_Date"); 
-							wrefresh(arg->meas_win);
-							break;
-						*/
-						default: break; 
+						default: 
+							break; 
 					}
 				pthread_mutex_unlock(&display_access);
 			}
@@ -253,3 +248,19 @@ void * CAN_socket_RX(void *varg_pt)
 	return NULL;
 }
 
+const char * status_byte_dec(unsigned char status_byte,unsigned char field)
+{
+	switch (field)
+	{
+		case Run_Standby:
+			return status_byte & (1<<Run_Standby) ? dev_status_str[1][Run_Standby] : dev_status_str[0][Run_Standby];
+		case In_sync:
+			return status_byte & (1<<In_sync) ? dev_status_str[1][In_sync] : dev_status_str[0][In_sync];
+		case Error:
+			return status_byte & (1<<Error) ? dev_status_str[1][Error] : dev_status_str[0][Error];
+		case Bootloader:
+			return status_byte & (1<<Bootloader) ? dev_status_str[1][Bootloader] : dev_status_str[0][Bootloader];
+		default :
+			return "";
+	}
+}

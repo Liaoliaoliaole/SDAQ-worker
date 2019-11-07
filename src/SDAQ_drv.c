@@ -11,11 +11,11 @@
 #include "SDAQ_drv.h"
 
 const char *unit_str[]={"Sim","V","A","°C","Pa","mV"}; 
-const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"}; 
+const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
+const char *dev_status_str[][8]={{"Stdby","No_sync","Okay","","","","","Norm"},{"Run","Sync","Error","","","","","Boot"}};  
 const unsigned char Parking_address=63;
 
 				/*TX Functions*/
-
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, short time_seed)
 {
