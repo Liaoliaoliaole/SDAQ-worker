@@ -200,7 +200,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						p_DeviceInfo(socket_num, dev_addr, 16);
 					}
 					else if(id_dec->payload_type==Start_command)
+					{
 						status |= 1; //set run bit of status byte
+						status_send_cnt = 0; //force a status message transmission 
+					}
 					else if(id_dec->payload_type==Stop_command)
 					{
 						status &= ~(1); //clear run bit of status byte
