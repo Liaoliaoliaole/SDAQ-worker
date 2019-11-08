@@ -18,6 +18,7 @@ enum status_byte
 // enumerator for payload_type
 enum payload_type
 {
+	//Messages payload_type for Master -> SDAQ
 	Synchronization_command = 1,
 	Start_command = 2,
 	Stop_command = 3,
@@ -27,6 +28,7 @@ enum payload_type
 	Write_calibration_Date = 9,
 	Write_calibration_Point_Data = 10,
 	Configure_Additional_data = 12,
+	//Messages payload_type for SDAQ -> Master
 	Measurement_value = 0x84, 
 	Device_status = 0x86, 
 	Device_info = 0x88,
@@ -92,39 +94,23 @@ typedef struct pSDAQ_Set_new_address
 				/*TX Functions*/
 /*All the functions return 0 in success and 1 on failure */
 //Request start of measure from the SDAQ device. For all dev_addr=0
-int Start(int socket_fd,unsigned char dev_address);
+int Start(int socket_fd, unsigned char dev_address);
 //Request stop of measure from the SDAQ device. For all dev_addr=0
-int Stop(int socket_fd,unsigned char dev_address);
+int Stop(int socket_fd, unsigned char dev_address);
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, short time_seed);
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
-int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config);
+int Raw_meas(int socket_fd, unsigned char dev_address, const unsigned char Config);
 //request change of device address with the specific serial number.
-int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_address);
+int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_address);
 //request device info. Device answer with 3 messages: Device ID/status, Device Info and Calibration Date. 
-int QueryDeviceInfo(int socket_fd,unsigned char dev_address);
+int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 
 //int WriteCalibrationDate(int socket_fd,unsigned char dev_address,time_t valid_until,unsigned char NumOfPoints);
 //int WriteCalibrationPoints();
 
-/*
-0x84 Measurement value
-
-0x86 Device ID/status
-
-0x88 Device Info
-
-0x89 Calibration Date
-
-0x8a Calibration Point Data
-
-0x8b Uncalibrated meas. value
-
-0xc0 Sync Info
-
-*/
-
 //The following RX Functions used on the pseudo_SDAQ Simulator 
 				/*RX Functions*/
-int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status);
-
+int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);
+int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel);
+int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);

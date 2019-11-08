@@ -230,7 +230,7 @@ void print_usage(char *prog_name)
 		"       measure: Get the measurement, status and info of a SDAQ device.\n"
 		"                (Call it as: measure 'SDAQ_address')\n"
 		"       logging: Get and log the measurement of a SDAQ device to a file.\n"
-		"                (Call it as: logging SDAQ_address 'Path/to/the/logging_directory')\n"
+		"                (Call it as: logging 'SDAQ_address' 'Path/to/the/logging_directory')\n"
 		"Options\n"
 		"           -h : Print help.\n"
 		"           -s : Silent mode.\n"

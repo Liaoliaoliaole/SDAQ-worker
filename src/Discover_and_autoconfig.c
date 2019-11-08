@@ -22,7 +22,7 @@
 
 //global variables 
 unsigned char target=CMP_Serial_Numbers; //flag, used in SDAQentry_cmp and SDAQentry_find functions, switch the comparison target.
-unsigned char TMR_exp=0;
+unsigned char TMR_exp=1;
 
 //Local struct for SDAQ device entry 
 struct SDAQentry {
@@ -40,6 +40,7 @@ GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs t
 GSList * find_SDAQs_Conflicts(GSList * head);//Construct a list of lists with SDAQs that have the same address 
 gint SDAQentry_cmp (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_insert_sorted.
 gint SDAQentry_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
+gint SDAQentry_find_autoconf (gconstpointer node, gconstpointer arg);//GFunc function used with g_slist_find_custom when is called from autoconfig.
 // GFunc function used with g_slist_foreach. Arguments: SDAQ_new_address_list, pointer to socket number 
 void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass);
 
@@ -108,22 +109,20 @@ int Discover(int socket_num, opt_flags usr_flag)
 int Autoconfig(int socket_num, opt_flags usr_flag)
 {
 	unsigned char addr_t=1;
-	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL,*list_work;
+	int ret_val=0,i,j;
+	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL,*list_work=NULL;//list_work used as element pointer in addressing, and as list in verification. 
 	list_SDAQs = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
 	if (list_SDAQs)
 	{
 		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
 		list_conflicts=find_SDAQs_Conflicts(list_SDAQs); //build list_conflicts 
-		if(!list_Park)//Check for no Parking SDAQs
+		if(list_conflicts) //Check for conflicts 
+			printf("Address conflict found. Autoconfig Give Up!!!! \n");
+		else if(!list_Park)//Check for no Parking SDAQs
 		{
 			if(!usr_flag.silent)
-				printf("All founded SDAQs have valid address. Bye Bye\n");
-		}
-		else if(list_conflicts && !usr_flag.silent) //Check for conflicts 
-		{
-			if(!usr_flag.silent)	
-				printf("Address conflict found.\nAutoconfig Give Up!!!! \n");
-		}
+				printf("All founded SDAQs have valid address.\nBye Bye!!\n");
+		}	
 		else //True Autoconfig 
 		{	
 			target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to sort by device address
@@ -137,8 +136,32 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 				}
 				addr_t++; 
 			}
+			if(!usr_flag.silent)
+			{
+				printf(" %2d SDAQs on Park found on bus\n",g_slist_length(list_Park));
+				printf("New addresses send to SDAQs....\n");
+			}
 			//Send the new addresses to the SDAQs
 			g_slist_foreach(list_Park, SDAQs_newaddress_list_to_SDAQs, &socket_num);
+			/*Autoconfig verification*/
+			if(!usr_flag.silent)
+			{
+				printf("-------Verification-------\n");
+				printf("Scan the BUS for %d sec.\n",usr_flag.timeout);
+			}
+			list_work = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
+			//check if the data->data of all the list_Park node is also in the list_work
+			for(i=0,j=g_slist_length(list_Park);i<j;i++)
+			{
+				if(!g_slist_find_custom(list_work,g_slist_nth_data(list_Park,i),SDAQentry_find_autoconf))
+				{
+					printf("!!!!!! FAILURE !!!!!!!\n");
+					break;
+				}
+			}
+			//Success message to the user
+			if(!usr_flag.silent && i==j)
+				printf("SUCCESS\n");
 		}
 		//free lists with only links
 		g_slist_free(list_Park);
@@ -149,9 +172,8 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 	}
 	else
 		printf("No SDAQ found\n");
-	return 0;
+	return ret_val;
 }
-
 
 // Allocates space for a new SDAQ entrance
 struct SDAQentry* new_SDAQentry()
@@ -183,25 +205,16 @@ void printf_SDAQentry(gpointer SDAQentry, gpointer arg_pass)
 // GFunc function used with g_slist_foreach. Arguments: SDAQ_new_address_list, pointer to socket number 
 void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass) 
 {
-	/*
-	//CAN Socket related variables
-	struct can_frame frame_rx;
-	int RX_bytes, 
-	*/
-	int socket_num = *((int*)arg_pass);
-	
 	//Configure with new address with arguments from the SDAQentry Node
-	SetDeviceAddress(socket_num,((struct SDAQentry *) SDAQentry)->serial_number,
-								((struct SDAQentry *) SDAQentry)->address);
-	//RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
+	SetDeviceAddress(*((int*)arg_pass),((struct SDAQentry *) SDAQentry)->serial_number,
+										((struct SDAQentry *) SDAQentry)->address);
 	return;
 }
 
-
 void timer_handler (int signum)
 {
-	 TMR_exp = 1;
-	 return;
+	TMR_exp = 0;
+	return;
 }
 /*return a list with all the SDAQs on bus, sort by address*/
 GSList * find_SDAQs(int socket_num, int scanning_time)
@@ -221,6 +234,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	signal(SIGALRM,timer_handler);
 	
 	//initialize timer expired time 
+	TMR_exp = 1;
 	memset (&timer, 0, sizeof(timer));
 	timer.it_value.tv_sec = scanning_time;
 	timer.it_value.tv_usec = 0;
@@ -228,7 +242,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	
 	//Query device info from every device
 	QueryDeviceInfo(socket_num,0);
-	while(!TMR_exp)
+	while(TMR_exp)
 	{
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
@@ -249,6 +263,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 						new_sdaq->serial_number = status_dec->dev_sn;
 						new_sdaq->address = id_dec->device_addr; 
 						new_sdaq->dev_type = dev_type_str[status_dec->dev_type];
+						//printf("New SDAQ discovered with %d at address : %d\n",new_sdaq->serial_number,new_sdaq->address);
 						ret_list = g_slist_insert_sorted(ret_list, new_sdaq, SDAQentry_cmp);
 					} 
 					else
@@ -360,4 +375,17 @@ gint SDAQentry_find (gconstpointer node, gconstpointer arg)
 			return node_dec->address == (unsigned char)*arg_t ?  0 : 1;
 		default : return 1;
 	}
+}
+
+/*
+	Comparing function used in g_slist_find_custom when is called in autoconfig
+*/
+gint SDAQentry_find_autoconf (gconstpointer node, gconstpointer arg)
+{
+	struct SDAQentry *node_dec = (struct SDAQentry *) node;
+	struct SDAQentry *arg_dec = (struct SDAQentry *) arg;
+	if(node_dec->serial_number == arg_dec->serial_number && node_dec->address == arg_dec->address && node_dec->dev_type == arg_dec->dev_type)
+		return 0;
+	else
+		return 1;
 }

@@ -10,7 +10,7 @@
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"Sim","V","A","°C","Pa","mV"}; 
+const char *unit_str[]={"\\O/","V","A","°C","Pa","mV"}; 
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
 const char *dev_status_str[][8]={{"Stdby","No_sync","Okay","","","","","Norm"},{"Run","Sync","Error","","","","","Boot"}};  
 const unsigned char Parking_address=63;
@@ -153,3 +153,52 @@ int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int 
 	return 0;
 }
 
+int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_info *p_sdaq_info;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Device_info;//Payload type for Device_info message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = sizeof(sdaq_info);//Payload size
+	p_sdaq_info = (sdaq_info*) &(frame_tx.data);
+	p_sdaq_info -> dev_type = 0;
+	p_sdaq_info -> firm_rev = 0;
+	p_sdaq_info -> hw_rev = 0;
+	p_sdaq_info -> num_of_ch = amount_of_channel;
+	p_sdaq_info -> sample_rate = 0;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
+int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_meas *p_sdaq_meas;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=3;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Measurement_value;//Payload type for Device_measurement message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	p_sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
+	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
+	p_sdaq_meas -> meas = value;
+	p_sdaq_meas -> unit = 0;
+	p_sdaq_meas -> status = 0;
+	p_sdaq_meas -> timestamp = timestamp;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}

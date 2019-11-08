@@ -1,8 +1,11 @@
+#define Stat_ID_Interval 200
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
+#include <sys/select.h>
 #include <pthread.h> 
 
 #include <net/if.h>
@@ -51,7 +54,8 @@ int main(int argc, char *argv[])
 	
 	//sanitize, decode and copy the CAN-if name. 
 	thread_arg.can_if_name=argv[1];
-	if(!(num_of_pSDAQ = atoi(argv[2])))
+	num_of_pSDAQ = atoi(argv[2]);
+	if(!num_of_pSDAQ || num_of_pSDAQ >= Parking_address)
 	{
 		printf("Amount of pseudo_SDAQ is invalid\n");
 		exit(1);
@@ -73,7 +77,7 @@ int main(int argc, char *argv[])
 		sleep(1);
 
 	for(int i=0;i<num_of_pSDAQ;i++)
-		pthread_cancel(CAN_socket_RX_Thread_id[i]);// cancel pseudo_SDAQ threads
+		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
 	
 	free(CAN_socket_RX_Thread_id);
 	return 0;
@@ -95,7 +99,6 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Variables for Socket CAN
 	struct can_frame frame_rx;
 	int RX_bytes;
-	struct timeval tv;
 	struct ifreq ifr;
 	struct sockaddr_can addr;	
 	struct can_filter RX_filter;
@@ -105,6 +108,12 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	sdaq_can_id *id_dec;
 	sdaq_set_new_addr *set_new_addr_dec;
 	unsigned char dev_addr=Parking_address,status=0;
+	unsigned int status_send_cnt=Stat_ID_Interval;
+	float val = (float) arg.serial_number;//to be changed 
+	//Variables for select
+	struct timeval tv;
+	fd_set ready_for_read;
+	int retval;
 
 	//CAN Socket Opening
 	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) 
@@ -136,8 +145,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	can_filter_enc->payload_type = 0x80; // + The most significant bit of Payload_type field marked for examination.  	
 	setsockopt(socket_num, SOL_CAN_RAW, CAN_RAW_FILTER, &RX_filter, sizeof(RX_filter));
 	
+	
 	// Add timeout option to the CAN Socket
-	tv.tv_sec = 20;
+	tv.tv_sec = 1;
 	tv.tv_usec = 0;
 	setsockopt(socket_num, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 	
@@ -149,27 +159,76 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		perror("Error in socket bind");
 		exit(1);
 	}
-	
-	while(1)
+	p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+	while(run)
 	{
-		p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
-		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
-		if(RX_bytes==sizeof(frame_rx))
+		/* Set Watch SocketCAN to see when it's available for reading. */
+		FD_ZERO(&ready_for_read); //init ready_for_read
+		FD_SET(socket_num, &ready_for_read); //link Socket_num with ready_for_read
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;		
+		//wait socket_num to be ready for read, or expired after timeout
+		retval = select(socket_num+1, &ready_for_read, NULL, NULL, &tv);
+		if(retval == -1)
 		{
-			id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-			if(id_dec->device_addr==dev_addr||id_dec->device_addr==0)
+			perror("select()");
+			close(socket_num);
+			pthread_exit(NULL);
+		}
+		else if(retval)//expired from Socket_num
+		{
+			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
+			if(RX_bytes==sizeof(frame_rx))
 			{
-				if(id_dec->payload_type==Set_dev_address)
+				id_dec = (sdaq_can_id *)&(frame_rx.can_id);
+				if(id_dec->device_addr==dev_addr||id_dec->device_addr==0)
 				{
-					set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
-					if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
-						dev_addr = set_new_addr_dec->new_address;
-					else if(!set_new_addr_dec->new_address)
+					if(id_dec->payload_type==Set_dev_address)
 					{
-						printf("Error: Set_dev_address received on pSDAQ with Serial number %d but with invalid address\n",arg.serial_number);
+						set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
+						if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
+						{
+							dev_addr = set_new_addr_dec->new_address;
+							p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+						}
+						else if(!set_new_addr_dec->new_address)
+							printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
+					}
+					else if(id_dec->payload_type==Query_Dev_info)
+					{
+						p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+						p_DeviceInfo(socket_num, dev_addr, 16);
+					}
+					else if(id_dec->payload_type==Start_command)
+						status |= 1; //set run bit of status byte
+					else if(id_dec->payload_type==Stop_command)
+					{
+						status &= ~(1); //clear run bit of status byte
+						status_send_cnt = 0; //force a status message transmission 
 					}
 				}
 			}
 		}
-	}	
+		else//expired from Timeout
+		{
+			if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
+			{
+				p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+				status_send_cnt = Stat_ID_Interval;
+			}
+			status_send_cnt--;
+			if(status & 0x01)//check run bit of status byte
+			{
+				for(int i=1;i<=16;i++)
+				{
+					val += i/100.0;
+					if(val > 100.0)
+						val=0.0;
+					p_measure(socket_num, dev_addr, i, val, 0);
+				}
+			}
+		}
+	}
+	close(socket_num);
+	return NULL;
 }
