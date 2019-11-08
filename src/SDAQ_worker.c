@@ -86,13 +86,18 @@ int main(int argc, char *argv[])
 				// to be sanitized 
 				//usr_opt.timestamp_format = optarg;
 				printf("Not implemented\n");
-				printf("-T argument = \"%s\"",optarg);
+				printf("-T argument = \"%s\"\n",optarg);
 				break;
 			case '?':
 				print_usage(argv[0]);
 				exit(1);
 				break;
 		}
+	}
+	if(argv[optind] == NULL) 
+	{
+		print_usage(argv[0]);
+		exit(1);		
 	}
 	//CAN Socket Opening
 	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) 
