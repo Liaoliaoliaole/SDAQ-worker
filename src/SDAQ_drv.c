@@ -10,9 +10,9 @@
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"\\O/","V","A","°C","Pa","mV"}; 
+const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"}; 
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
-const char *dev_status_str[][8]={{"Stdby","No_sync","Okay","","","","","Norm"},{"Run","Sync","Error","","","","","Boot"}};  
+const char *dev_status_str[][8]={{"Stand By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
 const unsigned char Parking_address=63;
 
 				/*TX Functions*/
@@ -190,6 +190,31 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, f
 	p_sdaq_id_ptr->priority=3;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Measurement_value;//Payload type for Device_measurement message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	p_sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
+	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
+	p_sdaq_meas -> meas = value;
+	p_sdaq_meas -> unit = 0;
+	p_sdaq_meas -> status = 0;
+	p_sdaq_meas -> timestamp = timestamp;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
+int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_meas *p_sdaq_meas;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=3;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Uncalibrated_meas;//Payload type for Device_measurement message
 	p_sdaq_id_ptr->device_addr = dev_address;
 	p_sdaq_id_ptr->channel_num = channel;
 	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size

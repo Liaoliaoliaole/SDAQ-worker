@@ -1,4 +1,5 @@
 #define Stat_ID_Interval 200
+#define Sync_Status_Interval 6
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -107,8 +108,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Variables for SDAQ_dev
 	sdaq_can_id *id_dec;
 	sdaq_set_new_addr *set_new_addr_dec;
-	unsigned char dev_addr=Parking_address,status=0;
-	unsigned int status_send_cnt=Stat_ID_Interval;
+	unsigned char dev_addr=Parking_address,status=0,raw_meas=0;
+	unsigned int status_send_cnt=Stat_ID_Interval,sync_status_cnt=Sync_Status_Interval;
 	float val = (float) arg.serial_number;//to be changed 
 	//Variables for select
 	struct timeval tv;
@@ -209,6 +210,13 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						status &= ~(1); //clear run bit of status byte
 						status_send_cnt = 0; //force a status message transmission 
 					}
+					else if(id_dec->payload_type==Configure_Additional_data)
+						raw_meas=frame_rx.data[0];
+					else if(id_dec->payload_type==Synchronization_command)
+					{
+						status |= 1<<In_sync;
+						sync_status_cnt=Sync_Status_Interval;
+					}
 				}
 			}
 		}
@@ -219,7 +227,13 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
 				status_send_cnt = Stat_ID_Interval;
 			}
+			if(!status_send_cnt) //in every status_send_cnt zero a the sync flag is reset
+			{
+			 	status &= ~(1<<In_sync);
+			 	sync_status_cnt = Sync_Status_Interval;
+			 }
 			status_send_cnt--;
+			sync_status_cnt--;
 			if(status & 0x01)//check run bit of status byte
 			{
 				for(int i=1;i<=16;i++)
@@ -228,6 +242,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					if(val > 100.0)
 						val=0.0;
 					p_measure(socket_num, dev_addr, i, val, 0);
+					if(raw_meas)
+						p_measure_raw(socket_num, dev_addr, i, val, 0);	
 				}
 			}
 		}

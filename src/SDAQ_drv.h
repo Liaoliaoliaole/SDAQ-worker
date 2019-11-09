@@ -9,16 +9,16 @@ extern const unsigned char Parking_address;
 // enumerator for Status byte
 enum status_byte
 {
-	Run_Standby,
-	In_sync,
-	Error,
+	Run_Standby=0,
+	In_sync=1,
+	Error=2,
 	Bootloader = 7
 };
 
 // enumerator for payload_type
 enum payload_type
 {
-	//Messages payload_type for Master -> SDAQ
+/*Messages payload_type. Master -> SDAQ*/
 	Synchronization_command = 1,
 	Start_command = 2,
 	Stop_command = 3,
@@ -28,7 +28,7 @@ enum payload_type
 	Write_calibration_Date = 9,
 	Write_calibration_Point_Data = 10,
 	Configure_Additional_data = 12,
-	//Messages payload_type for SDAQ -> Master
+/*Messages payload_type. SDAQ -> Master*/
 	Measurement_value = 0x84, 
 	Device_status = 0x86, 
 	Device_info = 0x88,
@@ -91,7 +91,7 @@ typedef struct pSDAQ_Set_new_address
 
 #pragma pack(pop)//Disable packing 
 
-				/*TX Functions*/
+				/*Master -> SDAQ Functions*/
 /*All the functions return 0 in success and 1 on failure */
 //Request start of measure from the SDAQ device. For all dev_addr=0
 int Start(int socket_fd, unsigned char dev_address);
@@ -110,7 +110,8 @@ int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //int WriteCalibrationPoints();
 
 //The following RX Functions used on the pseudo_SDAQ Simulator 
-				/*RX Functions*/
+				/*SDAQ -> Master Functions*/
 int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);
 int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel);
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);
+int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);
