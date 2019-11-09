@@ -5,14 +5,15 @@ extern const char *unit_str[];
 extern const char *dev_type_str[];
 extern const char *dev_status_str[][8]; 
 extern const unsigned char Parking_address;
+extern const unsigned char Broadcast;
 
 // enumerator for Status byte
 enum status_byte
 {
-	Run_Standby=0,
-	In_sync=1,
-	Error=2,
-	Bootloader = 7
+	State =0,
+	In_sync =1,
+	Error =2,
+	Mode = 7
 };
 
 // enumerator for payload_type
@@ -27,6 +28,7 @@ enum payload_type
 	Query_Calibration_Data = 8,
 	Write_calibration_Date = 9,
 	Write_calibration_Point_Data = 10,
+	Change_SDAQ_baudrate = 11,
 	Configure_Additional_data = 12,
 /*Messages payload_type. SDAQ -> Master*/
 	Measurement_value = 0x84, 

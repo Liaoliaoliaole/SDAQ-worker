@@ -1,5 +1,5 @@
-#define Stat_ID_Interval 200
-#define Sync_Status_Interval 6
+#define Stat_ID_Interval 200 //20 sec with base time 100ms 
+#define Sync_Status_Interval 6// 2 min reset of InSync flag based on Stat_ID_Interval  
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -72,7 +72,6 @@ int main(int argc, char *argv[])
 		thread_arg.serial_number=i+1;
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
-	
 	
 	while(run)
 		sleep(1);
@@ -160,7 +159,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		perror("Error in socket bind");
 		exit(1);
 	}
-	p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+	//Send status and info on start 
+	p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+	p_DeviceInfo(socket_num, dev_addr, 16);
 	while(run)
 	{
 		/* Set Watch SocketCAN to see when it's available for reading. */
@@ -176,64 +177,69 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			close(socket_num);
 			pthread_exit(NULL);
 		}
-		else if(retval)//expired from Socket_num
+		else if(retval)// Socket_num ready to read
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
 				id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-				if(id_dec->device_addr==dev_addr||id_dec->device_addr==0)
+				if(id_dec->device_addr==dev_addr||id_dec->device_addr==Broadcast)
 				{
-					if(id_dec->payload_type==Set_dev_address)
+					switch(id_dec->payload_type)
 					{
-						set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
-						if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
-						{
-							dev_addr = set_new_addr_dec->new_address;
-							p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
-						}
-						else if(!set_new_addr_dec->new_address)
-							printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
-					}
-					else if(id_dec->payload_type==Query_Dev_info)
-					{
-						p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
-						p_DeviceInfo(socket_num, dev_addr, 16);
-					}
-					else if(id_dec->payload_type==Start_command)
-					{
-						status |= 1; //set run bit of status byte
-						status_send_cnt = 0; //force a status message transmission 
-					}
-					else if(id_dec->payload_type==Stop_command)
-					{
-						status &= ~(1); //clear run bit of status byte
-						status_send_cnt = 0; //force a status message transmission 
-					}
-					else if(id_dec->payload_type==Configure_Additional_data)
-						raw_meas=frame_rx.data[0];
-					else if(id_dec->payload_type==Synchronization_command)
-					{
-						status |= 1<<In_sync;
-						sync_status_cnt=Sync_Status_Interval;
+						case Set_dev_address:
+							set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
+							if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
+							{
+								dev_addr = set_new_addr_dec->new_address;
+								p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+							}
+							else if(!set_new_addr_dec->new_address)
+								printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
+							break;
+						case Query_Dev_info: 
+						case Change_SDAQ_baudrate:
+							p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+							p_DeviceInfo(socket_num, dev_addr, 16);
+							break;
+						case Start_command:
+							status |= 1; //set run bit of status byte
+							status_send_cnt = 0; //force a status message transmission 
+							break;
+						case Stop_command:
+							status &= ~(1); //clear run bit of status byte
+							status_send_cnt = 0; //force a status message transmission 
+							break;	
+						case Configure_Additional_data:
+							raw_meas=frame_rx.data[0];
+							break;
+						case Synchronization_command:
+							if(id_dec->device_addr==Broadcast)
+							{	
+								status |= 1<<In_sync;
+								sync_status_cnt=Sync_Status_Interval;
+							}
+							break;
 					}
 				}
 			}
 		}
-		else//expired from Timeout
+		else//select expired from Timeout
 		{
 			if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
 			{
+				if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
+				{
+				 	status &= ~(1<<In_sync);
+				 	sync_status_cnt = Sync_Status_Interval;
+				 }
+				else
+					sync_status_cnt--;
 				p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
 				status_send_cnt = Stat_ID_Interval;
 			}
-			if(!status_send_cnt) //in every status_send_cnt zero a the sync flag is reset
-			{
-			 	status &= ~(1<<In_sync);
-			 	sync_status_cnt = Sync_Status_Interval;
-			 }
-			status_send_cnt--;
-			sync_status_cnt--;
+			else
+				status_send_cnt--;
 			if(status & 0x01)//check run bit of status byte
 			{
 				for(int i=1;i<=16;i++)

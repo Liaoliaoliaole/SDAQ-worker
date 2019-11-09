@@ -12,8 +12,27 @@
 
 const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"}; 
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
-const char *dev_status_str[][8]={{"Stand By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
+const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
 const unsigned char Parking_address=63;
+const unsigned char Broadcast=0;
+
+//Decoder for the status byte field from "CAN Device_ID/Status" message
+const char * status_byte_dec(unsigned char status_byte,unsigned char field)
+{
+	switch (field)
+	{
+		case State:
+			return status_byte & (1<<State) ? dev_status_str[1][State] : dev_status_str[0][State];
+		case In_sync:
+			return status_byte & (1<<In_sync) ? dev_status_str[1][In_sync] : dev_status_str[0][In_sync];
+		case Error:
+			return status_byte & (1<<Error) ? dev_status_str[1][Error] : dev_status_str[0][Error];
+		case Mode:
+			return status_byte & (1<<Mode) ? dev_status_str[1][Mode] : dev_status_str[0][Mode];
+		default :
+			return "";
+	}
+}
 
 				/*TX Functions*/
 //Synchronize the SDAQ devices. Requested by broadcast only.

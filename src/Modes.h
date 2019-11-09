@@ -11,6 +11,7 @@ typedef struct option_flags{
 	unsigned char timestamp_mode;
 	char *timestamp_format;
 	unsigned silent :1;
+	unsigned verify :1;
 	unsigned int timeout;
 	
 }opt_flags;

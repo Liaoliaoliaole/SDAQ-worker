@@ -222,7 +222,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	//internal List with SDAQs
 	GSList *ret_list=NULL;
 	
-	//CAN Socket related variables
+	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes;
 	sdaq_can_id *id_dec;
@@ -241,7 +241,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	setitimer (ITIMER_REAL, &timer, NULL);
 	
 	//Query device info from every device
-	QueryDeviceInfo(socket_num,0);
+	QueryDeviceInfo(socket_num,Broadcast);
 	while(TMR_exp)
 	{
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
