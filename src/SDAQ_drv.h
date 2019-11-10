@@ -82,6 +82,22 @@ typedef struct SDAQ_Info_Decoder
 	unsigned char sample_rate;
 }sdaq_info; 
 
+/* SDAQ's CAN Calibration_date message decoder */
+typedef struct SDAQ_calibration_date_Decoder
+{
+	unsigned int date;
+	unsigned char amount_of_points;
+}sdaq_calibration_date; 
+
+/* SDAQ's CAN Calibration_date message decoder */
+typedef struct SDAQ_calibration_data_Decoder
+{
+	float date_of_point;
+	unsigned char type;
+	unsigned char points_num;
+}sdaq_calibration_data; 
+
+
 //The following RX Decoders used on the pseudo_SDAQ Simulator 
 				/*RX Decoders*/
 /* SDAQ's CAN Set Device Address message decoder */
@@ -102,11 +118,13 @@ int Stop(int socket_fd, unsigned char dev_address);
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, short time_seed);
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
-int Raw_meas(int socket_fd, unsigned char dev_address, const unsigned char Config);
-//request change of device address with the specific serial number.
+int Req_Raw_meas(int socket_fd, unsigned char dev_address, const unsigned char Config);
+//Request change of device address with the specific serial number.
 int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_address);
-//request device info. Device answer with 3 messages: Device ID/status, Device Info and Calibration Date. 
+//Request device info. Device answer with 3 messages types: Device ID/status, Device Info and Calibration Date for each channel  
 int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
+//Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel 
+int QueryCalibrationData(int socket_fd, unsigned char dev_address);
 
 //int WriteCalibrationDate(int socket_fd,unsigned char dev_address,time_t valid_until,unsigned char NumOfPoints);
 //int WriteCalibrationPoints();

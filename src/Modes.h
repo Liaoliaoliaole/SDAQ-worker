@@ -1,36 +1,37 @@
-// enumerator for payload_type
+// enumerator for time_stamp_mode
 enum time_stamp_mode
 {
-	absolute,
 	relative,
+	absolute,
 	absolute_with_date
 };
-
-typedef struct option_flags{
-	
+// struct that contains the user's options 
+typedef struct option_flags
+{	
 	unsigned char timestamp_mode;
 	char *timestamp_format;
-	unsigned silent :1;
-	unsigned verify :1;
-	unsigned int timeout;
-	
+	char *write_calibration_file;
+	unsigned silent : 1;
+	unsigned verify : 1;
+	unsigned int timeout;	
 }opt_flags;
 
+/*All the functions return EXIT_SUCCESS at success and EXIT_FAILURE on failure*/
 
-//Function for Discovery mode
-int Discover(int socket_num, opt_flags usr_flag);
+//Declaration of function for Discovery mode. Implemented at Discover_and_autoconfig.c
+int Discover(int socket_num, opt_flags *usr_flag);
 
-//Function for Autoconf mode
-int Autoconfig(int socket_num, opt_flags usr_flag);
+//Declaration of function for Autoconf mode. Implemented at Discover_and_autoconfig.c
+int Autoconfig(int socket_num, opt_flags *usr_flag);
 
-//Function for Address mode
-int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags usr_flag);
+//Declaration of function for Address mode. Implemented at SDAQ_worker.c
+int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags *usr_flag);
 
-//Function for Measuring mode
-int Measure(int socket_num,unsigned char dev_addr, opt_flags usr_flag);
+//Declaration of function for Measuring mode. Implemented at Measure.c
+int Measure(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 
-//Function for Log mode
-int Logging(int socket_num,unsigned char dev_addr, opt_flags usr_flag);
+//Declaration of function for Logging mode. Implemented at Logging.c 
+int Logging(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 
-//Function for Info mode
-int Dev_info(int socket_num,unsigned char dev_addr, opt_flags usr_flag);
+//Declaration of function for Info mode. Implemented at Dev_info.c
+int Dev_info(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);

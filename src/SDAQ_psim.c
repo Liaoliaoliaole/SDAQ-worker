@@ -43,7 +43,7 @@ void handle_sigint(int sig)
 int main(int argc, char *argv[])
 {
 	unsigned int num_of_pSDAQ;
-	char usr_com[50];
+	//char usr_com[50];
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id; 
 	struct thread_arguments_passer thread_arg;
@@ -76,11 +76,13 @@ int main(int argc, char *argv[])
 	
 	while(run)
 	{
+		/*
 		printf("::");
 		fflush(stdout);
 		scanf("%s",usr_com);
 		printf("User input:%s\n",usr_com);
-		//sleep(1);
+		*/
+		sleep(1);
 	}
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end

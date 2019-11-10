@@ -1,4 +1,5 @@
-#define VERSION "0.8 beta"
+#define VERSION "0.8 beta" /*Release Version of SDAQ_worker*/
+#define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +10,11 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
+#include <linux/if_link.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
@@ -22,13 +27,20 @@
 //global variables
 
 //application functions
-void print_usage(char *prog_name);
+void list_CANIF();//print a list of the available can interfaces
+void print_usage(char *prog_name);//print the usage manual
 
 int main(int argc, char *argv[])
 {
 	//Option parsing variables
 	int c;
-	opt_flags usr_opt = {.timestamp_mode=relative,.timestamp_format=NULL,.silent=0,.timeout=1,.verify=0};
+	opt_flags usr_opt = {.timestamp_mode=relative,
+						 .timestamp_format=NULL,
+						 .write_calibration_file=NULL,
+						 .verify=0,
+						 .silent=0,
+						 .timeout = 1 //second
+						}; 
 	//Variables for Socket CAN
 	struct timeval tv;
 	struct ifreq ifr;
@@ -47,7 +59,7 @@ int main(int argc, char *argv[])
 	}
 	
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvst:S:T:")) != -1)
+	while ((c = getopt (argc, argv, "hVvslt:S:T:f:")) != -1)
 	{
 		switch (c)
 		{
@@ -57,8 +69,14 @@ int main(int argc, char *argv[])
 			case 'V':
 				printf(VERSION"\n");
 				exit(EXIT_SUCCESS);
+			case 'l':
+				list_CANIF();
+				exit(EXIT_SUCCESS);
 			case 's'://silent
 				usr_opt.silent = 1;
+				break;
+			case 'f'://silent
+				usr_opt.write_calibration_file = optarg;
 				break;
 			case 'v'://silent
 				usr_opt.verify = 1;
@@ -105,7 +123,6 @@ int main(int argc, char *argv[])
 	if(argv[optind] == NULL || argv[1] == NULL) 
 	{
 		printf("!!! CAN-IF and MODE Fields are Missing !!!\n"); 
-		print_usage(argv[0]);
 		exit(EXIT_FAILURE);		
 	}
 	//CAN Socket Opening
@@ -138,14 +155,8 @@ int main(int argc, char *argv[])
 	can_filter_enc->payload_type = 0x80; // + The most significant bit of Payload_type field marked for examination.  	
 	setsockopt(socket_num, SOL_CAN_RAW, CAN_RAW_FILTER, &RX_filter, sizeof(RX_filter));
 	
-	/*
-	//Disable Loopback
-	const int disable_loopback = 0;
-	//setsockopt(socket_num, SOL_CAN_RAW, CAN_RAW_LOOPBACK, &disable_loopback, sizeof(disable_loopback)); 
-	*/
-	
 	// Add timeout option to the CAN Socket
-	tv.tv_sec = 20;
+	tv.tv_sec = 20;//interval time that a SDAQ send a Status/ID frame.
 	tv.tv_usec = 0;
 	setsockopt(socket_num, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
 	
@@ -162,11 +173,11 @@ int main(int argc, char *argv[])
 	//Modes with device address requirement
 	if(!strcmp(argv[optind+1],"discover"))
 	{
-		Discover(socket_num, usr_opt);
+		Discover(socket_num, &usr_opt);
 	}
 	else if(!strcmp(argv[optind+1],"autoconfig"))
 	{
-		Autoconfig(socket_num, usr_opt);
+		Autoconfig(socket_num, &usr_opt);
 	}
 	else //modes with device address requirement
 	{
@@ -176,7 +187,7 @@ int main(int argc, char *argv[])
 			printf("Address argument is missing\n");
 			exit(EXIT_FAILURE);
 		}
-		if(strcmp(argv[optind+2],"parking")) //check address argument for parking 
+		if(strcmp(argv[optind+2],"parking")) //check address argument for not be string "parking"
 		{
 			dev_addr = atoi(argv[optind+2]); // convert argument string to number
 			if(dev_addr<1||dev_addr>=Parking_address)
@@ -188,7 +199,7 @@ int main(int argc, char *argv[])
 		else
 		{
 			dev_addr = Parking_address;
-			if(strcmp(argv[optind+1],"setaddress"))
+			if(strcmp(argv[optind+1],"setaddress"))// argument Parking allowed only for "setaddress" mode
 			{
 				printf("Device address: Out of range or invalid\n");
 				exit(EXIT_FAILURE);
@@ -208,19 +219,19 @@ int main(int argc, char *argv[])
 				printf("Serial number is invalid\n");
 				exit(EXIT_FAILURE);
 			}
-			Change_address(socket_num,serial_number, dev_addr, usr_opt);
+			Change_address(socket_num,serial_number, dev_addr, &usr_opt);
 		}
 		else if(!strcmp(argv[optind+1],"info"))
 		{
-			Dev_info(socket_num, dev_addr, usr_opt);
+			Dev_info(socket_num, dev_addr, &usr_opt);
 		}
 		else if(!strcmp(argv[optind+1],"measure"))
 		{
-			Measure(socket_num, dev_addr, usr_opt);
+			Measure(socket_num, dev_addr, &usr_opt);
 		}
 		else if(!strcmp(argv[optind+1],"logging"))
 		{
-			Logging(socket_num, dev_addr, usr_opt);
+			Logging(socket_num, dev_addr, &usr_opt);
 		}
 		else
 			printf("Unknown mode argument\n");
@@ -229,7 +240,7 @@ int main(int argc, char *argv[])
 	return EXIT_SUCCESS;
 }
 
-int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags usr_flag)
+int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags *usr_flag)
 {
 	unsigned char amount_of_tests=10;
 	//CAN Socket and SDAQ related variables
@@ -238,7 +249,7 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
 	sdaq_status *status_dec = (sdaq_status *)&(frame_rx.data);
 	SetDeviceAddress(socket_num, serial_number, new_address);
-	if(usr_flag.verify)
+	if(usr_flag->verify)
 	{
 		printf("Check address of SDAQ with S/N:%d\n",serial_number);
 		QueryDeviceInfo(socket_num,new_address);
@@ -260,7 +271,7 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 		}while(amount_of_tests);
 		if(amount_of_tests)
 		{
-			if(!usr_flag.silent)
+			if(!usr_flag->silent)
 				printf(" SUCCESS\n");
 		}
 		else
@@ -270,6 +281,25 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 		}
 	}
 	return EXIT_SUCCESS;
+}
+
+void list_CANIF()
+{
+	struct ifaddrs *ifaddr, *ifa;
+	
+	if (getifaddrs(&ifaddr) == -1) 
+	{
+		perror("getifaddrs");
+		exit(EXIT_FAILURE);
+	}
+	/*Scan through the list ifaddr.
+	Print ifa_name field of every node where the ifa_addr == NULL -- Possible make it better in future*/
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
+	{
+		if (ifa->ifa_addr == NULL)
+			printf("%s\n",ifa->ifa_name);
+	}
+	freeifaddrs(ifaddr);
 }
 
 void print_usage(char *prog_name)
@@ -292,7 +322,9 @@ void print_usage(char *prog_name)
 		"           -h : Print help.\n"
 		"           -V : Version.\n"
 		"           -s : Silent mode.\n"
-		"           -v : Address Verification. Used with mode 'address'.\n"
+		"           -v : Address Verification. Used with mode 'setaddress'.\n"
+		"           -l : Print a list of the available CAN-IF.\n" 
+		//"           -f : Write SDAQ info. Used with mode 'calibration'\n" 
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 1 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"

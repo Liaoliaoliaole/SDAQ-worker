@@ -10,7 +10,7 @@
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"}; 
+const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"};  
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
 const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
 const unsigned char Parking_address=63;
@@ -125,8 +125,25 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 	return 0;	
 }
 
+int QueryCalibrationData(int socket_fd, unsigned char dev_address)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Query_Calibration_Data message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = 0;//No Payload 
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
-int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
+int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 {
 	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx;
@@ -144,8 +161,6 @@ int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 		return 1;
 	return 0;
 }
-
-
 
 //The following RX Functions used on the pseudo_SDAQ Simulator 
 				/*RX Functions*/

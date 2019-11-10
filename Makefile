@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS= -Wall
-LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0) 
+LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0) 
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src
@@ -38,6 +38,6 @@ delete-the-tree:
 clean:
 	rm -f $(WORK_dir)/* $(BUILD_dir)/*
 
-.PHONY: all clean delete-the-tree 
+.PHONY: all clean delete-the-tree tree 
 
 
