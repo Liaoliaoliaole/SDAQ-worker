@@ -34,4 +34,4 @@ int Measure(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 int Logging(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 
 //Declaration of function for Info mode. Implemented at Dev_info.c
-int Dev_info(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
+int info(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);

@@ -110,7 +110,8 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 {
 	unsigned char addr_t=1;
 	int ret_val=EXIT_SUCCESS,i,j;
-	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL,*list_work=NULL;//list_work used as element pointer in addressing, and as list in verification. 
+	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL;
+	GSList *list_work=NULL;//list_work used as element pointer in addressing, and as list in verification. 
 	list_SDAQs = find_SDAQs(socket_num,usr_flag->timeout);//last argument is the scanning time
 	if (list_SDAQs)
 	{

@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 		}
 		else if(!strcmp(argv[optind+1],"info"))
 		{
-			Dev_info(socket_num, dev_addr, &usr_opt);
+			info(socket_num, dev_addr, &usr_opt);
 		}
 		else if(!strcmp(argv[optind+1],"measure"))
 		{
