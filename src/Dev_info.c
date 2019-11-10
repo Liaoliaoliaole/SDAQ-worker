@@ -44,7 +44,7 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
 
 	//Local variables, SDAQ information and calibration date and data.
-	SDAQ_info_cal_data str; 
+	SDAQ_info_cal_data str={0}; 
 	//Ask SDAQ for it's info.
 	QueryDeviceInfo(socket_num, dev_addr);
 	get_SDAQ_info_data(socket_num, dev_addr, &str);
