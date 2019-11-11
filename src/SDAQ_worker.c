@@ -264,7 +264,7 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 			}
 			else
 			{
-				printf("....Timeout\n");
+				printf("Timeout\n");
 				return EXIT_FAILURE;
 			}
 			amount_of_tests--;
@@ -272,11 +272,11 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 		if(amount_of_tests)
 		{
 			if(!usr_flag->silent)
-				printf(" SUCCESS\n");
+				printf("\nSUCCESS\n");
 		}
 		else
 		{
-			printf(" Error: SDAQ not answering!!!!\n");
+			printf("\nError: SDAQ not answering!!!!\n");
 			return EXIT_FAILURE;
 		}
 	}
@@ -324,7 +324,7 @@ void print_usage(char *prog_name)
 		"           -s : Silent mode.\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IF.\n" 
-		//"           -f : Write SDAQ info. Used with mode 'calibration'\n" 
+		"           -f : Write SDAQ info. Used with mode 'info'\n" 
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 1 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"

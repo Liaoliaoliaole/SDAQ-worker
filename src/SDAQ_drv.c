@@ -162,8 +162,30 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 	return 0;
 }
 
-//The following RX Functions used on the pseudo_SDAQ Simulator 
-				/*RX Functions*/
+//The following Functions used on the pseudo_SDAQ Simulator 
+int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_sync_debug_data *p_sdaq_sync_debug_data;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	memset(frame_tx.data, 0, sizeof(frame_tx.data));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper is 7 but the real seem to be 4 
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = 8;//Payload size fro mthe white paper is 8 
+	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) &(frame_tx.data);
+	p_sdaq_sync_debug_data->ref_time = ref_time;
+	p_sdaq_sync_debug_data->dev_time = dev_time;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
 int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
@@ -232,6 +254,7 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, f
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = 0;
 	p_sdaq_meas -> timestamp = timestamp;
+	usleep(1000);//hack to prevent message lost.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;	
@@ -257,6 +280,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = 0;
 	p_sdaq_meas -> timestamp = timestamp;
+	usleep(1000);//hack to prevent message lost.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;	

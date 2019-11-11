@@ -100,7 +100,6 @@ void print_usage(char *prog_name)
 
 void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 {
-	
 	struct thread_arguments_passer arg;
 	memcpy(&arg, varg_pt, sizeof(arg));//copy *varg_pt to arg (struct thread_arguments_passer)
 	pthread_mutex_unlock(&thread_make_lock);//Unlock threading making 
@@ -116,11 +115,14 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	sdaq_can_id *id_dec;
 	sdaq_set_new_addr *set_new_addr_dec;
 	unsigned char dev_addr=Parking_address,status=0,raw_meas=0;
-	unsigned int status_send_cnt=Stat_ID_Interval,sync_status_cnt=Sync_Status_Interval;
+	unsigned int status_send_cnt=Stat_ID_Interval;
+	unsigned int sync_status_cnt=Sync_Status_Interval;
+	unsigned short pseudo_SDAQ_timestamp=0;
 	float val = (float) arg.serial_number;//to be changed 
 	//Variables for select
 	struct timeval tv;
 	fd_set ready_for_read;
+	//Return value
 	int retval;
 
 	//CAN Socket Opening
@@ -226,6 +228,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 							{	
 								status |= 1<<In_sync;
 								sync_status_cnt=Sync_Status_Interval;
+								p_debug_data(socket_num, dev_addr, (unsigned short)*frame_rx.data, pseudo_SDAQ_timestamp);
+								pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
 							}
 							break;
 					}
@@ -255,12 +259,15 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					val += i/100.0;
 					if(val > 100.0)
 						val=0.0;
-					p_measure(socket_num, dev_addr, i, val, 0);
-					if(raw_meas)
-						p_measure_raw(socket_num, dev_addr, i, val, 0);	
+					p_measure(socket_num, dev_addr, i, val, pseudo_SDAQ_timestamp);
+					if(raw_meas&&!(pseudo_SDAQ_timestamp%1000))	
+						p_measure_raw(socket_num, dev_addr, i, val, pseudo_SDAQ_timestamp);
 				}
 			}
 		}
+		pseudo_SDAQ_timestamp += 100;
+		if(pseudo_SDAQ_timestamp>=60000)
+			pseudo_SDAQ_timestamp = 0;
 	}
 	close(socket_num);
 	return NULL;

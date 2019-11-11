@@ -37,8 +37,6 @@ enum payload_type
 	Calibration_Date = 0x89,
 	Calibration_Point_Data = 0x8a,
 	Uncalibrated_meas = 0x8b,
-	//Bootloader_Reply = 0xa0,
-	//Page_Buffer_Data = 0xa1,
 	Sync_Info = 0xc0
 };
 
@@ -92,20 +90,26 @@ typedef struct SDAQ_calibration_date_Decoder
 /* SDAQ's CAN Calibration_date message decoder */
 typedef struct SDAQ_calibration_data_Decoder
 {
-	float date_of_point;
+	float data_of_point;
 	unsigned char type;
 	unsigned char points_num;
 }sdaq_calibration_data; 
 
 
 //The following RX Decoders used on the pseudo_SDAQ Simulator 
-				/*RX Decoders*/
 /* SDAQ's CAN Set Device Address message decoder */
 typedef struct pSDAQ_Set_new_address
 {
 	unsigned int  dev_sn;
 	unsigned char new_address;
 }sdaq_set_new_addr; 
+
+/* SDAQ's CAN Set Device Address message decoder */
+typedef struct pSDAQ_sync_debug_data
+{
+	unsigned short ref_time;
+	unsigned short dev_time;
+}sdaq_sync_debug_data; 
 
 #pragma pack(pop)//Disable packing 
 
@@ -130,7 +134,8 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address);
 //int WriteCalibrationPoints();
 
 //The following RX Functions used on the pseudo_SDAQ Simulator 
-				/*SDAQ -> Master Functions*/
+				/*pseudo_SDAQ -> Master Functions*/
+int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time);
 int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);
 int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel);
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);

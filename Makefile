@@ -4,7 +4,7 @@ LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src
-DEP=$(WORK_dir)/Discover_and_autoconfig.o $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o $(WORK_dir)/Dev_info.o $(WORK_dir)/SDAQ_drv.o
+DEP=$(WORK_dir)/Discover_and_autoconfig.o $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o $(WORK_dir)/info.o $(WORK_dir)/SDAQ_drv.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim
 
@@ -23,7 +23,7 @@ $(WORK_dir)/Measure.o: $(SRC_dir)/Measure.c
 $(WORK_dir)/Logging.o: $(SRC_dir)/Logging.c 
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
-$(WORK_dir)/Dev_info.o: $(SRC_dir)/Dev_info.c 
+$(WORK_dir)/info.o: $(SRC_dir)/info.c 
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 	
 $(WORK_dir)/SDAQ_drv.o: $(SRC_dir)/SDAQ_drv.c

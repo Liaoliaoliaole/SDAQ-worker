@@ -61,7 +61,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window 
 	//Check if the terminal have the minimum size for the application
-	if(term_init_size.ws_col<term_min_width && term_init_size.ws_row<term_min_height)
+	if(term_init_size.ws_col<term_min_width || term_init_size.ws_row<term_min_height)
 	{
 		printf("Terminal need to be at least %dX%d Characters\n",term_min_width,term_min_height);
 		return EXIT_SUCCESS;
@@ -94,7 +94,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			{
 				case '1': Req_Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
 				case '2': Req_Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr); last_row=last_col=0; break;
-				case 'S': Sync(socket_num,0);
+				case 'S': Sync(socket_num,0xFF);
 				case '3': QueryDeviceInfo(socket_num,dev_addr); break;
 				case 'Q':
 				case 'q': 
@@ -239,12 +239,12 @@ void * CAN_socket_RX(void *varg_pt)
 						case Device_status: 
 							//wclear(arg->status_win);
 							status_dec = (sdaq_status *)frame_rx.data;
-							mvwprintw(arg->status_win,1,1,"Device_status & S/N:\n"); 
-							wprintw(arg->status_win,"  S/N = %d\n",status_dec->dev_sn);
-							wprintw(arg->status_win,"  State : %9s\n",status_byte_dec(status_dec->status,State));								
-							wprintw(arg->status_win,"  IsSync? : %3s\n",status_byte_dec(status_dec->status,In_sync));
-							wprintw(arg->status_win,"  Error?  : %3s\n",status_byte_dec(status_dec->status,Error));
-							wprintw(arg->status_win,"  Mode  : %3s\n",status_byte_dec(status_dec->status,Mode));
+							mvwprintw(arg->status_win,1,1,"Device_status & S/N:"); 
+							mvwprintw(arg->status_win,2,3,"S/N = %d",status_dec->dev_sn);
+							mvwprintw(arg->status_win,3,3,"State : %9s",status_byte_dec(status_dec->status,State));								
+							mvwprintw(arg->status_win,4,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
+							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
+							mvwprintw(arg->status_win,6,3,"Mode  : %3s",status_byte_dec(status_dec->status,Mode));
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))
 								wclean_refresh(arg->meas_win);
@@ -252,12 +252,12 @@ void * CAN_socket_RX(void *varg_pt)
 						case Device_info: 
 							//wclear(arg->meas_win);
 							info_dec = (sdaq_info *)frame_rx.data;
-							mvwprintw(arg->info_win,1,1,"Device_info:\n");
-							wprintw(arg->info_win,"  Type = %s\n",dev_type_str[info_dec->dev_type]);
-							wprintw(arg->info_win,"  Firmware rev = %d\n",info_dec->firm_rev);
-							wprintw(arg->info_win,"  Hardware rev = %d\n",info_dec->hw_rev);
-							wprintw(arg->info_win,"  Channels = %d\n",info_dec->num_of_ch); 
-							wprintw(arg->info_win,"  Samplerate = %d\n",info_dec->sample_rate);
+							mvwprintw(arg->info_win,1,1,"Device_info:");
+							mvwprintw(arg->info_win,2,3,"Type = %s",dev_type_str[info_dec->dev_type]);
+							mvwprintw(arg->info_win,3,3,"Firmware rev = %d",info_dec->firm_rev);
+							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
+							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch); 
+							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							wrefresh(arg->info_win);
 							//amount_of_inputs=info_dec->num_of_ch; //used in averaging as end index 
 							break;

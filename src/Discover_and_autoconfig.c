@@ -22,7 +22,7 @@
 
 //global variables 
 unsigned char target=CMP_Serial_Numbers; //flag, used in SDAQentry_cmp and SDAQentry_find functions, switch the comparison target.
-unsigned char TMR_exp=1;
+unsigned char Discover_and_autoconf_TMR_exp=1;
 
 //Local struct for SDAQ device entry 
 struct SDAQentry {
@@ -32,8 +32,8 @@ struct SDAQentry {
 };
 
 //local functions
-struct SDAQentry* new_SDAQentry();
-void free_SDAQentry(gpointer person);
+struct SDAQentry* new_SDAQentry();//allocate memory for a new SDAQentry 
+void free_SDAQentry(gpointer node);//used with g_slist_free_full to free the data of each node
 void printf_SDAQentry(gpointer SDAQ_entry, gpointer data);
 GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with the SDAQs that is on the BUS, Sort by address.
 GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking, Sort by Serial number 
@@ -217,9 +217,9 @@ void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass)
 	return;
 }
 
-void timer_handler (int signum)
+void Discover_and_autoconf_timer_handler (int signum)
 {
-	TMR_exp = 0;
+	Discover_and_autoconf_TMR_exp = 0;
 	return;
 }
 /*return a list with all the SDAQs on bus, sort by address*/
@@ -237,10 +237,10 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	struct itimerval timer;//Scan Timeout
 	
 	//link signal SIGALRM to timer's handler
-	signal(SIGALRM,timer_handler);
+	signal(SIGALRM, Discover_and_autoconf_timer_handler);
 	
 	//initialize timer expired time 
-	TMR_exp = 1;
+	Discover_and_autoconf_TMR_exp = 1;
 	memset (&timer, 0, sizeof(timer));
 	timer.it_value.tv_sec = scanning_time;
 	timer.it_value.tv_usec = 0;
@@ -248,7 +248,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	
 	//Query device info from every device
 	QueryDeviceInfo(socket_num,Broadcast);
-	while(TMR_exp)
+	while(Discover_and_autoconf_TMR_exp)
 	{
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
