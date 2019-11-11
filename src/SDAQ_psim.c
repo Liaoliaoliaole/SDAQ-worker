@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	signal(SIGINT, handle_sigint);
 	
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
-	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQ_variable;
+	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQ units memory space;
 	for(int i=0;i<num_of_pSDAQ;i++)
 	{
 		pthread_mutex_lock(&thread_make_lock);
