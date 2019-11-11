@@ -40,7 +40,7 @@ typedef struct SDAQ_information_and_calibration_data
 	struct GSList *Calibration_date_list;
 	struct GSlist *Calibration_point_data_lists;
 }SDAQ_info_cal_data;
-
+//struct used as container type for the data of the Calibration_date_list 
 typedef struct calibration_date
 {
 	unsigned char ch_num;
@@ -75,6 +75,7 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	int retval;
 	retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str);
 	if(!retval)
+	{
 		printf("----- Info of SDAQ with Address %d -----\n"
 			   "\tHardware rev: %d\n"
 			   "\tSoftware rev: %d\n"
@@ -88,8 +89,9 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 								 str.SDAQ_info.dev_type,
 								 str.SDAQ_info.num_of_ch,
 								 str.SDAQ_info.sample_rate);
-	printf("----- Calibration Expiration Dates -----\n");						 
-	g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_node,NULL);
+		printf("----- Calibration Expiration Dates -----\n");						 
+		g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_node,NULL);
+	}
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	return retval;
 }
@@ -158,7 +160,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						break;
 					case Calibration_Date:
 						new_node = new_SDAQ_date_node();
-						//Load data from buffer to node
+						//Load data from decoded "frame_rx" buffer to node
 						new_node->ch_num = id_dec->channel_num;
 						new_node->date = date_dec->date;
 						new_node->amount_of_points = date_dec->amount_of_points; 

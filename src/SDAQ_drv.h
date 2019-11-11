@@ -138,5 +138,6 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address);
 int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time);
 int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);
 int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel);
-int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);
-int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp);
+int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_date *ch_cal_date);
+int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);
+int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);

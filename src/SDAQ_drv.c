@@ -162,7 +162,9 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 	return 0;
 }
 
-//The following Functions used on the pseudo_SDAQ Simulator 
+/*-----------------------------------------------------------------------------------------------------------------*/ 
+
+/*The following Functions used only on the pseudo_SDAQ Simulator*/ 
 int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
@@ -234,7 +236,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	return 0;	
 }
 
-int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp)
+int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_meas *p_sdaq_meas;
@@ -252,15 +254,15 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, f
 	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
-	p_sdaq_meas -> status = 0;
+	p_sdaq_meas -> status = state;
 	p_sdaq_meas -> timestamp = timestamp;
-	usleep(1000);//hack to prevent message lost.
+	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;	
 }
 
-int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp)
+int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_meas *p_sdaq_meas;
@@ -278,9 +280,30 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
-	p_sdaq_meas -> status = 0;
+	p_sdaq_meas -> status = state;
 	p_sdaq_meas -> timestamp = timestamp;
-	usleep(1000);//hack to prevent message lost.
+	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
+int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_date *ch_cal_date)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Calibration_Date;//Payload type for Calibration_Date message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	p_sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = sizeof(sdaq_calibration_date);//Payload size
+	memcpy(frame_tx.data, ch_cal_date, sizeof(sdaq_calibration_date));
+	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;	
