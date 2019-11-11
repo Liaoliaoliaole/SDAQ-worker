@@ -122,7 +122,7 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 		else if(!list_Park)//Check for no Parking SDAQs
 		{
 			if(!usr_flag->silent)
-				printf("All founded SDAQs have valid address.\nBye Bye!!\n");
+				printf("All found SDAQs have valid address.\nBye Bye!!\n");
 		}	
 		else //True Autoconfig 
 		{	
@@ -139,7 +139,7 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 			}
 			if(!usr_flag->silent)
 			{
-				printf(" %2d SDAQs on Park found on bus\n",g_slist_length(list_Park));
+				printf("Found %2d SDAQs with Parking address\n",g_slist_length(list_Park));
 				printf("New addresses send to SDAQs....\n");
 			}
 			//Send the new addresses to the SDAQs
