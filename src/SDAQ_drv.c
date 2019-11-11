@@ -10,10 +10,29 @@
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"\\O/","V","A","°C","Pa","mV"}; 
+const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"};  
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
-const char *dev_status_str[][8]={{"Stdby","No_sync","Okay","","","","","Norm"},{"Run","Sync","Error","","","","","Boot"}};  
+const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
 const unsigned char Parking_address=63;
+const unsigned char Broadcast=0;
+
+//Decoder for the status byte field from "CAN Device_ID/Status" message
+const char * status_byte_dec(unsigned char status_byte,unsigned char field)
+{
+	switch (field)
+	{
+		case State:
+			return status_byte & (1<<State) ? dev_status_str[1][State] : dev_status_str[0][State];
+		case In_sync:
+			return status_byte & (1<<In_sync) ? dev_status_str[1][In_sync] : dev_status_str[0][In_sync];
+		case Error:
+			return status_byte & (1<<Error) ? dev_status_str[1][Error] : dev_status_str[0][Error];
+		case Mode:
+			return status_byte & (1<<Mode) ? dev_status_str[1][Mode] : dev_status_str[0][Mode];
+		default :
+			return "";
+	}
+}
 
 				/*TX Functions*/
 //Synchronize the SDAQ devices. Requested by broadcast only.
@@ -106,8 +125,25 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 	return 0;	
 }
 
+int QueryCalibrationData(int socket_fd, unsigned char dev_address)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Query_Calibration_Data message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = 0;//No Payload 
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
-int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
+int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 {
 	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx;
@@ -126,10 +162,30 @@ int Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 	return 0;
 }
 
+//The following Functions used on the pseudo_SDAQ Simulator 
+int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_sync_debug_data *p_sdaq_sync_debug_data;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	memset(frame_tx.data, 0, sizeof(frame_tx.data));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper is 7 but the real seem to be 4 
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = 8;//Payload size fro mthe white paper is 8 
+	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) &(frame_tx.data);
+	p_sdaq_sync_debug_data->ref_time = ref_time;
+	p_sdaq_sync_debug_data->dev_time = dev_time;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
 
-
-//The following RX Functions used on the pseudo_SDAQ Simulator 
-				/*RX Functions*/
 int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
@@ -198,6 +254,33 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, f
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = 0;
 	p_sdaq_meas -> timestamp = timestamp;
+	usleep(1000);//hack to prevent message lost.
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+
+int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, float value,unsigned short timestamp)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_meas *p_sdaq_meas;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=3;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Uncalibrated_meas;//Payload type for Device_measurement message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	p_sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
+	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
+	p_sdaq_meas -> meas = value;
+	p_sdaq_meas -> unit = 0;
+	p_sdaq_meas -> status = 0;
+	p_sdaq_meas -> timestamp = timestamp;
+	usleep(1000);//hack to prevent message lost.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;	

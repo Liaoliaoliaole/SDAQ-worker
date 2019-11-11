@@ -1,4 +1,5 @@
-#define Stat_ID_Interval 200
+#define Stat_ID_Interval 200 //20 sec with base time 100ms 
+#define Sync_Status_Interval 6// 2 min reset of InSync flag based on Stat_ID_Interval  
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@ void handle_sigint(int sig)
 int main(int argc, char *argv[])
 {
 	unsigned int num_of_pSDAQ;
+	//char usr_com[50];
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id; 
 	struct thread_arguments_passer thread_arg;
@@ -72,10 +74,16 @@ int main(int argc, char *argv[])
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
 	
-	
 	while(run)
+	{
+		/*
+		printf("::");
+		fflush(stdout);
+		scanf("%s",usr_com);
+		printf("User input:%s\n",usr_com);
+		*/
 		sleep(1);
-
+	}
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
 	
@@ -92,7 +100,6 @@ void print_usage(char *prog_name)
 
 void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 {
-	
 	struct thread_arguments_passer arg;
 	memcpy(&arg, varg_pt, sizeof(arg));//copy *varg_pt to arg (struct thread_arguments_passer)
 	pthread_mutex_unlock(&thread_make_lock);//Unlock threading making 
@@ -107,12 +114,15 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Variables for SDAQ_dev
 	sdaq_can_id *id_dec;
 	sdaq_set_new_addr *set_new_addr_dec;
-	unsigned char dev_addr=Parking_address,status=0;
+	unsigned char dev_addr=Parking_address,status=0,raw_meas=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
+	unsigned int sync_status_cnt=Sync_Status_Interval;
+	unsigned short pseudo_SDAQ_timestamp=0;
 	float val = (float) arg.serial_number;//to be changed 
 	//Variables for select
 	struct timeval tv;
 	fd_set ready_for_read;
+	//Return value
 	int retval;
 
 	//CAN Socket Opening
@@ -159,7 +169,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		perror("Error in socket bind");
 		exit(1);
 	}
-	p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+	//Send status and info on start 
+	p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+	p_DeviceInfo(socket_num, dev_addr, 16);
 	while(run)
 	{
 		/* Set Watch SocketCAN to see when it's available for reading. */
@@ -175,51 +187,71 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			close(socket_num);
 			pthread_exit(NULL);
 		}
-		else if(retval)//expired from Socket_num
+		else if(retval)// Socket_num ready to read
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
 				id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-				if(id_dec->device_addr==dev_addr||id_dec->device_addr==0)
+				if(id_dec->device_addr==dev_addr||id_dec->device_addr==Broadcast)
 				{
-					if(id_dec->payload_type==Set_dev_address)
+					switch(id_dec->payload_type)
 					{
-						set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
-						if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
-						{
-							dev_addr = set_new_addr_dec->new_address;
-							p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
-						}
-						else if(!set_new_addr_dec->new_address)
-							printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
-					}
-					else if(id_dec->payload_type==Query_Dev_info)
-					{
-						p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
-						p_DeviceInfo(socket_num, dev_addr, 16);
-					}
-					else if(id_dec->payload_type==Start_command)
-					{
-						status |= 1; //set run bit of status byte
-						status_send_cnt = 0; //force a status message transmission 
-					}
-					else if(id_dec->payload_type==Stop_command)
-					{
-						status &= ~(1); //clear run bit of status byte
-						status_send_cnt = 0; //force a status message transmission 
+						case Set_dev_address:
+							set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
+							if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
+							{
+								dev_addr = set_new_addr_dec->new_address;
+								p_DeviceID_and_status(socket_num,dev_addr, arg.serial_number, status);
+							}
+							else if(!set_new_addr_dec->new_address)
+								printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
+							break;
+						case Query_Dev_info: 
+						case Change_SDAQ_baudrate:
+							p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
+							p_DeviceInfo(socket_num, dev_addr, 16);
+							break;
+						case Start_command:
+							status |= 1; //set run bit of status byte
+							status_send_cnt = 0; //force a status message transmission 
+							break;
+						case Stop_command:
+							status &= ~(1); //clear run bit of status byte
+							status_send_cnt = 0; //force a status message transmission 
+							break;	
+						case Configure_Additional_data:
+							raw_meas=frame_rx.data[0];
+							break;
+						case Synchronization_command:
+							if(id_dec->device_addr==Broadcast)
+							{	
+								status |= 1<<In_sync;
+								sync_status_cnt=Sync_Status_Interval;
+								p_debug_data(socket_num, dev_addr, (unsigned short)*frame_rx.data, pseudo_SDAQ_timestamp);
+								pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
+							}
+							break;
 					}
 				}
 			}
 		}
-		else//expired from Timeout
+		else//select expired from Timeout
 		{
 			if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
 			{
+				if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
+				{
+				 	status &= ~(1<<In_sync);
+				 	sync_status_cnt = Sync_Status_Interval;
+				 }
+				else
+					sync_status_cnt--;
 				p_DeviceID_and_status(socket_num, dev_addr, arg.serial_number, status);
 				status_send_cnt = Stat_ID_Interval;
 			}
-			status_send_cnt--;
+			else
+				status_send_cnt--;
 			if(status & 0x01)//check run bit of status byte
 			{
 				for(int i=1;i<=16;i++)
@@ -227,10 +259,15 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					val += i/100.0;
 					if(val > 100.0)
 						val=0.0;
-					p_measure(socket_num, dev_addr, i, val, 0);
+					p_measure(socket_num, dev_addr, i, val, pseudo_SDAQ_timestamp);
+					if(raw_meas&&!(pseudo_SDAQ_timestamp%1000))	
+						p_measure_raw(socket_num, dev_addr, i, val, pseudo_SDAQ_timestamp);
 				}
 			}
 		}
+		pseudo_SDAQ_timestamp += 100;
+		if(pseudo_SDAQ_timestamp>=60000)
+			pseudo_SDAQ_timestamp = 0;
 	}
 	close(socket_num);
 	return NULL;

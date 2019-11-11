@@ -22,7 +22,7 @@
 
 //global variables 
 unsigned char target=CMP_Serial_Numbers; //flag, used in SDAQentry_cmp and SDAQentry_find functions, switch the comparison target.
-unsigned char TMR_exp=1;
+unsigned char Discover_and_autoconf_TMR_exp=1;
 
 //Local struct for SDAQ device entry 
 struct SDAQentry {
@@ -32,8 +32,8 @@ struct SDAQentry {
 };
 
 //local functions
-struct SDAQentry* new_SDAQentry();
-void free_SDAQentry(gpointer person);
+struct SDAQentry* new_SDAQentry();//allocate memory for a new SDAQentry 
+void free_SDAQentry(gpointer node);//used with g_slist_free_full to free the data of each node
 void printf_SDAQentry(gpointer SDAQ_entry, gpointer data);
 GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with the SDAQs that is on the BUS, Sort by address.
 GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking, Sort by Serial number 
@@ -44,20 +44,20 @@ gint SDAQentry_find_autoconf (gconstpointer node, gconstpointer arg);//GFunc fun
 // GFunc function used with g_slist_foreach. Arguments: SDAQ_new_address_list, pointer to socket number 
 void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass);
 
-int Discover(int socket_num, opt_flags usr_flag)
+int Discover(int socket_num, opt_flags *usr_flag)
 {
 	GSList *list_SDAQs=NULL,*list_Park=NULL,*list_conflicts=NULL;
-	if(!(usr_flag.silent))
-		printf("Scan the CANbus for %d sec ...\n",usr_flag.timeout);
+	if(!(usr_flag->silent))
+		printf("Scan the CANbus for %d sec ...\n",usr_flag->timeout);
 	//Construct the list with the SDAQs that is on the BUS
-	list_SDAQs = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
+	list_SDAQs = find_SDAQs(socket_num,usr_flag->timeout);//last argument is the scanning time
 	if (list_SDAQs)
 	{
 		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
 		list_conflicts = find_SDAQs_Conflicts(list_SDAQs);//build list_conflicts  
 		// print list_SDAQs
 		printf("The discover found %d SDAQ ",g_slist_length(list_SDAQs));
-		if(!(usr_flag.silent))
+		if(!(usr_flag->silent))
 		{
 			printf("\n==========  List of Discovered SDAQs   ==========\n");
 			g_slist_foreach(list_SDAQs, printf_SDAQentry, NULL);
@@ -68,7 +68,7 @@ int Discover(int socket_num, opt_flags usr_flag)
 			if(g_slist_length(list_SDAQs)!=g_slist_length(list_Park))
 			{
 				printf("From them %d is/are in Parking\n",g_slist_length(list_Park));
-				if(!(usr_flag.silent))
+				if(!(usr_flag->silent))
 				{
 					printf("==========  List of SDAQs in Parking   ==========\n");
 					g_slist_foreach(list_Park, printf_SDAQentry, NULL);
@@ -103,15 +103,16 @@ int Discover(int socket_num, opt_flags usr_flag)
 	printf("\n===== SDAQ[4] =====\n\n");
     printf_SDAQentry(g_slist_nth(list_SDAQs, 4)->data, NULL);
 	*/
-    return 0;
+    return EXIT_SUCCESS;
 }
 
-int Autoconfig(int socket_num, opt_flags usr_flag)
+int Autoconfig(int socket_num, opt_flags *usr_flag)
 {
 	unsigned char addr_t=1;
-	int ret_val=0,i,j;
-	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL,*list_work=NULL;//list_work used as element pointer in addressing, and as list in verification. 
-	list_SDAQs = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
+	int ret_val=EXIT_SUCCESS,i,j;
+	GSList *list_SDAQs=NULL,*list_Park=NULL, *list_conflicts=NULL;
+	GSList *list_work=NULL;//list_work used as element pointer in addressing, and as list in verification. 
+	list_SDAQs = find_SDAQs(socket_num,usr_flag->timeout);//last argument is the scanning time
 	if (list_SDAQs)
 	{
 		list_Park = find_SDAQs_inParking(list_SDAQs);//build list_Park with SDAQs in Parking mode 
@@ -120,8 +121,8 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 			printf("Address conflict found. Autoconfig Give Up!!!! \n");
 		else if(!list_Park)//Check for no Parking SDAQs
 		{
-			if(!usr_flag.silent)
-				printf("All founded SDAQs have valid address.\nBye Bye!!\n");
+			if(!usr_flag->silent)
+				printf("All found SDAQs have valid address.\nBye Bye!!\n");
 		}	
 		else //True Autoconfig 
 		{	
@@ -136,31 +137,33 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 				}
 				addr_t++; 
 			}
-			if(!usr_flag.silent)
+			if(!usr_flag->silent)
 			{
-				printf(" %2d SDAQs on Park found on bus\n",g_slist_length(list_Park));
+				printf("Found %2d SDAQs with Parking address\n",g_slist_length(list_Park));
 				printf("New addresses send to SDAQs....\n");
 			}
 			//Send the new addresses to the SDAQs
 			g_slist_foreach(list_Park, SDAQs_newaddress_list_to_SDAQs, &socket_num);
 			/*Autoconfig verification*/
-			if(!usr_flag.silent)
+			if(!usr_flag->silent)
 			{
 				printf("-------Verification-------\n");
-				printf("Scan the BUS for %d sec.\n",usr_flag.timeout);
+				printf("Scan the BUS for %d sec.\n",usr_flag->timeout);
 			}
-			list_work = find_SDAQs(socket_num,usr_flag.timeout);//last argument is the scanning time
+			list_work = find_SDAQs(socket_num,usr_flag->timeout);//last argument is the scanning time
 			//check if the data->data of all the list_Park node is also in the list_work
 			for(i=0,j=g_slist_length(list_Park);i<j;i++)
 			{
 				if(!g_slist_find_custom(list_work,g_slist_nth_data(list_Park,i),SDAQentry_find_autoconf))
 				{
-					printf("!!!!!! FAILURE !!!!!!!\n");
+					if(!usr_flag->silent)
+						printf("!!!!!! FAILURE !!!!!!!\n");
+					ret_val = EXIT_FAILURE;
 					break;
 				}
 			}
 			//Success message to the user
-			if(!usr_flag.silent && i==j)
+			if(!usr_flag->silent && i==j)
 				printf("SUCCESS\n");
 		}
 		//free lists with only links
@@ -171,7 +174,10 @@ int Autoconfig(int socket_num, opt_flags usr_flag)
 		g_slist_free_full(list_SDAQs, free_SDAQentry);
 	}
 	else
-		printf("No SDAQ found\n");
+	{
+		if(!usr_flag->silent)	
+			printf("No SDAQ found\n");
+	}
 	return ret_val;
 }
 
@@ -211,9 +217,9 @@ void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass)
 	return;
 }
 
-void timer_handler (int signum)
+void Discover_and_autoconf_timer_handler (int signum)
 {
-	TMR_exp = 0;
+	Discover_and_autoconf_TMR_exp = 0;
 	return;
 }
 /*return a list with all the SDAQs on bus, sort by address*/
@@ -222,7 +228,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	//internal List with SDAQs
 	GSList *ret_list=NULL;
 	
-	//CAN Socket related variables
+	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes;
 	sdaq_can_id *id_dec;
@@ -231,18 +237,18 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	struct itimerval timer;//Scan Timeout
 	
 	//link signal SIGALRM to timer's handler
-	signal(SIGALRM,timer_handler);
+	signal(SIGALRM, Discover_and_autoconf_timer_handler);
 	
 	//initialize timer expired time 
-	TMR_exp = 1;
+	Discover_and_autoconf_TMR_exp = 1;
 	memset (&timer, 0, sizeof(timer));
 	timer.it_value.tv_sec = scanning_time;
 	timer.it_value.tv_usec = 0;
 	setitimer (ITIMER_REAL, &timer, NULL);
 	
 	//Query device info from every device
-	QueryDeviceInfo(socket_num,0);
-	while(TMR_exp)
+	QueryDeviceInfo(socket_num,Broadcast);
+	while(Discover_and_autoconf_TMR_exp)
 	{
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
