@@ -312,7 +312,7 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	time_t exp_cal_date = node_dec->date;
 	ptm = gmtime(&exp_cal_date);
 	strftime (buff,sizeof(buff),"%Y/%m",ptm);
-	printf("  CH%2d: Expired @ %s | Points = %d\n",node_dec->ch_num,
+	printf("  CH%02d: Expired @ %s | Points = %d\n",node_dec->ch_num,
 												  buff,
 												  node_dec->amount_of_points);
 	g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
