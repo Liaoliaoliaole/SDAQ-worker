@@ -53,7 +53,7 @@ typedef struct SDAQ_information_and_calibration_data{
 		unsigned char sample_rate;
 	}SDAQ_info;
 	struct GSList *Calibration_date_list;
-	struct GSlist **Calibration_point_data_lists;//array of lists 
+	struct GSlist **Cal_points_data_lists;//array of lists 
 }SDAQ_info_cal_data;
 //struct used as container type for the data of the Calibration_date_list 
 typedef struct calibration_date{
@@ -80,8 +80,8 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 //Declaration of function for Calibration_date_list 
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date 
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
-//Declaration of function for Calibration_point_data_lists 
-sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Calibration_point_data_lists 
+//Declaration of function for Cal_points_data_lists 
+sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists 
 void free_SDAQ_cal_point_node(gpointer Point_node);//used with g_slist_free_full to free the data of node
 //Called from g_slist_foreach. the pass_arg is the array with with the list of calibration data points
 void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer pass_arg);
@@ -108,13 +108,13 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 								 str.SDAQ_info.num_of_ch,
 								 str.SDAQ_info.sample_rate);
 		printf("----- Expiration Date & Point's Data -----\n");						 
-		g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Calibration_point_data_lists);
+		g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
 	}
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
-		g_slist_free_full((GSList *)(str.Calibration_point_data_lists[i]), free_SDAQ_Date_node);
-	free(str.Calibration_point_data_lists);
+		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+	free(str.Cal_points_data_lists);
 	return retval;
 }
 
@@ -194,7 +194,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		}
 		else
 		{
-			printf("Timeout\n");
+			printf("No device found\n");
 			return EXIT_FAILURE;
 		}
 	}
@@ -203,8 +203,8 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		printf("Reception Failed\n");
 		return EXIT_FAILURE;
 	}
-	str->Calibration_point_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSlist *));
-	if(!str->Calibration_point_data_lists)
+	str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSlist *));
+	if(!str->Cal_points_data_lists)
 	{
 		fprintf(stderr,"Memory Error\n");
 		exit(EXIT_FAILURE);
@@ -218,9 +218,9 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		timer.it_value.tv_sec = scanning_time;
 		timer.it_value.tv_usec = 0;
 		setitimer (ITIMER_REAL, &timer, NULL);
-		cnt=0;//for 8 input + 8 output and + 1
+		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(info_TMR_exp && cnt<16)
+		while(info_TMR_exp && cnt<16)//16 = 8 ref (output) + 8 mes (input) points
 		{	
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
@@ -229,13 +229,13 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 				{
 					new_point_node = new_SDAQ_cal_point_node();					
 					memcpy(new_point_node, frame_rx.data, sizeof(sdaq_calibration_points_data));
-					(str->Calibration_point_data_lists)[i] = (struct GSlist *)g_slist_append((GSList *)(str->Calibration_point_data_lists)[i], new_point_node);
-					cnt++;//inc cnt of the success receptions  
+					(str->Cal_points_data_lists)[i] = (struct GSlist *)g_slist_append((GSList *)(str->Cal_points_data_lists)[i], new_point_node);
+					cnt++; 
 				}
 			}
 			else
 			{
-				printf("Timeout\n");
+				printf("No device found\n");
 				return EXIT_FAILURE;
 			}
 		}
@@ -261,8 +261,8 @@ void free_SDAQ_Date_node(gpointer Date_node)
     g_slice_free(date_list_data_of_node, Date_node);
 } 
 
-/*---- Declaration of function for Calibration_point_data_lists ----*/
-//allocate memory for a new sdaq_calibration_points_data part of Calibration_point_data_lists 
+/*---- Declaration of function for Cal_points_data_lists ----*/
+//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists 
 sdaq_calibration_points_data* new_SDAQ_cal_point_node()
 {
 	sdaq_calibration_points_data *new_point_node_data = (sdaq_calibration_points_data *) g_slice_alloc(sizeof(sdaq_calibration_points_data));
@@ -289,10 +289,10 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 		switch(node_dec->type)
 		{
 			case Input  : 
-				printf("    Point %d-> %#4.3f Input ",node_dec->points_num, node_dec->data_of_point);
+				printf("\t| %d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
 				break;
 			case Output : 
-				printf("| %4.3f Output\n",node_dec->data_of_point); 
+				printf(" %8.3f |\n",node_dec->data_of_point); 
 				break;
 			//default : 
 		}
@@ -312,11 +312,19 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	time_t exp_cal_date = node_dec->date;
 	ptm = gmtime(&exp_cal_date);
 	strftime (buff,sizeof(buff),"%Y/%m",ptm);
-	printf("  CH%02d: Expired @ %s | Points = %d\n",node_dec->ch_num,
-												  buff,
-												  node_dec->amount_of_points);
+	if(node_dec->amount_of_points)
+	{
+		printf("  CH%02d: Expired @ %s Cal_Points = %d\n",node_dec->ch_num,
+											    	  buff,
+											    	  node_dec->amount_of_points);
+		printf("\t| # |  Measure  | Reference |\n");
+	}
+	//printf("\t|---|-----------|-----------|\n");
 	g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
 	return;
 }
-
-
+/*
+  CH01: Expired @ 1970/01 || Points = 8
+     # |  Measure  | Reference |
+     0 |  789.321  |  321.456  |
+*/

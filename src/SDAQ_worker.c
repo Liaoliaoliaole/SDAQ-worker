@@ -136,9 +136,9 @@ int main(int argc, char *argv[])
 				break;
 		}
 	}
-	if(argv[optind] == NULL || argv[1] == NULL) 
+	if(argv[optind] == NULL || argv[1] == NULL || argc <=2) 
 	{
-		printf("!!! CAN-IF and MODE Fields are Missing !!!\n"); 
+		printf("!!! CAN-IF and/or MODE Field are Missing !!!\n"); 
 		exit(EXIT_FAILURE);		
 	}
 	//CAN Socket Opening
@@ -147,7 +147,6 @@ int main(int argc, char *argv[])
 		perror("Error while opening socket");
 		exit(EXIT_FAILURE);
 	}
-	
 	//Link interface name to socket
 	strcpy(ifr.ifr_name, argv[optind]); // get name from main arguments
 	if(ioctl(socket_num, SIOCGIFINDEX, &ifr))
@@ -155,7 +154,6 @@ int main(int argc, char *argv[])
 		perror("CAN-IF");
 		exit(EXIT_FAILURE);
 	}
-	
 	/*Filter for CAN messages	-- SocketCAN Filters act as: <received_can_id> & mask == can_id & mask*/
 	//load filter's can_id member
 	can_filter_enc = (sdaq_can_id *)&RX_filter.can_id;//Set encoder to filter.can_id
@@ -320,7 +318,7 @@ void list_CANIF()
 
 void print_usage(char *prog_name)
 {
-	const char preamp[] = {"\n"
+	const char preamp[] = {
 	"\tProgram: SDAQ_worker  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
     "\tThis program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
     "\tThis is free software, and you are welcome to redistribute it\n"
@@ -332,14 +330,14 @@ void print_usage(char *prog_name)
 		"      discover: Discovering the connected SDAQs.\n\n"
 		"    autoconfig: Set valid address to all Parked SDAQs.\n\n"
 		"    setaddress: Change the address of a SDAQ.\n"
-		"                (Usage: SDAQ_worker CAN-IF setaddress 'new_SDAQ_address' 'Serial_number_of_SDAQ')\n"
+		"                (Usage: SDAQ_worker CAN-IF setaddress 'new_address' 'Serial_number_of_SDAQ')\n"
 		"          info: Get all the available information of a SDAQ device.\n"
 		"                (Usage: SDAQ_worker CAN-IF info 'SDAQ_address')\n"
-		"       measure: Get the measurement, status and info of a SDAQ device.\n"
+		"       measure: Get the measurements, status and info of a SDAQ device.\n"
 		"                (Usage: SDAQ_worker CAN-IF measure 'SDAQ_address')\n"
 		"       logging: Get and log the measurement of a SDAQ device to a file.\n"
 		"                (Usage: SDAQ_worker CAN-IF logging 'SDAQ_address' 'Path/to/the/logging_directory')\n\n"
-		"ADDRESS: A valid SDAQ address. Resolution 1..62 (and Parking works only for Mode 'setaddress'\n\n"
+		"ADDRESS: A valid SDAQ address. Resolution 1..62 (also 'Parking' but works only for Mode 'setaddress'\n\n"
 		"Options:\n"
 		"           -h : Print help.\n"
 		"           -V : Version.\n"

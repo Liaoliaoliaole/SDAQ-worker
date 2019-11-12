@@ -44,6 +44,8 @@ struct pSDAQ_memory_space
 	unsigned char number_of_channels;
 	float out_val[16];
 	sdaq_calibration_date ch_cal_date[16];
+	float data_ref_values[16][8];
+	float data_mes_values[16][8];
 };
 
 //Global variables 
@@ -105,7 +107,16 @@ int main(int argc, char *argv[])
 		thread_arg.pSDAQ_mem = &pSDAQs_mem[i];
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
-
+	
+	pthread_mutex_lock(&SDAQs_mem_access);
+		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
+		pSDAQs_mem[0].ch_cal_date[15].amount_of_points=8;
+		//pSDAQs_mem[0].number_of_channels = 2;
+		pSDAQs_mem[0].data_ref_values[0][0] = 789.321;
+		pSDAQs_mem[0].data_mes_values[0][0] = 321.456;
+		pSDAQs_mem[0].out_val[0]+=12.55;
+	pthread_mutex_unlock(&SDAQs_mem_access);
+	
 	while(run)
 	{
 		/*
@@ -113,14 +124,6 @@ int main(int argc, char *argv[])
 		fflush(stdout);
 		scanf("%s",usr_com);
 		printf("User input:%s\n",usr_com);
-		
-		pthread_mutex_lock(&SDAQs_mem_access);
-			pSDAQs_mem[0].ch_cal_date[0].amount_of_points=5;
-		pthread_mutex_unlock(&SDAQs_mem_access);
-		
-		pthread_mutex_lock(&SDAQs_mem_access);
-			pSDAQs_mem[0].out_val[0]+=12.55;
-		pthread_mutex_unlock(&SDAQs_mem_access);
 		*/
 		sleep(1);
 	}
@@ -130,19 +133,6 @@ int main(int argc, char *argv[])
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
 	return 0;
-}
-
-
-void print_usage(char *prog_name)
-{
-	const char preamp[] = {"\n"
-	"Program: SDAQ_psim  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
-    "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
-    "This is free software, and you are welcome to redistribute it\n"
-    "under certain conditions; for details see LICENSE.\n"	
-	};
-	printf("%s\nUsage: %s CAN-IF [Amount of pseudo_SDAQ Devices] \n\n", preamp, prog_name);
-	return;
 }
 
 void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
@@ -162,6 +152,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Variables for SDAQ_dev
 	sdaq_can_id *id_dec;
 	sdaq_set_new_addr *set_new_addr_dec;
+	sdaq_calibration_points_data point_enc;
 	unsigned char status=0,raw_meas=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
 	unsigned int sync_status_cnt=Sync_Status_Interval;
@@ -247,6 +238,17 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					{
 						switch(id_dec->payload_type)
 						{
+							case Stop_command:
+								status &= ~(1); //clear run bit of status byte
+								status_send_cnt = 0; //force a status message transmission 
+								break;	
+							case Start_command:
+								status |= 1; //set run bit of status byte
+								status_send_cnt = 0; //force a status message transmission 
+								break;
+							case Configure_Additional_data:
+								raw_meas=frame_rx.data[0];//from white paper
+								break;							
 							case Set_dev_address:
 								set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
 								if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
@@ -258,30 +260,46 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
 								break;
 							case Change_SDAQ_baudrate: 
+								p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, status);
+								break;
 							case Query_Dev_info:
 								p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, status);
 								p_DeviceInfo(socket_num, arg.pSDAQ_mem->address, arg.pSDAQ_mem->number_of_channels);
 								for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 									p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
 								break;
-							case Start_command:
-								status |= 1; //set run bit of status byte
-								status_send_cnt = 0; //force a status message transmission 
-								break;
-							case Stop_command:
-								status &= ~(1); //clear run bit of status byte
-								status_send_cnt = 0; //force a status message transmission 
-								break;	
-							case Configure_Additional_data:
-								raw_meas=frame_rx.data[0];//from white paper
+							case Query_Calibration_Data:
+								if(id_dec->device_addr==arg.pSDAQ_mem->address 
+								&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
+								&& id_dec->channel_num)
+								{							
+									for(int j=0;j<8;j++)
+									{
+										point_enc.data_of_point = arg.pSDAQ_mem->data_ref_values[id_dec->channel_num-1][j]; 
+										point_enc.type = 1;
+										point_enc.points_num = j;
+										p_calibration_points_data(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &point_enc);
+										point_enc.data_of_point = arg.pSDAQ_mem->data_mes_values[id_dec->channel_num-1][j]; 
+										point_enc.type = 2;
+										p_calibration_points_data(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &point_enc);
+									}
+									p_calibration_date(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &(arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1]));
+								}
 								break;
 							case Synchronization_command:
 								if(id_dec->device_addr==Broadcast)
 								{	
-									status |= 1<<In_sync;
-									sync_status_cnt=Sync_Status_Interval;
 									p_debug_data(socket_num, arg.pSDAQ_mem->address, (unsigned short)*frame_rx.data, pseudo_SDAQ_timestamp);
-									pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
+									if((unsigned short)*frame_rx.data-pseudo_SDAQ_timestamp < 100 ||
+									   (unsigned short)*frame_rx.data-pseudo_SDAQ_timestamp > -100)
+									{
+										printf("Timestamp = %d\n",pseudo_SDAQ_timestamp);
+										printf("Timestamp diff = %d\n",(unsigned short)*frame_rx.data-pseudo_SDAQ_timestamp);
+										status |= 1<<In_sync;
+										sync_status_cnt=Sync_Status_Interval;
+									}
+									else
+										pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
 								}
 								break;
 						}
@@ -331,4 +349,16 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	}
 	close(socket_num);
 	return NULL;
+}
+
+void print_usage(char *prog_name)
+{
+	const char preamp[] = {
+	"Program: SDAQ_psim  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
+    "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
+    "This is free software, and you are welcome to redistribute it\n"
+    "under certain conditions; for details see LICENSE.\n"	
+	};
+	printf("%s\nUsage: %s CAN-IF [Amount of pseudo_SDAQ Devices] \n\n", preamp, prog_name);
+	return;
 }

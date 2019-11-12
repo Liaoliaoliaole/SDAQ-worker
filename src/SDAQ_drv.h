@@ -100,7 +100,7 @@ typedef struct SDAQ_calibration_date_Decoder{
 	unsigned char amount_of_points;
 }sdaq_calibration_date; 
 
-/* SDAQ's CAN Calibration_date message decoder */
+/* SDAQ's CAN Calibration_point_data message decoder */
 typedef struct SDAQ_calibration_points_data_Decoder{
 	float data_of_point;
 	unsigned char type;
@@ -149,5 +149,6 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);
 int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_of_channel);
 int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_date *ch_cal_date);
+int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_points_data *ch_cal_point_data);
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);
 int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);

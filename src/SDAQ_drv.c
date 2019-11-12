@@ -325,3 +325,24 @@ int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char c
 		return 1;
 	return 0;	
 }
+
+int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_points_data *ch_cal_point_data)
+{
+	sdaq_can_id *p_sdaq_id_ptr;
+	struct can_frame frame_tx;
+	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for Device_status message
+	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	p_sdaq_id_ptr->payload_type = Calibration_Point_Data;//Payload type for Calibration_Point_Data message
+	p_sdaq_id_ptr->device_addr = dev_address;
+	p_sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = sizeof(sdaq_calibration_points_data);//Payload size
+	memcpy(frame_tx.data, ch_cal_point_data, sizeof(sdaq_calibration_points_data));
+	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
