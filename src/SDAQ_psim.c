@@ -1,3 +1,20 @@
+/*   
+Program: SDAQ_psim. A virtual device simulator for SDAQ-CAN Devices.
+Copyright (C) 12019-12020  Sam harry Tzavaras
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, version 3 of the License, or any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #define Stat_ID_Interval 200 //20 sec with base time 100ms 
 #define Sync_Status_Interval 6// 2 min reset of InSync flag based on Stat_ID_Interval  
 
@@ -118,7 +135,13 @@ int main(int argc, char *argv[])
 
 void print_usage(char *prog_name)
 {
-	printf("\nUsage: %s CAN-IF [Amount of pseudo_SDAQ Devices] \n\n",prog_name);
+	const char preamp[] = {"\n"
+	"Program: SDAQ_psim  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
+    "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
+    "This is free software, and you are welcome to redistribute it\n"
+    "under certain conditions; for details see LICENSE.\n"	
+	};
+	printf("%s\nUsage: %s CAN-IF [Amount of pseudo_SDAQ Devices] \n\n", preamp, prog_name);
 	return;
 }
 

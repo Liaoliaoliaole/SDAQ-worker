@@ -1,3 +1,19 @@
+/*   
+Program: SDAQ_worker. A controlling software for SDAQ-CAN Devices.
+Copyright (C) 12019-12020  Sam harry Tzavaras
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, version 3 of the License, or any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 #define VERSION "0.8 beta" /*Release Version of SDAQ_worker*/
 #define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */
 
@@ -39,7 +55,7 @@ int main(int argc, char *argv[])
 						 .write_calibration_file=NULL,
 						 .verify=0,
 						 .silent=0,
-						 .timeout = 1 //second
+						 .timeout = 3 //second
 						}; 
 	//Variables for Socket CAN
 	struct timeval tv;
@@ -304,6 +320,12 @@ void list_CANIF()
 
 void print_usage(char *prog_name)
 {
+	const char preamp[] = {"\n"
+	"\tProgram: SDAQ_worker  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
+    "\tThis program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
+    "\tThis is free software, and you are welcome to redistribute it\n"
+    "\tunder certain conditions; for details see LICENSE.\n\n"	
+	};
 	const char manual[] = {
 		"CAN-IF: The name of the CAN-Bus adapter\n\n"
 		"MODE:\n"
@@ -330,7 +352,7 @@ void print_usage(char *prog_name)
 		"  -T <format> : Timestamp format, works with -S Date.\n"
 		"\n"
 	};
-	printf("\nUsage: %s CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [LOGGING DIRECTOR] [Options]\n\n%s",prog_name,manual);
+	printf("%s\nUsage: %s CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [LOGGING DIRECTOR] [Options]\n\n%s",preamp, prog_name, manual);
 	return;
 }
 
