@@ -107,7 +107,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			{
 				case '1': Req_Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
 				case '2': Req_Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr); last_row=last_col=0; break;
-				case 'S': Sync(socket_num,0xFF);
+				case 'S': Sync(socket_num,0);
 				case '3': QueryDeviceInfo(socket_num,dev_addr); break;
 				case 'Q':
 				case 'q': 

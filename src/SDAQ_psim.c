@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#define Stat_ID_Interval 200 //20 sec with base time 100ms 
-#define Sync_Status_Interval 6// 2 min reset of InSync flag based on Stat_ID_Interval  
+#define Stat_ID_Interval 200 //200 for 20 sec with base time 100ms 
+#define Sync_Status_Interval 6//6 for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval  
 
 #include <stdio.h>
 #include <stdlib.h>

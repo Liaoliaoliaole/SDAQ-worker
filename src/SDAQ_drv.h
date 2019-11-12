@@ -23,17 +23,20 @@ extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 
 // enumerator for Status byte
-enum status_byte
-{
+enum status_byte{
 	State =0,
 	In_sync =1,
 	Error =2,
 	Mode = 7
 };
 
+// enumerator for Calibration Point Data type byte
+enum Calibration_Point_Data_type_byte{
+	Input = 1,
+	Output = 2
+};
 // enumerator for payload_type
-enum payload_type
-{
+enum payload_type{
 /*Messages payload_type. Master -> SDAQ*/
 	Synchronization_command = 1,
 	Start_command = 2,
@@ -58,8 +61,7 @@ enum payload_type
 #pragma pack(push, 1)//use pragma pack() to pack the following structs to 1 byte size (aka no zero padding)
 
 /* SDAQ's CAN identifier encoder/decoder */
-typedef struct SDAQ_Identifier_Encoder_Decoder
-{
+typedef struct SDAQ_Identifier_Encoder_Decoder{
 	unsigned channel_num : 6;
 	unsigned device_addr : 6;
 	unsigned payload_type: 8;
@@ -69,8 +71,7 @@ typedef struct SDAQ_Identifier_Encoder_Decoder
 }sdaq_can_id; 
 
 /* SDAQ's CAN measurement message decoder */
-typedef struct SDAQ_Measurement_Decoder
-{
+typedef struct SDAQ_Measurement_Decoder{
 	float meas;
 	unsigned char unit;
 	unsigned char status;
@@ -78,16 +79,14 @@ typedef struct SDAQ_Measurement_Decoder
 }sdaq_meas; 
 
 /* SDAQ's CAN Device_ID/Status message decoder */
-typedef struct SDAQ_Status_Decoder
-{
+typedef struct SDAQ_Status_Decoder{
 	unsigned int  dev_sn;
 	unsigned char status;
 	unsigned char dev_type;
 }sdaq_status; 
 
 /* SDAQ's CAN Device_info message decoder */
-typedef struct SDAQ_Info_Decoder
-{
+typedef struct SDAQ_Info_Decoder{
 	unsigned char dev_type;
 	unsigned char firm_rev;
 	unsigned char hw_rev;
@@ -96,32 +95,28 @@ typedef struct SDAQ_Info_Decoder
 }sdaq_info; 
 
 /* SDAQ's CAN Calibration_date message decoder */
-typedef struct SDAQ_calibration_date_Decoder
-{
+typedef struct SDAQ_calibration_date_Decoder{
 	unsigned int date;
 	unsigned char amount_of_points;
 }sdaq_calibration_date; 
 
 /* SDAQ's CAN Calibration_date message decoder */
-typedef struct SDAQ_calibration_data_Decoder
-{
+typedef struct SDAQ_calibration_points_data_Decoder{
 	float data_of_point;
 	unsigned char type;
 	unsigned char points_num;
-}sdaq_calibration_data; 
+}sdaq_calibration_points_data; 
 
 
 //The following RX Decoders used on the pseudo_SDAQ Simulator 
 /* SDAQ's CAN Set Device Address message decoder */
-typedef struct pSDAQ_Set_new_address
-{
+typedef struct pSDAQ_Set_new_address{
 	unsigned int  dev_sn;
 	unsigned char new_address;
 }sdaq_set_new_addr; 
 
-/* SDAQ's CAN Set Device Address message decoder */
-typedef struct pSDAQ_sync_debug_data
-{
+/* SDAQ's CAN Debug data message decoder */
+typedef struct pSDAQ_sync_debug_data{
 	unsigned short ref_time;
 	unsigned short dev_time;
 }sdaq_sync_debug_data; 
@@ -143,7 +138,7 @@ int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_a
 //Request device info. Device answer with 3 messages types: Device ID/status, Device Info and Calibration Date for each channel  
 int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel 
-int QueryCalibrationData(int socket_fd, unsigned char dev_address);
+int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
 
 //int WriteCalibrationDate(int socket_fd,unsigned char dev_address,time_t valid_until,unsigned char NumOfPoints);
 //int WriteCalibrationPoints();
