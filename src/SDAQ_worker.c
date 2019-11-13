@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define VERSION "0.8 beta" /*Release Version of SDAQ_worker*/
+#define VERSION "0.8.5 beta" /*Release Version of SDAQ_worker*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 	}
 	
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvslt:S:T:f::")) != -1)
+	while ((c = getopt (argc, argv, "hVvslt:S:T:f:")) != -1)
 	{
 		switch (c)
 		{
@@ -90,9 +90,9 @@ int main(int argc, char *argv[])
 			case 's'://silent
 				usr_opt.silent = 1;
 				break;
-			case 'f'://file, optional argument.   
-				usr_opt.info_file = optarg ? optarg : "-"; //if no argument use stdio. 
-				break;
+			case 'f'://file  
+				usr_opt.info_file = optarg;
+				break;	
 			case 'v'://verify
 				usr_opt.verify = 1;
 				break;
@@ -104,6 +104,12 @@ int main(int argc, char *argv[])
 					print_usage(argv[0]);
 					exit(EXIT_FAILURE);
 				}
+				break;
+			case 'T':
+				// to be sanitized 
+				//usr_opt.timestamp_format = optarg;
+				printf("Not implemented\n");
+				printf("-T argument = \"%s\"\n",optarg);
 				break;
 			case 'S'://timestamp mode
 				switch(optarg[0])
@@ -123,16 +129,9 @@ int main(int argc, char *argv[])
 						exit(EXIT_FAILURE);
 				}
 				break;
-			case 'T':
-				// to be sanitized 
-				//usr_opt.timestamp_format = optarg;
-				printf("Not implemented\n");
-				printf("-T argument = \"%s\"\n",optarg);
-				break;
 			case '?':
-				print_usage(argv[0]);
+				//print_usage(argv[0]);
 				exit(EXIT_FAILURE);
-				break;
 		}
 	}
 	if(argv[optind] == NULL || argv[1] == NULL || argc <=2) 
@@ -321,7 +320,7 @@ void print_usage(char *prog_name)
 	"\tProgram: SDAQ_worker  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
     "\tThis program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
     "\tThis is free software, and you are welcome to redistribute it\n"
-    "\tunder certain conditions; for details see LICENSE.\n\n"	
+    "\tunder certain conditions; for details see LICENSE.\n"	
 	};
 	const char manual[] = {
 		"CAN-IF: The name of the CAN-Bus adapter\n\n"

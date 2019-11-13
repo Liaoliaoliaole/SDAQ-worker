@@ -22,7 +22,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sys/time.h>
 #include <math.h>
 
-#include <ncurses.h>
 #include <glib.h> 
 #include <gmodule.h>
 
@@ -32,16 +31,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "Modes.h"
 #include "SDAQ_xml.h"
 
+enum contens_type{
+	t_float,
+	t_integer,
+	t_string
+};
 
-#define MY_ENCODING "ISO-8859-1"
 
-void testXmlwriterFilename(const char *uri);
-
-void testXmlwriterMemory(const char *file);
-void testXmlwriterDoc(const char *file);
-void testXmlwriterTree(const char *file);
-
-xmlChar *ConvertInput(const char *in, const char *encoding);
+int add_xml_node(xmlNodePtr root_node , unsigned char node_name, void *contents_ptr, unsigned char type);
 
 
 int XML_info_file_write(char *file_path, void *arg)
@@ -59,7 +56,12 @@ int XML_info_file_write(char *file_path, void *arg)
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
     xmlDocSetRootElement(doc, root_node);
 
- 
+ 	
+ 	xmlNewChild(root_node, NULL, BAD_CAST "node1", BAD_CAST "content of node 1");
+    
+    
+    
+    
     // Creates a DTD declaration. Isn't mandatory.
     //xmlCreateIntSubset(doc, BAD_CAST "root", NULL, BAD_CAST "tree2.dtd");
 
@@ -101,7 +103,8 @@ int XML_info_file_write(char *file_path, void *arg)
     }
 
     //Dumping document to stdio or file
-    xmlSaveFormatFileEnc("-", doc, "UTF-8", 1);
+    xmlSaveFormatFileEnc(file_path, doc, "UTF-8", file_path[0]!='-');
+    //xmlSaveFormatFileEnc("-", doc, "UTF-8", 1);
     //free the document
     xmlFreeDoc(doc);
     //Free the global variables that may have been allocated by the parser.

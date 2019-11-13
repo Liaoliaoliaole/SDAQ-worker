@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <math.h>
 
 #include <ncurses.h>
+
 #include <glib.h> 
 #include <gmodule.h>
 
@@ -69,31 +70,41 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	SDAQ_info_cal_data str={0}; 
 	int retval;
 	retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str);
-	if(!retval && !usr_flag->silent)
+	if(!retval)
 	{
-		printf("------ Info of SDAQ with Address %d ------\n"
-			   "\tHardware rev: %d\n"
-			   "\tSoftware rev: %d\n"
-			   "\tS/N: %d\n"
-			   "\tType: %s\n"
-			   "\tChannels: %d\n"
-			   "\tSamplerate: %d\n",dev_addr,
-								 str.SDAQ_info.hw_rev,
-								 str.SDAQ_info.firm_rev,
-								 str.SDAQ_info.serial_number,
-								 str.SDAQ_info.dev_type,
-								 str.SDAQ_info.num_of_ch,
-								 str.SDAQ_info.sample_rate);
-		if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
+		if(!usr_flag->silent)
 		{
-			printf("----- Expiration Date & Point's Data -----\n");						 
-			g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
+			printf("------ Info of SDAQ with Address %d ------\n"
+				   "\tHardware rev: %d\n"
+				   "\tSoftware rev: %d\n"
+				   "\tS/N: %d\n"
+				   "\tType: %s\n"
+				   "\tChannels: %d\n"
+				   "\tSamplerate: %d\n",dev_addr,
+									 str.SDAQ_info.hw_rev,
+									 str.SDAQ_info.firm_rev,
+									 str.SDAQ_info.serial_number,
+									 str.SDAQ_info.dev_type,
+									 str.SDAQ_info.num_of_ch,
+									 str.SDAQ_info.sample_rate);
+			if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
+			{
+				printf("----- Expiration Date & Point's Data -----\n");						 
+				g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
+			}
+			else
+				printf("All channels have 0 amount of points\n");
 		}
 		else
-			printf("All channels have 0 amount of points\n");
+		{
+			if(usr_flag->info_file)
+				XML_info_file_write(usr_flag->info_file, &str);
+			else
+				XML_info_file_write("-", &str);
+		}
 	}
-	if(usr_flag->info_file)
-		XML_info_file_write(usr_flag->info_file, &str);
+
+	
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
