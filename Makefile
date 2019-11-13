@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -Wall
+CFLAGS= -std=c99 -Wall 
 LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0) 
 BUILD_dir=build
 WORK_dir=work

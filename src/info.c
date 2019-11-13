@@ -36,32 +36,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_drv.h"
 #include "Modes.h"
 
-/*	Struct SDAQ_information_and_calibration_data
-		used in mode info and calibration. 
-		Contains:
-			 internal struct SDAQ info. 
-			 A List with calibration points data (aka sdaq_calibration_data) for each channel
-			 A list with dates and amount of data (aka sdaq_calibration_date) for each channel
-*/
-typedef struct SDAQ_information_and_calibration_data{
-	struct SDAQ_info{
-		unsigned int serial_number;
-		const char *dev_type;	
-		unsigned char firm_rev;
-		unsigned char hw_rev;
-		unsigned char num_of_ch;
-		unsigned char sample_rate;
-	}SDAQ_info;
-	struct GSList *Calibration_date_list;
-	struct GSlist **Cal_points_data_lists;//array of lists 
-}SDAQ_info_cal_data;
-//struct used as container type for the data of the Calibration_date_list 
-typedef struct calibration_date{
-	unsigned char ch_num;
-	unsigned int date;
-	unsigned char amount_of_points;
-}date_list_data_of_node;
-
 //message reception flags union. Contains a struct with the flags and the amount of available channel, 
 union RX_info_calibration_date_flags_short{
 	struct{
