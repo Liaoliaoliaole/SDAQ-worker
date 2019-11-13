@@ -74,26 +74,26 @@ int main(int argc, char *argv[])
 	}
 	
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvslt:S:T:f:")) != -1)
+	while ((c = getopt (argc, argv, "hVvslt:S:T:f::")) != -1)
 	{
 		switch (c)
 		{
 			case 'h'://help
 				print_usage(argv[0]);
 				exit(EXIT_SUCCESS);
-			case 'V':
+			case 'V'://Version
 				printf(VERSION"\n");
 				exit(EXIT_SUCCESS);
-			case 'l':
+			case 'l'://List of CAN-IF
 				list_CANIF();
 				exit(EXIT_SUCCESS);
 			case 's'://silent
 				usr_opt.silent = 1;
 				break;
-			case 'f'://silent
-				usr_opt.info_file = optarg;
+			case 'f'://file, optional argument.   
+				usr_opt.info_file = optarg ? optarg : "-"; //if no argument use stdio. 
 				break;
-			case 'v'://silent
+			case 'v'://verify
 				usr_opt.verify = 1;
 				break;
 			case 't'://timeout

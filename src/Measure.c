@@ -13,13 +13,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-/*Windows sizes definitions*/
-#define STATUS_AND_INFO_WINDOWS_HEIGHT 8
-#define STATUS_AND_INFO_WINDOWS_WIDTH 30
-#define MEASURE_WINDOWS_HEIGHT 19
-#define WINDOWS_SPACING 0
 
-#define AVG_INTERVAL 1
+/* ncurses windows sizes definitions*/
+#define w_stat_info_height 8
+#define w_stat_info_width 30
+#define w_meas_height 19
+#define w_spacing 0
+#define w_meas_width  w_stat_info_width
+#define term_min_width  w_meas_width*2 + w_spacing
+#define term_min_height  w_meas_height + w_stat_info_height + 4
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,15 +45,6 @@ struct thread_arguments_passer
 	unsigned char dev_addr;
 	WINDOW *meas_win,*status_win,*info_win,*raw_meas_win;
 };
-
-//Terminal size and ncurses constants
-const int w_stat_info_height = STATUS_AND_INFO_WINDOWS_HEIGHT;
-const int w_stat_info_width = STATUS_AND_INFO_WINDOWS_WIDTH;
-const int w_meas_height = MEASURE_WINDOWS_HEIGHT;
-const int w_spacing = WINDOWS_SPACING;
-const int w_meas_width = STATUS_AND_INFO_WINDOWS_WIDTH;
-const int term_min_width = STATUS_AND_INFO_WINDOWS_WIDTH*2 + WINDOWS_SPACING;
-const int term_min_height = MEASURE_WINDOWS_HEIGHT + STATUS_AND_INFO_WINDOWS_HEIGHT + 4;
 
 //global variables
 volatile char running=1,box_flag=0,raw_flag=0; //Flag to activate RAW_measurement message from the device
@@ -178,10 +171,6 @@ void w_init(struct thread_arguments_passer *arg)
 //Thread function. Act as CAN-bus message Receiver and decoder for SDAQ devices
 void * CAN_socket_RX(void *varg_pt) 
 { 
-	/*
-	unsigned char amount_of_inputs=1,avg_cnt,i; //Averaging counter, scanning index and amound of
-	float meas_value[16]={0.0};
-	*/
 	//term size 
 	int term_col,term_row;
 	//passed arguments decoder
@@ -227,32 +216,6 @@ void * CAN_socket_RX(void *varg_pt)
 							else
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
-							/*
-							if(!(meas_dec->status))
-							{
-								if(isnan(meas_value[(id_dec->channel_num)-1]))//
-									meas_value[(id_dec->channel_num)-1]=0.0;
-								meas_value[(id_dec->channel_num)-1]+=meas_dec->meas;
-							}
-							else
-								meas_value[(id_dec->channel_num)-1]=NAN;
-							avg_cnt++;
-							if (avg_cnt>=AVG_INTERVAL*amount_of_inputs)
-							{
-								for(i=0;i<amount_of_inputs;i++)
-								{
-									if(!(isnan(meas_value[i])))
-									{
-										mvwprintw(arg->meas_win,i+2,4,"CH%2d = %04.3f%s "
-															,i+1,meas_value[i]/AVG_INTERVAL,unit_str[meas_dec->unit]);
-										meas_value[i]=0.0;
-									}
-									else
-										mvwprintw(arg->meas_win,i+2,4,"CH%2d = No sensor ",i+1);
-								}
-								wrefresh(arg->meas_win);
-								avg_cnt=0;
-							}*/
 							break;
 						case Device_status: 
 							//wclear(arg->status_win);
@@ -277,7 +240,6 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch); 
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							wrefresh(arg->info_win);
-							//amount_of_inputs=info_dec->num_of_ch; //used in averaging as end index 
 							break;
 						default: 
 							break; 

@@ -13,7 +13,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -35,6 +34,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "SDAQ_drv.h"
 #include "Modes.h"
+#include "SDAQ_xml.h"
 
 //message reception flags union. Contains a struct with the flags and the amount of available channel, 
 union RX_info_calibration_date_flags_short{
@@ -93,9 +93,7 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			printf("All channels have 0 amount of points\n");
 	}
 	if(usr_flag->info_file)
-	{
-		printf("path to info file is %s\n",usr_flag->info_file);
-	}
+		XML_info_file_write(usr_flag->info_file, &str);
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
