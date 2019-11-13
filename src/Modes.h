@@ -15,15 +15,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 // enumerator for time_stamp_mode
-enum time_stamp_mode
-{
+enum time_stamp_mode{
 	relative,
 	absolute,
 	absolute_with_date
 };
 // struct that contains the user's options 
-typedef struct option_flags
-{	
+typedef struct option_flags{	
 	unsigned char timestamp_mode;
 	char *timestamp_format;
 	char *info_file;
@@ -31,6 +29,35 @@ typedef struct option_flags
 	unsigned verify : 1;
 	unsigned int timeout;	
 }opt_flags;
+
+/*The following two type defs structs used in info.c file and SDAQ_xml.c*/
+
+/*	Struct SDAQ_information_and_calibration_data
+		used in mode info and calibration. 
+		Contains:
+			 internal struct SDAQ info. 
+			 A List with calibration points data (aka sdaq_calibration_data) for each channel
+			 A list with dates and amount of data (aka sdaq_calibration_date) for each channel
+*/
+typedef struct SDAQ_information_and_calibration_data{
+	struct SDAQ_info{
+		unsigned int serial_number;
+		const char *dev_type;	
+		unsigned char firm_rev;
+		unsigned char hw_rev;
+		unsigned char num_of_ch;
+		unsigned char sample_rate;
+	}SDAQ_info;
+	struct GSList *Calibration_date_list;
+	struct GSlist **Cal_points_data_lists;//array of lists 
+}SDAQ_info_cal_data;
+//struct used as container type for the data of the Calibration_date_list 
+typedef struct calibration_date{
+	unsigned char ch_num;
+	unsigned int date;
+	unsigned char amount_of_points;
+}date_list_data_of_node;
+
 
 /*All the functions return EXIT_SUCCESS at success and EXIT_FAILURE on failure*/
 
