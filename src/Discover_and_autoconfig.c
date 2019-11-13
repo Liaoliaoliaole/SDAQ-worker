@@ -155,7 +155,7 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 			}
 			if(!usr_flag->silent)
 			{
-				printf("Found %2d SDAQs with Parking address\n",g_slist_length(list_Park));
+				printf("Found %d SDAQs with Parking address\n",g_slist_length(list_Park));
 				printf("New addresses send to SDAQs....\n");
 			}
 			//Send the new addresses to the SDAQs

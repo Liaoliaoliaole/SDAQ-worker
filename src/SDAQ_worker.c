@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 	int c;
 	opt_flags usr_opt = {.timestamp_mode=relative,
 						 .timestamp_format=NULL,
-						 .write_calibration_file=NULL,
+						 .info_file=NULL,
 						 .verify=0,
 						 .silent=0,
 						 .timeout = 3 //second
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 				usr_opt.silent = 1;
 				break;
 			case 'f'://silent
-				usr_opt.write_calibration_file = optarg;
+				usr_opt.info_file = optarg;
 				break;
 			case 'v'://silent
 				usr_opt.verify = 1;

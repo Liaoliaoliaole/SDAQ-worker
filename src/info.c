@@ -75,16 +75,19 @@ union RX_info_calibration_date_flags_short{
 //Global Variables
 volatile unsigned char info_TMR_exp=1;
 
-//local functions
+	/*----- local functions  -----*/
 int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
 //Declaration of function for Calibration_date_list 
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date 
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
+gint SDAQ_date_node_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_insert_sorted.
 //Declaration of function for Cal_points_data_lists 
 sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists 
 void free_SDAQ_cal_point_node(gpointer Point_node);//used with g_slist_free_full to free the data of node
 //Called from g_slist_foreach. the pass_arg is the array with with the list of calibration data points
 void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer pass_arg);
+
+	/*------ Implementation of functions------*/
 
 int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
@@ -92,7 +95,7 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	SDAQ_info_cal_data str={0}; 
 	int retval;
 	retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str);
-	if(!retval)
+	if(!retval && !usr_flag->silent)
 	{
 		printf("------ Info of SDAQ with Address %d ------\n"
 			   "\tHardware rev: %d\n"
@@ -107,8 +110,17 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 								 str.SDAQ_info.dev_type,
 								 str.SDAQ_info.num_of_ch,
 								 str.SDAQ_info.sample_rate);
-		printf("----- Expiration Date & Point's Data -----\n");						 
-		g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
+		if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
+		{
+			printf("----- Expiration Date & Point's Data -----\n");						 
+			g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
+		}
+		else
+			printf("All channels have 0 amount of points\n");
+	}
+	if(usr_flag->info_file)
+	{
+		printf("path to info file is %s\n",usr_flag->info_file);
 	}
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
@@ -279,6 +291,16 @@ void free_SDAQ_cal_point_node(gpointer point_node)
 	g_slice_free(sdaq_calibration_points_data, point_node);
 }
 
+/*
+	Comparing function used in g_slist_find_custom. 
+	find the first node with non zero value on amount_of_points field
+*/
+gint SDAQ_date_node_find (gconstpointer a, gconstpointer b)
+{
+	return ((date_list_data_of_node *)a)->amount_of_points > 0 ?  0 : 1;
+}
+
+
 //assist function prints the Data of the points. arg_pass is a pointer to an integer with the amount_of_points that will be print out.
 void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 {
@@ -317,14 +339,14 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 		printf("  CH%02d: Expired @ %s Cal_Points = %d\n",node_dec->ch_num,
 											    	  buff,
 											    	  node_dec->amount_of_points);
+		//printf("\t ___________________________\n");
 		printf("\t| # |  Measure  | Reference |\n");
 	}
 	//printf("\t|---|-----------|-----------|\n");
 	g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
+	/*
+	if(node_dec->amount_of_points)
+		printf("\t ___________________________\n"
+	*/
 	return;
 }
-/*
-  CH01: Expired @ 1970/01 || Points = 8
-     # |  Measure  | Reference |
-     0 |  789.321  |  321.456  |
-*/

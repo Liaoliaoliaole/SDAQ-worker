@@ -26,7 +26,7 @@ typedef struct option_flags
 {	
 	unsigned char timestamp_mode;
 	char *timestamp_format;
-	char *write_calibration_file;
+	char *info_file;
 	unsigned silent : 1;
 	unsigned verify : 1;
 	unsigned int timeout;	
