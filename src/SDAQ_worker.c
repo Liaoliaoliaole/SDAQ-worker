@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define VERSION "0.8 beta" /*Release Version of SDAQ_worker*/
-#define _GNU_SOURCE     /* To get defns of NI_MAXSERV and NI_MAXHOST */
 
 #include <stdio.h>
 #include <stdlib.h>
