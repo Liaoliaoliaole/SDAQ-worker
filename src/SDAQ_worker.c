@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	//Link interface name to socket
-	strcpy(ifr.ifr_name, argv[optind]); // get name from main arguments
+	strcpy(ifr.ifr_name, argv[optind]); // get value from CAN-IF arguments
 	if(ioctl(socket_num, SIOCGIFINDEX, &ifr))
 	{
 		perror("CAN-IF");
