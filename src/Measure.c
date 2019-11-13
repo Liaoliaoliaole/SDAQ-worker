@@ -13,6 +13,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+/*Windows sizes definitions*/
+#define STATUS_AND_INFO_WINDOWS_HEIGHT 8
+#define STATUS_AND_INFO_WINDOWS_WIDTH 30
+#define MEASURE_WINDOWS_HEIGHT 19
+#define WINDOWS_SPACING 0
 
 #define AVG_INTERVAL 1
 
@@ -40,13 +45,13 @@ struct thread_arguments_passer
 };
 
 //Terminal size and ncurses constants
-const int w_stat_info_height = 8;
-const int w_stat_info_width = 30;
-const int w_meas_height = 19;
-const int w_spacing = 0;
-const int w_meas_width = w_stat_info_width;
-const int term_min_width = w_meas_width*2 + w_spacing;
-const int term_min_height = w_meas_height + w_stat_info_height + 4;
+const int w_stat_info_height = STATUS_AND_INFO_WINDOWS_HEIGHT;
+const int w_stat_info_width = STATUS_AND_INFO_WINDOWS_WIDTH;
+const int w_meas_height = MEASURE_WINDOWS_HEIGHT;
+const int w_spacing = WINDOWS_SPACING;
+const int w_meas_width = STATUS_AND_INFO_WINDOWS_WIDTH;
+const int term_min_width = STATUS_AND_INFO_WINDOWS_WIDTH*2 + WINDOWS_SPACING;
+const int term_min_height = MEASURE_WINDOWS_HEIGHT + STATUS_AND_INFO_WINDOWS_HEIGHT + 4;
 
 //global variables
 volatile char running=1,box_flag=0,raw_flag=0; //Flag to activate RAW_measurement message from the device
