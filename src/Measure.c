@@ -43,10 +43,10 @@ struct thread_arguments_passer
 const int w_stat_info_height = 8;
 const int w_stat_info_width = 30;
 const int w_meas_height = 19;
-const int w_meas_width = w_stat_info_width;
 const int w_spacing = 0;
-const int term_min_width = w_meas_width*2 + w_spacing;
-const int term_min_height = w_meas_height + w_stat_info_height + 4;
+int w_meas_width = w_stat_info_width;
+int term_min_width = w_meas_width*2 + w_spacing;
+int term_min_height = w_meas_height + w_stat_info_height + 4;
 
 //global variables
 volatile char running=1,box_flag=0,raw_flag=0; //Flag to activate RAW_measurement message from the device
