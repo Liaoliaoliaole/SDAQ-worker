@@ -48,8 +48,8 @@ typedef struct SDAQ_information_and_calibration_data{
 		unsigned char num_of_ch;
 		unsigned char sample_rate;
 	}SDAQ_info;
-	struct GSList *Calibration_date_list;
-	struct GSlist **Cal_points_data_lists;//array of lists 
+	struct GSList *Calibration_date_list; //list with data type date_list_data_of_node
+	struct GSlist **Cal_points_data_lists;//array of lists with data type sdaq_calibration_points_data 
 }SDAQ_info_cal_data;
 //struct used as container type for the data of the Calibration_date_list 
 typedef struct calibration_date{
@@ -76,5 +76,5 @@ int Measure(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 //Declaration of function for Logging mode. Implemented at Logging.c 
 int Logging(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 
-//Declaration of function for Info mode. Implemented at Dev_info.c
-int info(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
+//Declaration of function for GetInfo mode. Implemented at Dev_info.c
+int getinfo(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);

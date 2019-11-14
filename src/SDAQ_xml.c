@@ -28,110 +28,106 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 
+#include "SDAQ_drv.h"
 #include "Modes.h"
 #include "SDAQ_xml.h"
 
 enum contens_type{
 	t_float,
-	t_integer,
+	t_integer_ubyte,
+	t_integer_ushort,
+	t_integer_uint,
+	t_time_t,
 	t_string
 };
 
-
-int add_xml_node(xmlNodePtr root_node , unsigned char node_name, void *contents_ptr, unsigned char type);
+//custom function that convert an type (contens_type) to a node with name name_mode
+xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
 
 
 int XML_info_file_write(char *file_path, void *arg)
 {
 	SDAQ_info_cal_data *info_ptr = arg;
-	printf("The file Saving function is not yet implemented\n\tThe bellow is garbage\n ");
-	
-	xmlDocPtr doc = NULL;//document pointer
-    xmlNodePtr root_node = NULL, node = NULL, node1 = NULL;// node pointers
-    char buff[256];
-    int i, j;
-
+	xmlDocPtr doc = NULL;
+    xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
+	unsigned char buff[15],*buff_ptr;
     //Creates a new document, a node and set it as a root node
     doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
-    xmlDocSetRootElement(doc, root_node);
-
- 	
- 	xmlNewChild(root_node, NULL, BAD_CAST "node1", BAD_CAST "content of node 1");
-    
-    
-    
-    
-    // Creates a DTD declaration. Isn't mandatory.
-    //xmlCreateIntSubset(doc, BAD_CAST "root", NULL, BAD_CAST "tree2.dtd");
-
-    //xmlNewChild() creates a new node, which is "attached" as child node of root_node node. 
-    xmlNewChild(root_node, NULL, BAD_CAST "node1", BAD_CAST "content of node 1");
-
-    /* 
-     * xmlNewProp() creates attributes, which is "attached" to an node.
-     * It returns xmlAttrPtr, which isn't used here.
-     */
-    node =
-        xmlNewChild(root_node, NULL, BAD_CAST "node3",
-                    BAD_CAST "this node has attributes");
-    xmlNewProp(node, BAD_CAST "attribute", BAD_CAST "yes");
-    xmlNewProp(node, BAD_CAST "foo", BAD_CAST "bar");
-
-    /*
-     * Here goes another way to create nodes. xmlNewNode() and xmlNewText
-     * creates a node and a text node separately. They are "attached"
-     * by xmlAddChild() 
-     */
-    node = xmlNewNode(NULL, BAD_CAST "node4");
-    node1 = xmlNewText(BAD_CAST
-                   "other way to create content (which is also a node)");
-    xmlAddChild(node, node1);
-    xmlAddChild(root_node, node);
-
-    /* 
-     * A simple loop that "automates" nodes creation 
-     */
-    for (i = 5; i < 7; i++) {
-        sprintf(buff, "node%d", i);
-        node = xmlNewChild(root_node, NULL, BAD_CAST buff, NULL);
-        for (j = 1; j < 4; j++) {
-            sprintf(buff, "node%d%d", i, j);
-            node1 = xmlNewChild(node, NULL, BAD_CAST buff, NULL);
-            xmlNewProp(node1, BAD_CAST "odd", BAD_CAST((j % 2) ? "no" : "yes"));
-        }
-    }
-
+	xmlDocSetRootElement(doc, root_node);
+	//add SDAQ info to xml
+	w_node = xmlNewChild(root_node, NULL, BAD_CAST "SDAQ_info", NULL);
+	xml_SDAQ_data(w_node, BAD_CAST "SerialNumber", &(info_ptr->SDAQ_info.serial_number), t_integer_uint);
+ 	xml_SDAQ_data(w_node, BAD_CAST "Type",(char *) info_ptr->SDAQ_info.dev_type, t_string);
+ 	xml_SDAQ_data(w_node, BAD_CAST "Firmware_Rev", &(info_ptr->SDAQ_info.firm_rev), t_integer_ubyte);
+    xml_SDAQ_data(w_node, BAD_CAST "Hardware_Rev", &(info_ptr->SDAQ_info.hw_rev), t_integer_ubyte);
+    xml_SDAQ_data(w_node, BAD_CAST "Available_Channels", &(info_ptr->SDAQ_info.num_of_ch), t_integer_ubyte);
+	xml_SDAQ_data(w_node, BAD_CAST "Samplerate", &(info_ptr->SDAQ_info.sample_rate), t_integer_ubyte);
+	//add calibration data. Calibration data node is the new root
+	root_node = xmlNewChild(root_node, NULL, BAD_CAST "Calibration_Data", NULL);
+	for(int i=0;i<info_ptr->SDAQ_info.num_of_ch;i++)
+	{
+		//add xml_node for Channel 
+		sprintf((char*)buff, "CH%d", i+1);
+		w_node = xmlNewChild(root_node, NULL, buff, NULL);
+		//add channel's expiration date and amount of used points
+		xml_SDAQ_data(w_node, BAD_CAST "Expiration_Date",
+			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->date, t_time_t);
+		xml_SDAQ_data(w_node, BAD_CAST "Used_Points",
+			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
+		//add points for channel
+		w_node1 = xmlNewChild(w_node, NULL, BAD_CAST "Points", NULL);
+		for(int j=0; j<8; j++)
+		{
+			sprintf((char*)buff, "Point_%d",j);
+			w_node2 = xmlNewChild(w_node1, NULL, buff, NULL);
+			for(int k=0; k<2; k++)
+			{
+				buff_ptr = !k ? (unsigned char*)"Measure" :  (unsigned char*)"Reference";
+				xml_SDAQ_data(w_node2, buff_ptr,
+				&(((sdaq_calibration_points_data *)g_slist_nth_data(((GSList *)info_ptr->Cal_points_data_lists[i]),j*2+k))->data_of_point), t_float);
+			}
+		}
+	}
     //Dumping document to stdio or file
     xmlSaveFormatFileEnc(file_path, doc, "UTF-8", file_path[0]!='-');
-    //xmlSaveFormatFileEnc("-", doc, "UTF-8", 1);
-    //free the document
-    xmlFreeDoc(doc);
-    //Free the global variables that may have been allocated by the parser.
-    xmlCleanupParser();
+	//free allocated memory
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
     // this is to debug memory for regression tests
     xmlMemoryDump();
 	return 0;
 }
-/*
-xmlNodePtr n;
-    xmlDocPtr doc;
-    xmlChar *xmlbuff;
-    int buffersize;
 
-    
-    //Create the document.
-    doc = xmlNewDoc(BAD_CAST "1.0");
-    n = xmlNewNode(NULL, BAD_CAST "root");
-    xmlNodeSetContent(n, BAD_CAST "content");
-    xmlDocSetRootElement(doc, n);
-
-	//Dump the document to a buffer and print it
-	//for demonstration purposes.
-    xmlDocDumpFormatMemory(doc, &xmlbuff, &buffersize, 1);
-    printf("%s", (char *) xmlbuff);
-
-    //Free associated memory.
-    xmlFree(xmlbuff);
-    xmlFreeDoc(doc);
-*/
+xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type)
+{
+	unsigned char buff[60],*buff_ptr=buff;
+	struct tm * ptm;
+	xmlNodePtr node;
+	switch(type)
+	{
+		case t_float:
+			sprintf((char*)buff,"%f",*((float *)contents_ptr));
+			break;
+		case t_integer_ubyte:
+			sprintf((char*)buff,"%u",*((unsigned char*)contents_ptr));
+			break;
+		case t_integer_ushort:
+			sprintf((char*)buff,"%u",*((unsigned short*)contents_ptr));
+			break;
+		case t_integer_uint:
+			sprintf((char*)buff,"%u",*((unsigned int*)contents_ptr));
+			break;
+		case t_time_t:
+			ptm = gmtime(((time_t*)contents_ptr));
+			strftime((char*)buff_ptr,sizeof(buff),"%Y/%m",ptm);
+			break;
+		case t_string:
+			buff_ptr = (unsigned char*)contents_ptr;
+			break;
+		default :
+			return NULL;
+	}
+	node = xmlNewChild(root_node, NULL, node_name, buff_ptr);
+	return node; 
+}

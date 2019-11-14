@@ -184,13 +184,9 @@ int main(int argc, char *argv[])
 	/*Scan Mode argument*/
 	//Modes with device address requirement
 	if(!strcmp(argv[optind+1],"discover"))
-	{
 		Discover(socket_num, &usr_opt);
-	}
 	else if(!strcmp(argv[optind+1],"autoconfig"))
-	{
 		Autoconfig(socket_num, &usr_opt);
-	}
 	else //modes with device address requirement
 	{
 		//Sanity check of the device address arguments
@@ -233,18 +229,12 @@ int main(int argc, char *argv[])
 			}
 			Change_address(socket_num,serial_number, dev_addr, &usr_opt);
 		}
-		else if(!strcmp(argv[optind+1],"info"))
-		{
-			info(socket_num, dev_addr, &usr_opt);
-		}
+		else if(!strcmp(argv[optind+1],"getinfo"))
+			getinfo(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"measure"))
-		{
 			Measure(socket_num, dev_addr, &usr_opt);
-		}
 		else if(!strcmp(argv[optind+1],"logging"))
-		{
 			Logging(socket_num, dev_addr, &usr_opt);
-		}
 		else
 			printf("Unknown mode argument\n");
 	}
@@ -329,8 +319,8 @@ void print_usage(char *prog_name)
 		"    autoconfig: Set valid address to all Parked SDAQs.\n\n"
 		"    setaddress: Change the address of a SDAQ.\n"
 		"                (Usage: SDAQ_worker CAN-IF setaddress 'new_address' 'Serial_number_of_SDAQ')\n"
-		"          info: Get all the available information of a SDAQ device.\n"
-		"                (Usage: SDAQ_worker CAN-IF info 'SDAQ_address')\n"
+		"       getinfo: Get all the available information of a SDAQ device.\n"
+		"                (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')\n"
 		"       measure: Get the measurements, status and info of a SDAQ device.\n"
 		"                (Usage: SDAQ_worker CAN-IF measure 'SDAQ_address')\n"
 		"       logging: Get and log the measurement of a SDAQ device to a file.\n"
@@ -339,10 +329,10 @@ void print_usage(char *prog_name)
 		"Options:\n"
 		"           -h : Print help.\n"
 		"           -V : Version.\n"
-		"           -s : Silent mode.\n"
+		"           -s : Silent print, or with mode 'getinfo' print info at stdout in XML format\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IF.\n" 
-		"           -f : Write SDAQ info. Used with mode 'info'\n" 
+		"           -f : Write SDAQ info. Used with mode 'getinfo'\n" 
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 1 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"

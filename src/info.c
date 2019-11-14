@@ -64,7 +64,7 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer pass_arg);
 
 	/*------ Implementation of functions------*/
 
-int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
+int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
 	//Local variables, SDAQ information and calibration date and data.
 	SDAQ_info_cal_data str={0}; 
@@ -94,6 +94,8 @@ int info(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			}
 			else
 				printf("All channels have 0 amount of points\n");
+			if(usr_flag->info_file)
+				XML_info_file_write(usr_flag->info_file, &str);
 		}
 		else
 		{
