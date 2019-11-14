@@ -295,10 +295,10 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 	{
 		switch(node_dec->type)
 		{
-			case Input  : 
+			case meas  : 
 				printf("\t| %d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
 				break;
-			case Output : 
+			case ref : 
 				printf(" %8.3f |\n",node_dec->data_of_point); 
 				break;
 			//default : 

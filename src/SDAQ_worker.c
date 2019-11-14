@@ -38,6 +38,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Include Functions implementation header
 #include "Modes.h"
 
+#include <time.h>
 
 //global variables
 
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 						 .info_file=NULL,
 						 .verify=0,
 						 .silent=0,
-						 .timeout = 3 //second
+						 .timeout = 2 //second
 						}; 
 	//Variables for Socket CAN
 	struct timeval tv;
@@ -180,7 +181,7 @@ int main(int argc, char *argv[])
 		perror("Error in socket bind");
 		exit(EXIT_FAILURE);
 	}	 
-	
+
 	/*Scan Mode argument*/
 	//Modes with device address requirement
 	if(!strcmp(argv[optind+1],"discover"))

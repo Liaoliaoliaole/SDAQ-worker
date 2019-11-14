@@ -48,13 +48,13 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 int XML_info_file_write(char *file_path, void *arg)
 {
 	SDAQ_info_cal_data *info_ptr = arg;
-	xmlDocPtr doc = NULL;
+	xmlDocPtr xml_doc = NULL;
     xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
 	unsigned char buff[15],*buff_ptr;
     //Creates a new document, a node and set it as a root node
-    doc = xmlNewDoc(BAD_CAST "1.0");
+    xml_doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
-	xmlDocSetRootElement(doc, root_node);
+	xmlDocSetRootElement(xml_doc, root_node);
 	//add SDAQ info to xml
 	w_node = xmlNewChild(root_node, NULL, BAD_CAST "SDAQ_info", NULL);
 	xml_SDAQ_data(w_node, BAD_CAST "SerialNumber", &(info_ptr->SDAQ_info.serial_number), t_integer_uint);
@@ -89,10 +89,10 @@ int XML_info_file_write(char *file_path, void *arg)
 			}
 		}
 	}
-    //Dumping document to stdio or file
-    xmlSaveFormatFileEnc(file_path, doc, "UTF-8", file_path[0]!='-');
+    //write the xml_doc to stdout or to file
+    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", file_path[0]!='-');
 	//free allocated memory
-	xmlFreeDoc(doc);
+	xmlFreeDoc(xml_doc);
 	xmlCleanupParser();
     // this is to debug memory for regression tests
     xmlMemoryDump();

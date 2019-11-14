@@ -179,6 +179,53 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 	return 0;
 }
 
+//Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, unsigned int date,unsigned char NumOfPoints)
+{
+	sdaq_can_id *sdaq_id_ptr;
+	struct can_frame frame_tx;
+	sdaq_calibration_date *sdaq_cal_date_enc = (sdaq_calibration_date*) frame_tx.data;
+	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for "Write_calibration_Date" command
+	sdaq_id_ptr->flags=4;//set the EFF
+	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Write_calibration_Date;//Payload type for "Write_calibration_Date" command
+	sdaq_id_ptr->device_addr = dev_address;
+	sdaq_id_ptr->channel_num = channel_num;
+	frame_tx.can_dlc = sizeof(sdaq_calibration_date);//Payload size
+	sdaq_cal_date_enc->date = date;
+	sdaq_cal_date_enc->amount_of_points = NumOfPoints;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;	
+}
+//Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
+int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char point_num, unsigned char type)
+{
+	sdaq_can_id *sdaq_id_ptr;
+	struct can_frame frame_tx;
+	sdaq_calibration_points_data *sdaq_cal_point_data_enc = (sdaq_calibration_points_data*) frame_tx.data;
+	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	//construct identifier for "Write_calibration_Date" command
+	sdaq_id_ptr->flags=4;//set the EFF
+	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Write_calibration_Point_Data;//Payload type for "Write_calibration_Point_Data" command
+	sdaq_id_ptr->device_addr = dev_address;
+	sdaq_id_ptr->channel_num = channel_num;
+	frame_tx.can_dlc = sizeof(sdaq_calibration_points_data);//Payload size
+	sdaq_cal_point_data_enc->data_of_point = point_val;
+	sdaq_cal_point_data_enc->type = type;
+	sdaq_cal_point_data_enc->points_num = point_num;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+
+
 /*-----------------------------------------------------------------------------------------------------------------*/ 
 
 /*The following Functions used only on the pseudo_SDAQ Simulator*/ 

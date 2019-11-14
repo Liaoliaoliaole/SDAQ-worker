@@ -32,8 +32,8 @@ enum status_byte{
 
 // enumerator for Calibration Point Data type byte
 enum Calibration_Point_Data_type_byte{
-	Input = 1,
-	Output = 2
+	meas = 1,
+	ref = 2
 };
 // enumerator for payload_type
 enum payload_type{
@@ -139,9 +139,10 @@ int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_a
 int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel 
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
-
-//int WriteCalibrationDate(int socket_fd,unsigned char dev_address,time_t valid_until,unsigned char NumOfPoints);
-//int WriteCalibrationPoints();
+//Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, unsigned int date,unsigned char NumOfPoints);
+//Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
+int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char Point_num, unsigned char type);
 
 //The following RX Functions used on the pseudo_SDAQ Simulator 
 				/*pseudo_SDAQ -> Master Functions*/

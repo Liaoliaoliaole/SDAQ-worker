@@ -15,7 +15,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 /* ncurses windows sizes definitions*/
-#define w_stat_info_height 8
+#define w_stat_info_height 9
 #define w_stat_info_width 30
 #define w_meas_height 19
 #define w_spacing 0
@@ -178,17 +178,16 @@ void * CAN_socket_RX(void *varg_pt)
 	//local variables for CAN Socket frame and SDAQ messages decoders
 	struct can_frame frame_rx;
 	int RX_bytes;
-	sdaq_can_id *id_dec;
-	sdaq_status *status_dec;
-	sdaq_meas *meas_dec;
-	sdaq_info *info_dec;
-	
+	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
+	sdaq_status *status_dec = (sdaq_status *)frame_rx.data;
+	sdaq_meas *meas_dec = (sdaq_meas *)frame_rx.data;
+	sdaq_info *info_dec = (sdaq_info *)frame_rx.data;
+	sdaq_sync_debug_data *ts_dec = (sdaq_sync_debug_data *)frame_rx.data;
 	while(1)
 	{		
 		RX_bytes=read(arg->socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
 		{
-			id_dec = (sdaq_can_id *)&(frame_rx.can_id);
 			if(arg->dev_addr==id_dec->device_addr)
 			{
 				pthread_mutex_lock(&display_access);
@@ -196,8 +195,6 @@ void * CAN_socket_RX(void *varg_pt)
 					{
 						case Uncalibrated_meas:
 							raw_flag=1;
-							//wclear(arg->raw_meas_win);
-							meas_dec = (sdaq_meas *)frame_rx.data;
 							mvwprintw(arg->raw_meas_win,1,2,"Uncalibrated:");
 							if(!(meas_dec->status))
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
@@ -207,8 +204,6 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->raw_meas_win);
 							break;
 						case Measurement_value: 
-							//wclear(arg->meas_win);
-							meas_dec = (sdaq_meas *)frame_rx.data;
 							mvwprintw(arg->meas_win,1,2,"Calibrated:");
 							if(!(meas_dec->status))
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
@@ -218,21 +213,17 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->meas_win);
 							break;
 						case Device_status: 
-							//wclear(arg->status_win);
-							status_dec = (sdaq_status *)frame_rx.data;
 							mvwprintw(arg->status_win,1,1,"Device_status & S/N:"); 
 							mvwprintw(arg->status_win,2,3,"S/N = %d",status_dec->dev_sn);
-							mvwprintw(arg->status_win,3,3,"State : %9s",status_byte_dec(status_dec->status,State));								
-							mvwprintw(arg->status_win,4,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
+							mvwprintw(arg->status_win,3,3,"Mode  : %3s",status_byte_dec(status_dec->status,Mode));
+							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));								
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
-							mvwprintw(arg->status_win,6,3,"Mode  : %3s",status_byte_dec(status_dec->status,Mode));
+							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))
 								wclean_refresh(arg->meas_win);
 							break;
 						case Device_info: 
-							//wclear(arg->meas_win);
-							info_dec = (sdaq_info *)frame_rx.data;
 							mvwprintw(arg->info_win,1,1,"Device_info:");
 							mvwprintw(arg->info_win,2,3,"Type = %s",dev_type_str[info_dec->dev_type]);
 							mvwprintw(arg->info_win,3,3,"Firmware rev = %d",info_dec->firm_rev);
@@ -241,6 +232,8 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							wrefresh(arg->info_win);
 							break;
+						case Sync_Info:
+							mvwprintw(arg->status_win,7,3,"Timediff : %5d msec",ts_dec->dev_time - ts_dec->ref_time);
 						default: 
 							break; 
 					}
