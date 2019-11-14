@@ -334,7 +334,7 @@ void print_usage(char *prog_name)
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IF.\n" 
 		"           -f : Write SDAQ info. Used with mode 'getinfo'\n" 
-		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 1 Sec\n"
+		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"
 		"\n"
