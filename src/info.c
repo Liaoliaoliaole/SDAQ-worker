@@ -115,6 +115,12 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	return retval;
 }
 
+int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
+{
+	printf("Not Implemented\n");
+	return 0;
+}
+
 void info_timer_handler (int signum)
 {
 	info_TMR_exp = 0;

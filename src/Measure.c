@@ -41,6 +41,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 struct thread_arguments_passer
 {
+	unsigned char lock_kb_flag;
 	int socket_num;
 	unsigned char dev_addr;
 	WINDOW *meas_win,*status_win,*info_win,*raw_meas_win;
@@ -66,8 +67,9 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	pthread_t CAN_socket_RX_Thread_id; 
 	struct thread_arguments_passer thread_arg;
 	
-	thread_arg.dev_addr=dev_addr;
-	thread_arg.socket_num=socket_num;
+	thread_arg.dev_addr = dev_addr;
+	thread_arg.socket_num = socket_num;
+	thread_arg.lock_kb_flag = 0;
 	
 	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window 
@@ -101,19 +103,28 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 				last_col = col;
 			}
 			user_pressed_key=getch();// get the user's entrance 
-			switch(user_pressed_key)
+			if(!thread_arg.lock_kb_flag)
 			{
-				case '1': Req_Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
-				case '2': Req_Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr); last_row=last_col=0; break;
-				case 'S': Sync(socket_num,0);
-				case '3': QueryDeviceInfo(socket_num,dev_addr); break;
-				case 'Q':
-				case 'q': 
-				case  3 : running=0; break; //SIGINT or Ctrl+c
-				case 'R': raw_flag^=0x01; Req_Raw_meas(socket_num,dev_addr,raw_flag); break;
-				case 'B': box_flag^=1;//toggle borders and force clean
-				case 'C': last_row=last_col=0;
-				default : break;
+				switch(user_pressed_key)
+				{
+					case '1': Req_Raw_meas(socket_num,dev_addr,raw_flag); Start(socket_num,dev_addr); break;
+					case '2': Req_Raw_meas(socket_num,dev_addr,raw_flag); Stop(socket_num,dev_addr); last_row=last_col=0; break;
+					//case 'S': Sync(socket_num,0);
+					case '3': QueryDeviceInfo(socket_num,dev_addr); break;
+					case 'Q':
+					case 'q': 
+					case  3 : running=0; break; //SIGINT or Ctrl+C
+					case 'R': raw_flag^=1; Req_Raw_meas(socket_num,dev_addr,raw_flag); break;
+					case 'B': box_flag^=1;//toggle borders and force clean
+					case 'C': last_row=last_col=0; break;
+					case 'L': thread_arg.lock_kb_flag = 1; last_row=last_col=0; break;
+				}
+			}
+			else // enter if keyboard is locked
+			{
+				running = user_pressed_key==3 ? 0 : 1; //quit on Ctrl+C
+				thread_arg.lock_kb_flag = user_pressed_key=='L' ? 0 : 1; //unlock keyboard
+				last_row=last_col=0;
 			}
 			if(!raw_flag) //clean Raw_meas window if the flag is off and the measurements is off
 			{
@@ -159,7 +170,9 @@ void w_init(struct thread_arguments_passer *arg)
 	clear();
 	mvprintw(0,term_col/2-10,"Device Address: %d",arg->dev_addr);
 	mvprintw(term_min_height-2,term_col/2-w_stat_info_width,"Function Buttons:");
-	mvprintw(term_min_height-1,term_col/2-w_stat_info_width,"Q Exit 1 Start 2 Stop 3 Dev_Info R Un-Calibrated S Sync");
+	if(arg->lock_kb_flag)
+		printw(" Locked");
+	mvprintw(term_min_height-1,term_col/2-w_stat_info_width,"Q Exit 1 Start 2 Stop 3 Info_Req R Raw_meas L (Un)Lock");
 	refresh();
 	wclean_refresh(arg->status_win);
 	wclean_refresh(arg->info_win);
@@ -195,9 +208,9 @@ void * CAN_socket_RX(void *varg_pt)
 					{
 						case Uncalibrated_meas:
 							raw_flag=1;
-							mvwprintw(arg->raw_meas_win,1,2,"Uncalibrated:");
+							mvwprintw(arg->raw_meas_win,1,2,"Un-calibrated(Raw):");
 							if(!(meas_dec->status))
-								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
+								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = %9.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
@@ -206,7 +219,7 @@ void * CAN_socket_RX(void *varg_pt)
 						case Measurement_value: 
 							mvwprintw(arg->meas_win,1,2,"Calibrated:");
 							if(!(meas_dec->status))
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = %04.3f %s   "
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = %9.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);

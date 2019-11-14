@@ -77,10 +77,10 @@ int Start(int socket_fd,unsigned char dev_address)
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for start measure message
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->protocol_id=PROTOCOL_ID;
-	sdaq_id_ptr->payload_type=Start_command;//Payload type for start measure command
-	sdaq_id_ptr->device_addr=dev_address;
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Start_command;//Payload type for start measure command
+	sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = 0;//No payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
@@ -94,10 +94,10 @@ int Stop(int socket_fd,unsigned char dev_address)
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for stop measure message
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->protocol_id=PROTOCOL_ID;
-	sdaq_id_ptr->payload_type=Stop_command;//Payload type for stop measure command
-	sdaq_id_ptr->device_addr=dev_address;
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Stop_command;//Payload type for stop measure command
+	sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = 0;//No payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
@@ -111,8 +111,8 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for change of device address message
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id=PROTOCOL_ID;
 	sdaq_id_ptr->payload_type=Set_dev_address;//Payload type for change of device address command
 	sdaq_id_ptr->device_addr=0;//TX from broadcast only
@@ -131,7 +131,7 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for device info request command
-	sdaq_id_ptr->flags=4;//set the EFF
+	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	sdaq_id_ptr->payload_type=Query_Dev_info;//Payload type for device info request command
 	sdaq_id_ptr->device_addr=dev_address;
@@ -148,7 +148,7 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Query_Calibration_Data message
-	p_sdaq_id_ptr->flags=4;//set the EFF
+	p_sdaq_id_ptr->flags = 4;//set the EFF
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -167,8 +167,8 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for "Configure Additional data" command
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	sdaq_id_ptr->payload_type = Configure_Additional_data;//Payload type for "Configure Additional data" command
 	sdaq_id_ptr->device_addr = dev_address;
@@ -188,8 +188,8 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for "Write_calibration_Date" command
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	sdaq_id_ptr->payload_type = Write_calibration_Date;//Payload type for "Write_calibration_Date" command
 	sdaq_id_ptr->device_addr = dev_address;
@@ -210,8 +210,8 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for "Write_calibration_Date" command
-	sdaq_id_ptr->flags=4;//set the EFF
-	sdaq_id_ptr->priority=4;//From the SDAQ White paper
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	sdaq_id_ptr->payload_type = Write_calibration_Point_Data;//Payload type for "Write_calibration_Point_Data" command
 	sdaq_id_ptr->device_addr = dev_address;
@@ -238,8 +238,8 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	memset(frame_tx.data, 0, sizeof(frame_tx.data));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=4;//According to the White paper is 7 but the real seem to be 4 
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 7;//According to the White paper 
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -260,8 +260,8 @@ int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int 
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 4;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Device_status;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -283,8 +283,8 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 4;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Device_info;//Payload type for Device_info message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -308,8 +308,8 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, u
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=3;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 3;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Measurement_value;//Payload type for Device_measurement message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -334,8 +334,8 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=3;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 3;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Uncalibrated_meas;//Payload type for Device_measurement message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -359,8 +359,8 @@ int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char c
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 4;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Calibration_Date;//Payload type for Calibration_Date message
 	p_sdaq_id_ptr->device_addr = dev_address;
@@ -380,8 +380,8 @@ int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
-	p_sdaq_id_ptr->flags=4;//set the EFF
-	p_sdaq_id_ptr->priority=4;//According to the White paper
+	p_sdaq_id_ptr->flags = 4;//set the EFF
+	p_sdaq_id_ptr->priority = 4;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Calibration_Point_Data;//Payload type for Calibration_Point_Data message
 	p_sdaq_id_ptr->device_addr = dev_address;

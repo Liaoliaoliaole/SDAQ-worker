@@ -232,6 +232,8 @@ int main(int argc, char *argv[])
 		}
 		else if(!strcmp(argv[optind+1],"getinfo"))
 			getinfo(socket_num, dev_addr, &usr_opt);
+		else if(!strcmp(argv[optind+1],"setinfo"))
+			setinfo(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"measure"))
 			Measure(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"logging"))
@@ -321,6 +323,7 @@ void print_usage(char *prog_name)
 		"    setaddress: Change the address of a SDAQ.\n"
 		"                (Usage: SDAQ_worker CAN-IF setaddress 'new_address' 'Serial_number_of_SDAQ')\n"
 		"       getinfo: Get all the available information of a SDAQ device.\n"
+		"       setinfo: Set the Calibration data and points information on a SDAQ device.\n"
 		"                (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')\n"
 		"       measure: Get the measurements, status and info of a SDAQ device.\n"
 		"                (Usage: SDAQ_worker CAN-IF measure 'SDAQ_address')\n"

@@ -78,3 +78,6 @@ int Logging(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
 
 //Declaration of function for GetInfo mode. Implemented at Dev_info.c
 int getinfo(int socket_num,unsigned char dev_addr, opt_flags *usr_flag);
+
+//Declaration of function for SetInfo mode. Implemented at Dev_info.c
+int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag);
