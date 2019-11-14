@@ -336,6 +336,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									}
 									else
 									{
+										arg.pSDAQ_mem->status &= ~(1<<In_sync);
 										pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
 										in_sync_cnt = 0;
 									}
