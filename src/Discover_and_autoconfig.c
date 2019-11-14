@@ -101,7 +101,7 @@ int Discover(int socket_num, opt_flags *usr_flag)
 			printf("\n!!!!!! Found %d device with address conflict !!!!!!\n",g_slist_length(list_conflicts));
 			printf("==========  List of Conflict addresses  =========\n");
 			g_slist_foreach(list_conflicts, printf_SDAQentry, NULL);
-			printf("\n\tUse mode 'address' and correct them!!!\n\n");
+			printf("\n\tUse mode 'setaddress' and correct them!!!\n\n");
 		}
 		//free lists with only links
 		g_slist_free(list_Park);

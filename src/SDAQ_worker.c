@@ -326,7 +326,7 @@ void print_usage(char *prog_name)
 		"                (Usage: SDAQ_worker CAN-IF measure 'SDAQ_address')\n"
 		"       logging: Get and log the measurement of a SDAQ device to a file.\n"
 		"                (Usage: SDAQ_worker CAN-IF logging 'SDAQ_address' 'Path/to/the/logging_directory')\n\n"
-		"ADDRESS: A valid SDAQ address. Resolution 1..62 (also 'Parking' but works only for Mode 'setaddress'\n\n"
+		"ADDRESS: A valid SDAQ address. Resolution 1..62 (also 'Parking' if Mode 'setaddress')\n\n"
 		"Options:\n"
 		"           -h : Print help.\n"
 		"           -V : Version.\n"
