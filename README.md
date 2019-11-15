@@ -66,7 +66,7 @@ Options:
            -s : Silent print, or with mode 'getinfo' print info at stdout in XML format
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IF.
-           -f : Write SDAQ info. Used with mode 'getinfo'
+           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'.
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
   -T <format> : Timestamp format, works with -S Date.
