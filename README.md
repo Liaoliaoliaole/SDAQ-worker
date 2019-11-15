@@ -1,12 +1,12 @@
 # SDAQ_worker Project
 
 ## Preamp
-This repository related to a software control and emulate suite related to SDAQ devices. An SDAQs is a proprietary acquisition device (developed by iCraft Oy) with predefined physical input (voltage, current, thermocouple, etc) and CANBus output.  
+This repository related to a software control and emulate suite related to SDAQ devices. An SDAQs is a proprietary (developed by iCraft Oy) acquisition devices with predefined physical input (voltage, current, thermocouple, etc) and CANBus interface as output.  
 
 The SDAQ_worker project was started with the phylosophy to make some softwares that can control this devices from a computer that is equip with CAN interface (Linux Socket CAN compatible) and runs GNU operating system.
 
 ## Executables
-After the compilation 2 executable files are produced that are:
+After the compilation 2 executable files are produced, that are:
 * SDAQ_worker
 * SDAQ_psim
 
@@ -17,7 +17,7 @@ The SDAQ_psim is a SDAQ software emulator.
 For compilation of this project the following dependences are required.  
 * [GCC](https://gcc.gnu.org/)-The GNU Compiler Collection
 * [GNU Make](https://www.gnu.org/software/make/) - GNU make utility
-* [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A a free software emulation library of curses.
+* [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
 * [libxml2](http://xmlsoft.org/) -  Library for parsing XML documents
 ##### Optionaly
