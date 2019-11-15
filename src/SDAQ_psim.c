@@ -399,6 +399,10 @@ void print_usage(char *prog_name)
     "This is free software, and you are welcome to redistribute it\n"
     "under certain conditions; for details see LICENSE.\n"	
 	};
-	printf("%s\nUsage: %s CAN-IF [Amount of pseudo_SDAQ Devices] \n\n", preamp, prog_name);
+	const char exp[] = {
+	"\tCAN-IF: The name of the CAN-Bus adapter\n\n"
+	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, range 1..62\n"
+	};
+	printf("%s\nUsage: %s CAN-IF [Num_of_pSDAQ]\n\n%s\n", preamp, prog_name,exp);
 	return;
 }
