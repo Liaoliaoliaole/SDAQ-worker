@@ -130,7 +130,7 @@ int Start(int socket_fd, unsigned char dev_address);
 //Request stop of measure from the SDAQ device. For all dev_addr=0
 int Stop(int socket_fd, unsigned char dev_address);
 //Synchronize the SDAQ devices. Requested by broadcast only.
-int Sync(int socket_fd, short time_seed);
+int Sync(int socket_fd, unsigned short time_seed);
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
 int Req_Raw_meas(int socket_fd, unsigned char dev_address, const unsigned char Config);
 //Request change of device address with the specific serial number.

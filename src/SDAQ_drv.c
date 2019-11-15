@@ -52,7 +52,7 @@ const char * status_byte_dec(unsigned char status_byte,unsigned char field)
 
 				/*TX Functions*/
 //Synchronize the SDAQ devices. Requested by broadcast only.
-int Sync(int socket_fd, short time_seed)
+int Sync(int socket_fd, unsigned short time_seed)
 {
 	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx;
@@ -64,7 +64,7 @@ int Sync(int socket_fd, short time_seed)
 	sdaq_id_ptr->payload_type = Synchronization_command;//Payload type for synchronization command
 	sdaq_id_ptr->device_addr = 0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(short);//Payload size
-	*((short *)frame_tx.data) = time_seed;
+	*((unsigned short *)frame_tx.data) = time_seed;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))>0)
 		return 1;
 	return 0;	
