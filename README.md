@@ -51,6 +51,7 @@ MODE:
     setaddress: Change the address of a SDAQ.
                 (Usage: SDAQ_worker CAN-IF setaddress 'new_address' 'Serial_number_of_SDAQ')
        getinfo: Get all the available information of a SDAQ device.
+                (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')
        setinfo: Set the Calibration data and points information on a SDAQ device.
                 (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')
        measure: Get the measurements, status and info of a SDAQ device.
@@ -67,7 +68,7 @@ Options:
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IF.
            -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'.
-  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec
+  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
   -T <format> : Timestamp format, works with -S Date.
 ```
