@@ -112,7 +112,7 @@ $ SDAQ_worker vcan0 measure 1
 7. 'logging'
 
 #### TODO-list SDAQ_psim
-1. Interface
+1. User Interface
 
 ## Authors
 * **Sam Harry Tzavaras** - *Initial work*
