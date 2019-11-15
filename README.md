@@ -27,12 +27,11 @@ For compilation of this project the following dependences are required.
 ### Compilation
 To compile the firmware (tested under GNU/Linux only)
 ```
-# Clone the project's source code
+$ # Clone the project's source code
 $ git clone https://gitlab.com/fantomsam/sdaq-worker.git
 $ cd sdaq-worker
-# Make the compilation directory tree
+$ # Make the compilation directory tree
 $ make tree
-# Compile via Make
 $ make
 ```
 The binary file located under the build directory.
@@ -84,9 +83,9 @@ Usage: SDAQ_psim CAN-IF [Num_of_pSDAQ]
 
 ## Examples
 ```
-$ #Load virtual can module to Kernel
+$ # Load Virtual-CANBus module to Kernel
 $ sudo modprobe vcan
-$ #Make a new network device with name 'vcan0' and type 'vcan'
+$ # Make a new network device with name 'vcan0' and type 'vcan'
 $ sudo ip link add dev vcan0 type vcan
 $ sudo ip link set up vcan0
 ```
