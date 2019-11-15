@@ -377,14 +377,14 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						}
 					pthread_mutex_unlock(&SDAQs_mem_access);
 					meas_cnt = Meas_Interval;
-					pseudo_SDAQ_timestamp += 10;
-					if(pseudo_SDAQ_timestamp>=60000)
-						pseudo_SDAQ_timestamp = 0;
 				}
 				else
 					meas_cnt--;
 			}
 		}
+		pseudo_SDAQ_timestamp += 10;
+		if(pseudo_SDAQ_timestamp>=60000)
+			pseudo_SDAQ_timestamp = 0;
 
 	}
 	close(socket_num);
