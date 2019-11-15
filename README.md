@@ -59,7 +59,7 @@ MODE:
        logging: Get and log the measurement of a SDAQ device to a file.
                 (Usage: SDAQ_worker CAN-IF logging 'SDAQ_address' 'Path/to/the/logging_directory')
 
-ADDRESS: A valid SDAQ address. Resolution 1..62 (also 'Parking' if Mode 'setaddress')
+ADDRESS: A valid SDAQ address. Resolution 1..62 (also 'Parking' for Mode 'setaddress')
 
 Options:
            -h : Print help.
