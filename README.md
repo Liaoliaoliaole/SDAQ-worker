@@ -74,7 +74,12 @@ Options:
 ```
 ### Usage of SDAQ_psim
 ```
-Usage: SDAQ_psim CAN-IF [Amount of pseudo_SDAQ Devices]
+Usage: SDAQ_psim CAN-IF [Num_of_pSDAQ]
+
+        CAN-IF: The name of the CAN-Bus adapter
+
+        Num_of_pSDAQ: The number of the pseudo_SDAQ devices, range 1..62
+
 ```
 
 ## Examples
