@@ -119,6 +119,6 @@ $ SDAQ_worker vcan0 measure 1
 * **Sam Harry Tzavaras** - *Initial work*
 
 ## License
-The source code of the SDAQ_worker project is licensed under GPLv3 or later - see the [License](License) file for details.
+The source code of the SDAQ_worker project is licensed under GPLv3 or later - see the [License](LICENSE) file for details.
 ##### Avatar
 Icons by [Icons8](http://icons8.com)
