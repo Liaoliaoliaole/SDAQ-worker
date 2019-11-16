@@ -249,7 +249,7 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
-							mvwprintw(arg->status_win,7,3,"Timediff : %6d msec",(ts_dec->ref_time - ts_dec->dev_time));//
+							mvwprintw(arg->status_win,7,3,"Timediff : %7hd msec",(ts_dec->ref_time - ts_dec->dev_time));
 							wrefresh(arg->status_win);
 						default: 
 							break; 
