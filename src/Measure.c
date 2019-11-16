@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /* ncurses windows sizes definitions*/
 #define w_stat_info_height 9
 #define w_stat_info_width 30
-#define w_meas_height 19
+#define w_meas_height 20
 #define w_spacing 0
 #define w_meas_width  w_stat_info_width
 #define term_min_width  w_meas_width*2 + w_spacing
@@ -32,6 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <pthread.h> 
 #include <sys/ioctl.h>
+#include <arpa/inet.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
@@ -214,6 +215,7 @@ void * CAN_socket_RX(void *varg_pt)
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
+							mvwprintw(arg->raw_meas_win,18,4,"Time -> %8d",meas_dec->timestamp);
 							wrefresh(arg->raw_meas_win);
 							break;
 						case Measurement_value: 
@@ -223,6 +225,7 @@ void * CAN_socket_RX(void *varg_pt)
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+2,4,"CH%02d = No sensor  ",id_dec->channel_num);
+							mvwprintw(arg->meas_win,18,4,"Time -> %8d",meas_dec->timestamp);
 							wrefresh(arg->meas_win);
 							break;
 						case Device_status: 
@@ -246,7 +249,8 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
-							mvwprintw(arg->status_win,7,3,"Timediff : %5d msec",ts_dec->dev_time - ts_dec->ref_time);
+							mvwprintw(arg->status_win,7,3,"Timediff : %6d msec",(ts_dec->ref_time - ts_dec->dev_time));//
+							wrefresh(arg->status_win);
 						default: 
 							break; 
 					}

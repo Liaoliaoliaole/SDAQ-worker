@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <math.h>
 #include <string.h> 
 
+#include <arpa/inet.h>
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
@@ -64,7 +65,7 @@ int Sync(int socket_fd, unsigned short time_seed)
 	sdaq_id_ptr->payload_type = Synchronization_command;//Payload type for synchronization command
 	sdaq_id_ptr->device_addr = 0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(short);//Payload size
-	*((unsigned short *)frame_tx.data) = time_seed;
+	*((unsigned short *)frame_tx.data) = htons(time_seed);
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))>0)
 		return 1;
 	return 0;	
@@ -243,7 +244,7 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
-	frame_tx.can_dlc = 8;//Payload size fro mthe white paper is 8 
+	frame_tx.can_dlc = 4;//Payload size from the white paper is 8 
 	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) &(frame_tx.data);
 	p_sdaq_sync_debug_data->ref_time = ref_time;
 	p_sdaq_sync_debug_data->dev_time = dev_time;
@@ -345,7 +346,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = state;
-	p_sdaq_meas -> timestamp = timestamp;
+	p_sdaq_meas -> timestamp = htons(timestamp);
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;

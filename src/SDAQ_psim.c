@@ -14,8 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define Meas_Interval 10
-#define Stat_ID_Interval 2000 //for 20 sec with base time 10ms 
+#define Stat_ID_Interval 200 //for 20 sec with base time 100ms 
 #define Sync_Status_Interval 6//for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval  
 
 #include <stdio.h>
@@ -158,13 +157,15 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	sdaq_calibration_date *cal_date_dec = (sdaq_calibration_date *) frame_rx.data;
 	sdaq_calibration_points_data point_enc, *point_dec = (sdaq_calibration_points_data*) frame_rx.data;
 	float noise;
-	unsigned char meas_cnt=0,raw_meas_flag=0,in_sync_cnt=0;
+	unsigned char raw_meas_cnt=0, in_sync_cnt=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
 	unsigned int sync_status_cnt=0;
-	unsigned short pseudo_SDAQ_timestamp=0;
+	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, time_diff;
 	//Variables for select
 	struct timeval tv;
 	fd_set ready_for_read;
+	//Time variables
+	struct timespec tstart,tend;
 	//Return value
 	int retval;
 
@@ -219,11 +220,13 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	pthread_mutex_unlock(&SDAQs_mem_access);
 	while(run)
 	{
+		// Get time
+		clock_gettime(CLOCK_MONOTONIC_RAW, &tstart);
 		/* Set Watch SocketCAN to see when it's available for reading. */
 		FD_ZERO(&ready_for_read); //init ready_for_read
 		FD_SET(socket_num, &ready_for_read); //link Socket_num with ready_for_read
 		tv.tv_sec = 0;
-		tv.tv_usec = 10000;		
+		tv.tv_usec = 100000;		
 		//wait socket_num to be ready for read, or expired after timeout
 		retval = select(socket_num+1, &ready_for_read, NULL, NULL, &tv);
 		if(retval == -1)
@@ -251,7 +254,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status); 
 								break;
 							case Configure_Additional_data:
-								raw_meas_flag = frame_rx.data[0];//from white paper
+								raw_meas_cnt = frame_rx.data[0];//from white paper
 								break;							
 							case Set_dev_address:
 								if(set_new_addr_dec->dev_sn == arg.serial_number && set_new_addr_dec->new_address)
@@ -262,7 +265,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								else if(!set_new_addr_dec->new_address)
 									printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
 								break;
-							case Change_SDAQ_baudrate: 
+							case Change_SDAQ_baudrate:
 								p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 								break;
 							case Query_Dev_info:
@@ -272,9 +275,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
 								break;
 							case Query_Calibration_Data:
-								if(id_dec->device_addr==arg.pSDAQ_mem->address 
-								&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
-								&& id_dec->channel_num)
+								if(id_dec->device_addr==arg.pSDAQ_mem->address && id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels && id_dec->channel_num)
 								{							
 									for(int j=0;j<8;j++)
 									{
@@ -323,9 +324,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 							case Synchronization_command:
 								if(id_dec->device_addr==Broadcast)
 								{	
-									p_debug_data(socket_num, arg.pSDAQ_mem->address, (unsigned short)*frame_rx.data, pseudo_SDAQ_timestamp);
-									if((unsigned short)*frame_rx.data-pseudo_SDAQ_timestamp < 100 &&
-									   (unsigned short)*frame_rx.data-pseudo_SDAQ_timestamp > -100)
+									ref_timestamp = htons(*((unsigned short *)frame_rx.data));
+									p_debug_data(socket_num, arg.pSDAQ_mem->address, ref_timestamp, pseudo_SDAQ_timestamp);
+									if((ref_timestamp-pseudo_SDAQ_timestamp) < 100 && (ref_timestamp-pseudo_SDAQ_timestamp) > -100)
 									{
 										if(in_sync_cnt>=2)
 										{
@@ -338,7 +339,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									else
 									{
 										arg.pSDAQ_mem->status &= ~(1<<In_sync);
-										pseudo_SDAQ_timestamp = (unsigned short)*frame_rx.data;
+										pseudo_SDAQ_timestamp = ref_timestamp;
 										in_sync_cnt = 0;
 									}
 								}
@@ -348,7 +349,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				pthread_mutex_unlock(&SDAQs_mem_access);
 			}
 		}
-		else//select expired from Timeout
+		else //select expired from Timeout
 		{
 			if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
 			{
@@ -365,27 +366,29 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				status_send_cnt--;
 			if(arg.pSDAQ_mem->status & 0x01)//check run bit of status byte
 			{
-				if(!meas_cnt)
+				pthread_mutex_lock(&SDAQs_mem_access);
+					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
+					{			
+						noise = ((rand()%20)-10)/1000.0;
+						p_measure(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
+						if(raw_meas_cnt >= 10)	
+							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
+					}
+				pthread_mutex_unlock(&SDAQs_mem_access);
+				if(raw_meas_cnt)
 				{
-					pthread_mutex_lock(&SDAQs_mem_access);
-						for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
-						{			
-							noise = ((rand()%20)-10)/1000.0;
-							p_measure(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
-							if(raw_meas_flag && !(pseudo_SDAQ_timestamp%100))	
-								p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
-						}
-					pthread_mutex_unlock(&SDAQs_mem_access);
-					meas_cnt = Meas_Interval;
+					raw_meas_cnt++;
+					if(raw_meas_cnt >= 11)
+						raw_meas_cnt=1;
 				}
-				else
-					meas_cnt--;
 			}
 		}
-		pseudo_SDAQ_timestamp += 10;
+		clock_gettime(CLOCK_MONOTONIC_RAW, &tend);
+		time_diff = (tend.tv_nsec - tstart.tv_nsec)/1000000;
+		time_diff += (tend.tv_sec - tstart.tv_sec)*1000;
+		pseudo_SDAQ_timestamp += time_diff;
 		if(pseudo_SDAQ_timestamp>=60000)
 			pseudo_SDAQ_timestamp = 0;
-
 	}
 	close(socket_num);
 	return NULL;
