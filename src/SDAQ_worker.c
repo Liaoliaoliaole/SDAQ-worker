@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
 						 .info_file=NULL,
 						 .verify=0,
 						 .silent=0,
+						 .resize=0,
 						 .timeout = 2 //second
 						}; 
 	//Variables for Socket CAN
@@ -75,7 +76,7 @@ int main(int argc, char *argv[])
 	}
 	
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvslt:S:T:f:")) != -1)
+	while ((c = getopt (argc, argv, "hVvrslt:S:T:f:")) != -1)
 	{
 		switch (c)
 		{
@@ -88,6 +89,9 @@ int main(int argc, char *argv[])
 			case 'l'://List of CAN-IF
 				list_CANIF();
 				exit(EXIT_SUCCESS);
+			case 'r':
+				usr_opt.resize = 1;
+				break;
 			case 's'://silent
 				usr_opt.silent = 1;
 				break;
@@ -335,6 +339,7 @@ void print_usage(char *prog_name)
 		"           -h : Print help.\n"
 		"           -V : Version.\n"
 		"           -s : Silent print, or with mode 'getinfo' print info at stdout in XML format\n"
+		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IF.\n" 
 		"           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'\n" 

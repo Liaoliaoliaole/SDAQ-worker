@@ -27,6 +27,7 @@ typedef struct option_flags{
 	char *info_file;
 	unsigned silent : 1;
 	unsigned verify : 1;
+	unsigned resize : 1;
 	unsigned int timeout;	
 }opt_flags;
 

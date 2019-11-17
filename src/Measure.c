@@ -53,8 +53,9 @@ volatile char running=1,box_flag=0,raw_flag=0; //Flag to activate RAW_measuremen
 pthread_mutex_t display_access = PTHREAD_MUTEX_INITIALIZER;
 
 //local functions
-void w_init(struct thread_arguments_passer *arg);
-void wclean_refresh(WINDOW *ptr);
+short time_diff_cal(unsigned short dev_time, unsigned short ref_time);//assistance func for timestamp diff
+void w_init(struct thread_arguments_passer *arg);//init apps ncurses windows
+void wclean_refresh(WINDOW *ptr);//clean a window and redraw it.
 void *CAN_socket_RX(void *varg_pt);//Thread function 
 const char * status_byte_dec(unsigned char status_byte,unsigned char field);
 
@@ -80,7 +81,8 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		printf("Terminal need to be at least %dX%d Characters\n",term_min_width,term_min_height);
 		return EXIT_SUCCESS;
 	}
-	printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
+	if(usr_flag->resize)
+		printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
 	initscr(); // start the ncurses mode
 	raw();//getch without return
 	noecho();//disable echo
@@ -140,7 +142,8 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	}
 	pthread_cancel(CAN_socket_RX_Thread_id);// cancel "CAN_socket_RX_Thread_id" thread
 	endwin();
-	printf("\e[8;%d;%dt",term_init_size.ws_row,term_init_size.ws_col);//restore the terminal size
+	if(usr_flag->resize)
+		printf("\e[8;%d;%dt",term_init_size.ws_row,term_init_size.ws_col);//restore the terminal size
 	if(running<0)
 		printf("Terminal need to be at least %dx%d\n",term_min_width,term_min_height);
 	return EXIT_SUCCESS;
@@ -235,8 +238,6 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));								
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
 							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
-							if(!(status_dec->status && (1<<In_sync)))//not in sync
-								mvwprintw(arg->status_win,7,3,"                       ");
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))//no measure
 								wclean_refresh(arg->meas_win);
@@ -251,7 +252,7 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
-							mvwprintw(arg->status_win,7,3,"Timediff : %7hd msec",(ts_dec->ref_time - ts_dec->dev_time));
+							mvwprintw(arg->status_win,7,3,"Timediff : %4hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
 							wrefresh(arg->status_win);
 						default: 
 							break; 
@@ -269,4 +270,11 @@ void * CAN_socket_RX(void *varg_pt)
 		}
 	}
 	return NULL;
+}
+short time_diff_cal(unsigned short dev_time, unsigned short ref_time)
+{
+	short ret = dev_time > ref_time ? dev_time - ref_time : ref_time - dev_time;
+	if(ret<0)
+		ret = 60000 - dev_time - ref_time;
+	return ret;
 }

@@ -64,6 +64,7 @@ Options:
            -h : Print help.
            -V : Version.
            -s : Silent print, or with mode 'getinfo' print info at stdout in XML format
+           -r : resize terminal. Used with mode 'measure'.
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IF.
            -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'.

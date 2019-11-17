@@ -62,6 +62,7 @@ struct thread_arguments_passer
 
 //application functions
 void print_usage(char *prog_name);
+short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time);
 void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
 void handle_sigint(int sig) 
@@ -160,8 +161,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	unsigned char raw_meas_cnt=0, in_sync_cnt=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
 	unsigned int sync_status_cnt=0;
-	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, time_diff=0;
-	short time_diff_acc = 100; //accumulator for the Time Loop Lock 
+	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, loop_time_diff=0;
+	short loop_time_diff_acc = 100; //time_corrector, accumulator for the Time Loop Lock 
 	//Variables for select
 	struct timeval tv;
 	fd_set ready_for_read;
@@ -227,7 +228,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		FD_ZERO(&ready_for_read); //init ready_for_read
 		FD_SET(socket_num, &ready_for_read); //link Socket_num with ready_for_read
 		tv.tv_sec = 0;
-		tv.tv_usec = time_diff_acc*1000;// timeout of select, ~100ms adjuster in every loop		
+		tv.tv_usec = loop_time_diff_acc * 1000;// timeout of select, ~100ms adjuster in every loop		
 		//wait socket_num to be ready for read, or expired after timeout
 		retval = select(socket_num+1, &ready_for_read, NULL, NULL, &tv);
 		if(retval == -1)
@@ -325,20 +326,24 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 							case Synchronization_command:
 								if(id_dec->device_addr==Broadcast)
 								{	
-									ref_timestamp = htons(*((unsigned short *)frame_rx.data));
+									ref_timestamp = *((unsigned short *)frame_rx.data);
+									printf("reftime = %hu devtime = %hu\n",ref_timestamp,pseudo_SDAQ_timestamp);
 									p_debug_data(socket_num, arg.pSDAQ_mem->address, ref_timestamp, pseudo_SDAQ_timestamp);
-									if((ref_timestamp-pseudo_SDAQ_timestamp) < 100 && (ref_timestamp-pseudo_SDAQ_timestamp) > -100)
+									if(dev_ref_time_diff_cal(pseudo_SDAQ_timestamp,ref_timestamp) < 100)
 									{
-										if(in_sync_cnt>=1)
+										
+										if(in_sync_cnt>1)
 										{
 											arg.pSDAQ_mem->status |= 1<<In_sync;
 											sync_status_cnt=Sync_Status_Interval;
 										}
 										else
 											in_sync_cnt++;
+										pseudo_SDAQ_timestamp += ref_timestamp - pseudo_SDAQ_timestamp;
 									}
 									else
 									{
+										printf("devtime = reftime\n");
 										arg.pSDAQ_mem->status &= ~(1<<In_sync);
 										pseudo_SDAQ_timestamp = ref_timestamp;
 										in_sync_cnt = 0;
@@ -387,20 +392,28 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		
 		// get time and calc different
 		clock_gettime(CLOCK_MONOTONIC_RAW, &tend);
-		time_diff = (tend.tv_nsec - tstart.tv_nsec)/1000000;
-		time_diff += (tend.tv_sec - tstart.tv_sec)*1000;
+		loop_time_diff = (tend.tv_nsec - tstart.tv_nsec)/1000000;
+		loop_time_diff += (tend.tv_sec - tstart.tv_sec)*1000;
 		//add time of loop to pseudo_SDAQ_timestamp
-		pseudo_SDAQ_timestamp += time_diff;
+		pseudo_SDAQ_timestamp += loop_time_diff;
 		if(pseudo_SDAQ_timestamp>=60000)
-			pseudo_SDAQ_timestamp = 0;
+			pseudo_SDAQ_timestamp -= 60000;
 		//calculate new time for loop
-		time_diff_acc += 100 - time_diff;
-		if(time_diff_acc>100) // lock acc top value to 100 ms
-			time_diff_acc = 100;
-		//printf("Timediff= %4hu Newloop_time= %4hi\n",time_diff,time_diff_acc);
+		loop_time_diff_acc += 100 - loop_time_diff;
+		if(loop_time_diff_acc>100) // lock acc top value to 100 ms
+			loop_time_diff_acc = 100;
+		//printf("Timediff= %4hu Newloop_time= %4hi\n",loop_time_diff, loop_time_diff_acc);
 	}
 	close(socket_num);
 	return NULL;
+}
+
+short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time)
+{
+	short ret = dev_time > ref_time ? dev_time - ref_time : ref_time - dev_time;
+	if(ret<0)
+		ret = 60000 - dev_time - ref_time;
+	return ret;
 }
 
 void print_usage(char *prog_name)

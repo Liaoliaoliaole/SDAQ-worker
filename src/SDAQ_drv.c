@@ -65,7 +65,7 @@ int Sync(int socket_fd, unsigned short time_seed)
 	sdaq_id_ptr->payload_type = Synchronization_command;//Payload type for synchronization command
 	sdaq_id_ptr->device_addr = 0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(short);//Payload size
-	*((unsigned short *)frame_tx.data) = htons(time_seed);
+	*((unsigned short *)frame_tx.data) = time_seed;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))>0)
 		return 1;
 	return 0;	
@@ -346,7 +346,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = state;
-	p_sdaq_meas -> timestamp = htons(timestamp);
+	p_sdaq_meas -> timestamp = timestamp;
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
