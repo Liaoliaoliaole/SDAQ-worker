@@ -160,7 +160,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	unsigned char raw_meas_cnt=0, in_sync_cnt=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
 	unsigned int sync_status_cnt=0;
-	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, time_diff;
+	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, time_diff=0;
+	short time_diff_acc = 100; //accumulator for the Time Loop Lock 
 	//Variables for select
 	struct timeval tv;
 	fd_set ready_for_read;
@@ -226,7 +227,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		FD_ZERO(&ready_for_read); //init ready_for_read
 		FD_SET(socket_num, &ready_for_read); //link Socket_num with ready_for_read
 		tv.tv_sec = 0;
-		tv.tv_usec = 100000;// timeout of select, 100ms		
+		tv.tv_usec = time_diff_acc*1000;// timeout of select, ~100ms adjuster in every loop		
 		//wait socket_num to be ready for read, or expired after timeout
 		retval = select(socket_num+1, &ready_for_read, NULL, NULL, &tv);
 		if(retval == -1)
@@ -369,27 +370,34 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						raw_meas_cnt=1;
 				}
 			}
-			if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
-			{
-				if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
-				 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
-				else
-					sync_status_cnt--;
-				pthread_mutex_lock(&SDAQs_mem_access);
-					p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-				pthread_mutex_unlock(&SDAQs_mem_access);
-				status_send_cnt = Stat_ID_Interval;
-			}
-			else
-				status_send_cnt--;
 		}
+		if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted 
+		{
+			if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
+			 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
+			else
+				sync_status_cnt--;
+			pthread_mutex_lock(&SDAQs_mem_access);
+				p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
+			pthread_mutex_unlock(&SDAQs_mem_access);
+			status_send_cnt = Stat_ID_Interval;
+		}
+		else
+			status_send_cnt--;
+		
 		// get time and calc different
 		clock_gettime(CLOCK_MONOTONIC_RAW, &tend);
 		time_diff = (tend.tv_nsec - tstart.tv_nsec)/1000000;
 		time_diff += (tend.tv_sec - tstart.tv_sec)*1000;
+		//add time of loop to pseudo_SDAQ_timestamp
 		pseudo_SDAQ_timestamp += time_diff;
 		if(pseudo_SDAQ_timestamp>=60000)
 			pseudo_SDAQ_timestamp = 0;
+		//calculate new time for loop
+		time_diff_acc += 100 - time_diff;
+		if(time_diff_acc>100) // lock acc top value to 100 ms
+			time_diff_acc = 100;
+		//printf("Timediff= %4hu Newloop_time= %4hi\n",time_diff,time_diff_acc);
 	}
 	close(socket_num);
 	return NULL;

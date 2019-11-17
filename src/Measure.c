@@ -235,8 +235,10 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));								
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
 							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
+							if(!(status_dec->status && (1<<In_sync)))//not in sync
+								mvwprintw(arg->status_win,7,3,"                       ");
 							wrefresh(arg->status_win);
-							if(!(status_dec->status & 0x01))
+							if(!(status_dec->status & 0x01))//no measure
 								wclean_refresh(arg->meas_win);
 							break;
 						case Device_info: 
