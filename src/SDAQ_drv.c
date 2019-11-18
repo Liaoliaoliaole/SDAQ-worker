@@ -1,4 +1,4 @@
-/*   
+/*
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <string.h> 
+#include <string.h>
 
 #include <arpa/inet.h>
 #include <linux/can.h>
@@ -27,9 +27,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"};  
+const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"};
 const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
-const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};  
+const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};
 const unsigned char Parking_address=63;
 const unsigned char Broadcast=0;
 
@@ -68,7 +68,7 @@ int Sync(int socket_fd, unsigned short time_seed)
 	*((unsigned short *)frame_tx.data) = time_seed;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))>0)
 		return 1;
-	return 0;	
+	return 0;
 }
 //Request start of measure from the SDAQ device. For all dev_addr=0
 int Start(int socket_fd,unsigned char dev_address)
@@ -118,13 +118,13 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 	sdaq_id_ptr->payload_type=Set_dev_address;//Payload type for change of device address command
 	sdaq_id_ptr->device_addr=0;//TX from broadcast only
 	frame_tx.can_dlc = sizeof(unsigned int) + sizeof(unsigned char);//Payload size
-	*((int *)frame_tx.data) = dev_SN; 
+	*((int *)frame_tx.data) = dev_SN;
 	*(frame_tx.data + sizeof(unsigned int)) = new_dev_address;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
-//request device info. Device answer with 3 messages: Device ID/status, Device Info and Calibration Date. 
+//request device info. Device answer with 3 messages: Device ID/status, Device Info and Calibration Date.
 int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 {
 	sdaq_can_id *sdaq_id_ptr;
@@ -139,7 +139,7 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 	frame_tx.can_dlc = 0;//No payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel)
@@ -154,10 +154,10 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 	p_sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
 	p_sdaq_id_ptr->device_addr = dev_address;
 	p_sdaq_id_ptr->channel_num = channel;
-	frame_tx.can_dlc = 0;//No Payload 
+	frame_tx.can_dlc = 0;//No Payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
@@ -200,7 +200,7 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_cal_date_enc->amount_of_points = NumOfPoints;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char point_num, unsigned char type)
@@ -227,9 +227,9 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 }
 
 
-/*-----------------------------------------------------------------------------------------------------------------*/ 
+/*-----------------------------------------------------------------------------------------------------------------*/
 
-/*The following Functions used only on the pseudo_SDAQ Simulator*/ 
+/*The following Functions used only on the pseudo_SDAQ Simulator*/
 int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
@@ -240,17 +240,17 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 	memset(frame_tx.data, 0, sizeof(frame_tx.data));
 	//construct identifier for Device_status message
 	p_sdaq_id_ptr->flags = 4;//set the EFF
-	p_sdaq_id_ptr->priority = 7;//According to the White paper 
+	p_sdaq_id_ptr->priority = 7;//According to the White paper
 	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
 	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
-	frame_tx.can_dlc = 4;//Payload size from the white paper is 8 
+	frame_tx.can_dlc = 4;//Payload size from the white paper is 8
 	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) (frame_tx.data);
 	p_sdaq_sync_debug_data->ref_time = ref_time;
 	p_sdaq_sync_debug_data->dev_time = dev_time;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int SN, unsigned char status)
@@ -298,7 +298,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	p_sdaq_info -> sample_rate = 0;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp)
@@ -324,7 +324,7 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, u
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp)
@@ -350,7 +350,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_date *ch_cal_date)
@@ -371,7 +371,7 @@ int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char c
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
-	return 0;	
+	return 0;
 }
 
 int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_points_data *ch_cal_point_data)
