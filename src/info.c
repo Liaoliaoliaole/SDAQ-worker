@@ -118,6 +118,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
 	printf("Not Implemented\n");
+	return 0;
 	//Local variables, SDAQ information and calibration date and data.
 	SDAQ_info_cal_data str={0}; 
 	int retval;
@@ -209,7 +210,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		if(RX_bytes==sizeof(frame_rx))
 		{
 			if(id_dec->device_addr==dev_addr)
-			{
+			{ 
 				switch(id_dec->payload_type)
 				{
 					case Device_status:

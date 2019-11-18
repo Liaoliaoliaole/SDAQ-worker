@@ -80,7 +80,7 @@ typedef struct SDAQ_Measurement_Decoder{
 
 /* SDAQ's CAN Device_ID/Status message decoder */
 typedef struct SDAQ_Status_Decoder{
-	unsigned int  dev_sn;
+	unsigned int  dev_sn; 
 	unsigned char status;
 	unsigned char dev_type;
 }sdaq_status; 
@@ -92,12 +92,14 @@ typedef struct SDAQ_Info_Decoder{
 	unsigned char hw_rev;
 	unsigned char num_of_ch;
 	unsigned char sample_rate;
+	unsigned char max_cal_point;
 }sdaq_info; 
 
 /* SDAQ's CAN Calibration_date message decoder */
 typedef struct SDAQ_calibration_date_Decoder{
 	unsigned int date;
 	unsigned char amount_of_points;
+	unsigned char cal_units;
 }sdaq_calibration_date; 
 
 /* SDAQ's CAN Calibration_point_data message decoder */

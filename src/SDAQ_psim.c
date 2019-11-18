@@ -14,8 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define Stat_ID_Interval 200 //for 20 sec with base time 100ms 
-#define Sync_Status_Interval 6//for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval  
+#define Stat_ID_Interval 100 //for 10 sec with base time 100ms 
+#define Sync_Status_Interval 12//for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval  
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -235,7 +235,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		{
 			perror("select()");
 			close(socket_num);
-			pthread_exit(NULL);
+			pthread_exit(NULL); 
 		}
 		else if(retval)// Socket_num ready to read
 		{

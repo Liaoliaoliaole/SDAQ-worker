@@ -247,8 +247,8 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes;
-	sdaq_can_id *id_dec;
-	sdaq_status *status_dec;
+	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
+	sdaq_status *status_dec = (sdaq_status *)(frame_rx.data);
 	//Timers related Variables
 	struct itimerval timer;//Scan Timeout
 	
@@ -269,8 +269,6 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
 		{
-			id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-			status_dec = (sdaq_status *)&(frame_rx.data);
 			if(id_dec->payload_type == Device_status)
 			{	
 				target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
@@ -291,7 +289,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 					else
 					{
 						fprintf(stderr,"Memory error\n");
-						exit(1);
+						exit(EXIT_FAILURE);
 					}
 				}
 			}
@@ -383,7 +381,7 @@ gint SDAQentry_cmp (gconstpointer a, gconstpointer b)
 
 /*
 	Comparing function used in g_slist_find_custom, 
-	Controlled by target switch variable. 
+	Controlled by target switch variable.  
 */
 gint SDAQentry_find (gconstpointer node, gconstpointer arg)
 {

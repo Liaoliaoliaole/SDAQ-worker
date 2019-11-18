@@ -32,7 +32,6 @@ typedef struct option_flags{
 }opt_flags;
 
 /*The following two type defs structs used in info.c file and SDAQ_xml.c*/
-
 /*	Struct SDAQ_information_and_calibration_data
 		used in mode info and calibration. 
 		Contains:
@@ -45,7 +44,7 @@ typedef struct SDAQ_information_and_calibration_data{
 		unsigned int serial_number;
 		const char *dev_type;	
 		unsigned char firm_rev;
-		unsigned char hw_rev;
+		unsigned char hw_rev; 
 		unsigned char num_of_ch;
 		unsigned char sample_rate;
 	}SDAQ_info;
