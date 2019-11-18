@@ -256,7 +256,7 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 	struct can_frame frame_rx;
 	int RX_bytes;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-	sdaq_status *status_dec = (sdaq_status *)&(frame_rx.data);
+	sdaq_status *status_dec = (sdaq_status *)(frame_rx.data);
 	SetDeviceAddress(socket_num, serial_number, new_address);
 	if(usr_flag->verify)
 	{

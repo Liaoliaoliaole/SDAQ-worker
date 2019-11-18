@@ -245,7 +245,7 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 	p_sdaq_id_ptr->payload_type = Sync_Info;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = 4;//Payload size from the white paper is 8 
-	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) &(frame_tx.data);
+	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) (frame_tx.data);
 	p_sdaq_sync_debug_data->ref_time = ref_time;
 	p_sdaq_sync_debug_data->dev_time = dev_time;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
@@ -267,7 +267,7 @@ int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int 
 	p_sdaq_id_ptr->payload_type = Device_status;//Payload type for Device_status message
 	p_sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = sizeof(sdaq_status);//Payload size
-	p_sdaq_status = (sdaq_status*) &(frame_tx.data);
+	p_sdaq_status = (sdaq_status*) (frame_tx.data);
 	p_sdaq_status -> dev_sn = SN;
 	p_sdaq_status -> status = status;
 	p_sdaq_status -> dev_type = 0;
@@ -290,7 +290,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	p_sdaq_id_ptr->payload_type = Device_info;//Payload type for Device_info message
 	p_sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = sizeof(sdaq_info);//Payload size
-	p_sdaq_info = (sdaq_info*) &(frame_tx.data);
+	p_sdaq_info = (sdaq_info*) (frame_tx.data);
 	p_sdaq_info -> dev_type = 0;
 	p_sdaq_info -> firm_rev = 0;
 	p_sdaq_info -> hw_rev = 0;
@@ -316,7 +316,7 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, u
 	p_sdaq_id_ptr->device_addr = dev_address;
 	p_sdaq_id_ptr->channel_num = channel;
 	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
-	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
+	p_sdaq_meas = (sdaq_meas*) (frame_tx.data);
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = state;
@@ -342,7 +342,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 	p_sdaq_id_ptr->device_addr = dev_address;
 	p_sdaq_id_ptr->channel_num = channel;
 	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
-	p_sdaq_meas = (sdaq_meas*) &(frame_tx.data);
+	p_sdaq_meas = (sdaq_meas*) (frame_tx.data);
 	p_sdaq_meas -> meas = value;
 	p_sdaq_meas -> unit = 0;
 	p_sdaq_meas -> status = state;

@@ -154,9 +154,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	int socket_num;
 	//Variables for SDAQ_dev
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
-	sdaq_set_new_addr *set_new_addr_dec = (sdaq_set_new_addr *) frame_rx.data;
-	sdaq_calibration_date *cal_date_dec = (sdaq_calibration_date *) frame_rx.data;
-	sdaq_calibration_points_data point_enc, *point_dec = (sdaq_calibration_points_data*) frame_rx.data;
+	sdaq_set_new_addr *set_new_addr_dec = (sdaq_set_new_addr *)frame_rx.data;
+	sdaq_calibration_date *cal_date_dec = (sdaq_calibration_date *)frame_rx.data;
+	sdaq_calibration_points_data point_enc, *point_dec = (sdaq_calibration_points_data*)frame_rx.data;
 	float noise;
 	unsigned char raw_meas_cnt=0, in_sync_cnt=0;
 	unsigned int status_send_cnt=Stat_ID_Interval;
