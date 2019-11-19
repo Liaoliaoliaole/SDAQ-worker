@@ -16,7 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define TIME_REF 100 //loop time ref
 #define Stat_ID_Interval 10000/TIME_REF //for 10 sec with base time TIME_REF
-#define Sync_Status_Interval 120/Stat_ID_Interval //for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval
+#define Sync_Status_Interval 120/(Stat_ID_Interval) //for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 	}
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
-	
+
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
 	free(SDAQs_mem_access);
@@ -347,7 +347,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 										}
 										else
 											in_sync_cnt++;
-										//pseudo_SDAQ_timestamp += ref_timestamp - pseudo_SDAQ_timestamp;
+										pseudo_SDAQ_timestamp += dev_ref_time_diff_cal(pseudo_SDAQ_timestamp,ref_timestamp);
 									}
 									else
 									{

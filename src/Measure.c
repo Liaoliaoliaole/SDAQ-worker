@@ -1,4 +1,4 @@
-/*   
+/*
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -28,9 +28,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <ncurses.h> 
+#include <ncurses.h>
 #include <signal.h>
-#include <pthread.h> 
+#include <pthread.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 
@@ -56,7 +56,7 @@ pthread_mutex_t display_access = PTHREAD_MUTEX_INITIALIZER;
 short time_diff_cal(unsigned short dev_time, unsigned short ref_time);//assistance func for timestamp diff
 void w_init(struct thread_arguments_passer *arg);//init apps ncurses windows
 void wclean_refresh(WINDOW *ptr);//clean a window and redraw it.
-void *CAN_socket_RX(void *varg_pt);//Thread function 
+void *CAN_socket_RX(void *varg_pt);//Thread function
 const char * status_byte_dec(unsigned char status_byte,unsigned char field);
 
 int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
@@ -66,15 +66,15 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	char user_pressed_key;
 	struct winsize term_init_size;
 	//variables for threads
-	pthread_t CAN_socket_RX_Thread_id; 
+	pthread_t CAN_socket_RX_Thread_id;
 	struct thread_arguments_passer thread_arg;
-	
+
 	thread_arg.dev_addr = dev_addr;
 	thread_arg.socket_num = socket_num;
 	thread_arg.lock_kb_flag = 0;
-	
+
 	//Init Measurement mode with ncurses
-	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window 
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
 	if(term_init_size.ws_col<term_min_width || term_init_size.ws_row<term_min_height)
 	{
@@ -89,7 +89,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	curs_set(0);//hide cursor
 	scrollok(stdscr, TRUE);
 	w_init(&thread_arg);
-	//mount the CAN-bus receiver on a thread, and load arguments 
+	//mount the CAN-bus receiver on a thread, and load arguments
 	pthread_create(&CAN_socket_RX_Thread_id, NULL, CAN_socket_RX, &thread_arg);
 	while(running>0)
 	{
@@ -105,7 +105,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 				last_row = row;
 				last_col = col;
 			}
-			user_pressed_key=getch();// get the user's entrance 
+			user_pressed_key=getch();// get the user's entrance
 			if(!thread_arg.lock_kb_flag)
 			{
 				switch(user_pressed_key)
@@ -115,7 +115,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 					//case 'S': Sync(socket_num,0);
 					case '3': QueryDeviceInfo(socket_num,dev_addr); break;
 					case 'Q':
-					case 'q': 
+					case 'q':
 					case  3 : running=0; break; //SIGINT or Ctrl+C
 					case 'R': raw_flag^=1; Req_Raw_meas(socket_num,dev_addr,raw_flag); break;
 					case 'B': box_flag^=1;//toggle borders and force clean
@@ -170,7 +170,7 @@ void w_init(struct thread_arguments_passer *arg)
 	scrollok(arg->info_win, TRUE);
 	scrollok(arg->meas_win, TRUE);
 	scrollok(arg->raw_meas_win, TRUE);
-	mvprintw(0,0,"%d %d",term_row,term_col);//ncurses stdscr size -- does not show in the screen, move after clean 
+	mvprintw(0,0,"%d %d",term_row,term_col);//ncurses stdscr size -- does not show in the screen, move after clean
 	clear();
 	mvprintw(0,term_col/2-10,"Device Address: %d",arg->dev_addr);
 	mvprintw(term_min_height-2,term_col/2-w_stat_info_width,"Function Buttons:");
@@ -186,9 +186,9 @@ void w_init(struct thread_arguments_passer *arg)
 }
 
 //Thread function. Act as CAN-bus message Receiver and decoder for SDAQ devices
-void * CAN_socket_RX(void *varg_pt) 
-{ 
-	//term size 
+void * CAN_socket_RX(void *varg_pt)
+{
+	//term size
 	int term_col,term_row;
 	//passed arguments decoder
 	struct thread_arguments_passer *arg = (struct thread_arguments_passer *) varg_pt;
@@ -201,7 +201,7 @@ void * CAN_socket_RX(void *varg_pt)
 	sdaq_info *info_dec = (sdaq_info *)frame_rx.data;
 	sdaq_sync_debug_data *ts_dec = (sdaq_sync_debug_data *)frame_rx.data;
 	while(1)
-	{		
+	{
 		RX_bytes=read(arg->socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
 		{
@@ -221,7 +221,7 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor  ",id_dec->channel_num);
 							wrefresh(arg->raw_meas_win);
 							break;
-						case Measurement_value: 
+						case Measurement_value:
 							mvwprintw(arg->meas_win,1,2,"Calibrated:");
 							mvwprintw(arg->meas_win,2,4,"Time -> %5d (msec)",meas_dec->timestamp);
 							if(!(meas_dec->status))
@@ -231,31 +231,31 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor  ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
 							break;
-						case Device_status:  
-							mvwprintw(arg->status_win,1,1,"Device_status & S/N:"); 
+						case Device_status:
+							mvwprintw(arg->status_win,1,1,"Device_status & S/N:");
 							mvwprintw(arg->status_win,2,3,"S/N = %d",status_dec->dev_sn);
 							mvwprintw(arg->status_win,3,3,"Mode  : %3s",status_byte_dec(status_dec->status,Mode));
-							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));								
+							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
 							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
 							wrefresh(arg->status_win);
 							if(!(status_dec->status & 0x01))//no measure
 								wclean_refresh(arg->meas_win);
 							break;
-						case Device_info: 
+						case Device_info:
 							mvwprintw(arg->info_win,1,1,"Device_info:");
 							mvwprintw(arg->info_win,2,3,"Type = %s",dev_type_str[info_dec->dev_type]);
 							mvwprintw(arg->info_win,3,3,"Firmware rev = %d",info_dec->firm_rev);
 							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
-							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch); 
+							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch);
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
-							mvwprintw(arg->status_win,7,3,"Timediff : %4hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
+							mvwprintw(arg->status_win,7,3,"Timediff : %6hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
 							wrefresh(arg->status_win);
-						default: 
-							break; 
+						default:
+							break;
 					}
 				pthread_mutex_unlock(&display_access);
 			}
