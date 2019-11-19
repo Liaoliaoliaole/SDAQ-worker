@@ -37,8 +37,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "Modes.h"
 
 //global variables
-unsigned char target=CMP_Serial_Numbers; //flag, used in SDAQentry_cmp and SDAQentry_find functions, switch the comparison target.
-unsigned char Discover_and_autoconf_TMR_exp=1;
+static unsigned char Discover_and_autoconf_TMR_exp=1;
 
 //Local struct for SDAQ device entry
 struct SDAQentry {
@@ -55,7 +54,8 @@ GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with t
 GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking, Sort by Serial number
 GSList * find_SDAQs_Conflicts(GSList * head);//Construct a list of lists with SDAQs that have the same address
 gint SDAQentry_cmp (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_insert_sorted.
-gint SDAQentry_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
+gint SDAQentry_find_address (gconstpointer node, gconstpointer arg);//Used in g_slist_find_custom, compare to find node with address == *arg
+gint SDAQentry_find_serial_number (gconstpointer node, gconstpointer arg);//Used in g_slist_find_custom, compare to find node with serial_number == *arg
 gint SDAQentry_find_autoconf (gconstpointer node, gconstpointer arg);//GFunc function used with g_slist_find_custom when is called from autoconfig.
 // GFunc function used with g_slist_foreach. Arguments: SDAQ_new_address_list, pointer to socket number
 void SDAQs_newaddress_list_to_SDAQs(gpointer SDAQentry, gpointer arg_pass);
@@ -135,11 +135,10 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 		}
 		else //True Autoconfig
 		{
-			target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to sort by device address
 			list_work = list_Park;
 			while(list_work)
 			{
-				if(!g_slist_find_custom(list_SDAQs,&addr_t,SDAQentry_find))
+				if(!g_slist_find_custom(list_SDAQs,&addr_t,SDAQentry_find_address))
 				{
 					((struct SDAQentry *)list_work->data)->address=addr_t;
 					list_work = list_work -> next;//next node with parking address
@@ -264,19 +263,16 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 		{
 			if(id_dec->payload_type == Device_status)
 			{
-				target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
+				//target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
 				// check if node with same Serial number exist in the list. if no, do store.
-				if(g_slist_find_custom(ret_list,(gconstpointer)&(status_dec->dev_sn),SDAQentry_find)==NULL)
+				if(g_slist_find_custom(ret_list,(gconstpointer)&(status_dec->dev_sn),SDAQentry_find_serial_number)==NULL)
 				{
 					struct SDAQentry *new_sdaq = new_SDAQentry();
 					if (new_sdaq)
-					{
-						target = CMP_Addresses; // set SDAQentry_find and SDAQentry_cmp to sort by address
-						// set SDAQ info data
+					{	// set SDAQ info data
 						new_sdaq->serial_number = status_dec->dev_sn;
 						new_sdaq->address = id_dec->device_addr;
 						new_sdaq->dev_type = dev_type_str[status_dec->dev_type];
-						//printf("New SDAQ discovered with %d at address : %d\n",new_sdaq->serial_number,new_sdaq->address);
 						ret_list = g_slist_insert_sorted(ret_list, new_sdaq, SDAQentry_cmp);
 					}
 					else
@@ -296,14 +292,13 @@ GSList* find_SDAQs_inParking(GSList * head)
 	GSList *t_lst = head, *ret_list=NULL;
 	for(int i=g_slist_length(head);i;i--)//Run for all head nodes.
 	{
-		target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to sort by device address
+		//target = CMP_Addresses; // Set SDAQentry_find and SDAQentry_cmp to sort by device address
 		if(t_lst)
 		{
 			//look at the list t_lst (aka head, at first) for entrance with parking address
-			t_lst = g_slist_find_custom(t_lst,(gconstpointer) &(Parking_address),SDAQentry_find);
+			t_lst = g_slist_find_custom(t_lst,(gconstpointer) &(Parking_address),SDAQentry_find_address);
 			if(t_lst)
 			{
-				target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
 				ret_list = g_slist_insert_sorted(ret_list, (gpointer) t_lst->data, SDAQentry_cmp);//sort by serial number
 				t_lst = t_lst->next; //goto next node
 			}
@@ -358,36 +353,33 @@ GSList * find_SDAQs_Conflicts(GSList * head)
 
 /*
 	Comparing function used in g_slist_insert_sorted.
-	Controlled by target switch variable.
 */
 gint SDAQentry_cmp (gconstpointer a, gconstpointer b)
 {
-	switch(target)
-	{
-		case CMP_Serial_Numbers :
-			return (((struct SDAQentry *)a)->serial_number < ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
-		case CMP_Addresses :
-			return (((struct SDAQentry *)a)->address <= ((struct SDAQentry *)b)->address) ?  0 : 1;
-		default : return 1;
-	}
+	if(((struct SDAQentry *)a)->address != ((struct SDAQentry *)b)->address)
+		return (((struct SDAQentry *)a)->address <= ((struct SDAQentry *)b)->address) ?  0 : 1;
+	else
+		return (((struct SDAQentry *)a)->serial_number <= ((struct SDAQentry *)b)->serial_number) ?  0 : 1;
 }
 
 /*
-	Comparing function used in g_slist_find_custom,
-	Controlled by target switch variable.
+	Comparing function used in g_slist_find_custom, compare to find node with address == *arg
 */
-gint SDAQentry_find (gconstpointer node, gconstpointer arg)
+gint SDAQentry_find_address (gconstpointer node, gconstpointer arg)
+{
+	const unsigned char *arg_t = arg;
+	struct SDAQentry *node_dec = (struct SDAQentry *) node;
+	return node_dec->address == (unsigned char)*arg_t ?  0 : 1;
+}
+
+/*
+	Comparing function used in g_slist_find_custom, compare to find node with serial_number == *arg
+*/
+gint SDAQentry_find_serial_number (gconstpointer node, gconstpointer arg)
 {
 	const unsigned int *arg_t = arg;
 	struct SDAQentry *node_dec = (struct SDAQentry *) node;
-	switch(target)
-	{
-		case CMP_Serial_Numbers:
-			return node_dec->serial_number == (unsigned int) *arg_t ?  0 : 1;
-		case CMP_Addresses:
-			return node_dec->address == (unsigned char)*arg_t ?  0 : 1;
-		default : return 1;
-	}
+	return node_dec->serial_number == (unsigned int) *arg_t ?  0 : 1;
 }
 
 /*

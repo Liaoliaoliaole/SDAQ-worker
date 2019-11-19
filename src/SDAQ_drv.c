@@ -248,6 +248,7 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 	p_sdaq_sync_debug_data = (sdaq_sync_debug_data*) (frame_tx.data);
 	p_sdaq_sync_debug_data->ref_time = ref_time;
 	p_sdaq_sync_debug_data->dev_time = dev_time;
+	usleep(10000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
@@ -271,6 +272,7 @@ int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int 
 	p_sdaq_status -> dev_sn = SN;
 	p_sdaq_status -> status = status;
 	p_sdaq_status -> dev_type = 0;
+	usleep(10000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
@@ -296,6 +298,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	p_sdaq_info -> hw_rev = 0;
 	p_sdaq_info -> num_of_ch = amount_of_channel;
 	p_sdaq_info -> sample_rate = 0;
+	usleep(10000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;

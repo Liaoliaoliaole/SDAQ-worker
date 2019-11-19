@@ -218,7 +218,7 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
-								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d = No sensor  ",id_dec->channel_num);
+								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor  ",id_dec->channel_num);
 							wrefresh(arg->raw_meas_win);
 							break;
 						case Measurement_value: 
@@ -228,7 +228,7 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %s   "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d = No sensor  ",id_dec->channel_num);
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor  ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
 							break;
 						case Device_status:  

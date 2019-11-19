@@ -52,9 +52,9 @@ struct pSDAQ_memory_space
 };
 
 //Global variables
-unsigned char SDAQ_psim_run=1;
+unsigned char SDAQ_psim_run=1, active_threads=0;
 pthread_mutex_t thread_make_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t SDAQs_mem_access = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t *SDAQs_mem_access;
 
 struct thread_arguments_passer
 {
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 	num_of_pSDAQ = atoi(argv[2]);
 	if(!num_of_pSDAQ || num_of_pSDAQ >= Parking_address)
 	{
-		printf("Amount of pseudo_SDAQ is invalid\n");
+		printf("Amount of pseudo_SDAQ is invalid. Range 1..%d\n",Parking_address-1);
 		exit(1);
 	}
 
@@ -103,8 +103,11 @@ int main(int argc, char *argv[])
 
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
 	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQ units memory space;
+	SDAQs_mem_access = malloc(sizeof(pthread_mutex_t)*num_of_pSDAQ);
 	for(int i=0;i<num_of_pSDAQ;i++)
 	{
+		active_threads++;
+		pthread_mutex_init(&SDAQs_mem_access[i], NULL);
 		pthread_mutex_lock(&thread_make_lock);
 		thread_arg.serial_number=i+1;
 		memset(&(pSDAQs_mem[i]), 0, sizeof(struct pSDAQ_memory_space));
@@ -112,17 +115,16 @@ int main(int argc, char *argv[])
 		pSDAQs_mem[i].number_of_channels = 16;
 		thread_arg.pSDAQ_mem = &pSDAQs_mem[i];
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
-		usleep(100000);
 	}
 
-	pthread_mutex_lock(&SDAQs_mem_access);
+	pthread_mutex_lock(&SDAQs_mem_access[0]);
 		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
 		pSDAQs_mem[0].ch_cal_date[15].amount_of_points=8;
 		//pSDAQs_mem[0].number_of_channels = 2;
 		pSDAQs_mem[0].data_ref_values[0][0] = 789.321;
 		pSDAQs_mem[0].data_mes_values[0][0] = 321.456;
 		pSDAQs_mem[0].out_val[0]+=12.55;
-	pthread_mutex_unlock(&SDAQs_mem_access);
+	pthread_mutex_unlock(&SDAQs_mem_access[0]);
 
 	while(SDAQ_psim_run)
 	{
@@ -132,13 +134,15 @@ int main(int argc, char *argv[])
 		scanf("%s",usr_com);
 		printf("User input:%s\n",usr_com);
 		*/
+		//printf("active threads %d\n",active_threads);
 		sleep(1);
 	}
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
-
+	
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
+	free(SDAQs_mem_access);
 	return 0;
 }
 
@@ -220,10 +224,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		exit(1);
 	}
 	//Send status and info on start
-	pthread_mutex_lock(&SDAQs_mem_access);
+	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 		p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 		p_DeviceInfo(socket_num, arg.pSDAQ_mem->address, arg.pSDAQ_mem->number_of_channels);
-	pthread_mutex_unlock(&SDAQs_mem_access);
+	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
 	while(SDAQ_psim_run)
 	{
 		// Get time
@@ -246,7 +250,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
-				pthread_mutex_lock(&SDAQs_mem_access);
+				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 					if(id_dec->device_addr==arg.pSDAQ_mem->address||id_dec->device_addr==Broadcast)
 					{
 						switch(id_dec->payload_type)
@@ -356,14 +360,14 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								break;
 						}
 					}
-				pthread_mutex_unlock(&SDAQs_mem_access);
+				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
 			}
 		}
 		else //select expired from Timeout
 		{
 			if(arg.pSDAQ_mem->status & 0x01)//check run bit of status byte
 			{
-				pthread_mutex_lock(&SDAQs_mem_access);
+				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 					{
 						noise = ((rand()%20)-10)/1000.0;
@@ -371,7 +375,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						if(raw_meas_cnt >= 10)
 							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 					}
-				pthread_mutex_unlock(&SDAQs_mem_access);
+				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
 				if(raw_meas_cnt)
 				{
 					raw_meas_cnt++;
@@ -386,9 +390,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
 			else
 				sync_status_cnt--;
-			pthread_mutex_lock(&SDAQs_mem_access);
+			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 				p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-			pthread_mutex_unlock(&SDAQs_mem_access);
+			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
 			status_send_cnt = Stat_ID_Interval;
 		}
 		else
@@ -409,9 +413,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			loop_time_diff_acc = 1;
 		if(loop_time_diff_acc>=TIME_REF) // lock acc top value to 100 ms
 			loop_time_diff_acc = TIME_REF;
-		printf("Timediff= %4hu Newloop_time= %4hi\n",loop_time_diff, loop_time_diff_acc);
+		//printf("thread (%2d) Timediff= %4hu Newloop_time= %4hi\n", arg.serial_number, loop_time_diff, loop_time_diff_acc);
 	}
 	close(socket_num);
+	active_threads--;
 	return NULL;
 }
 
