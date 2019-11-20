@@ -1,4 +1,4 @@
-/*   
+/*
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -13,7 +13,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-// SDAQ_xml function implementation 
+// SDAQ_xml function implementation
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,7 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <sys/time.h>
 #include <math.h>
 
-#include <glib.h> 
+#include <glib.h>
 #include <gmodule.h>
 
 #include <libxml/xmlmemory.h>
@@ -63,11 +63,12 @@ int XML_info_file_write(char *file_path, void *arg)
     xml_SDAQ_data(w_node, BAD_CAST "Hardware_Rev", &(info_ptr->SDAQ_info.hw_rev), t_integer_ubyte);
     xml_SDAQ_data(w_node, BAD_CAST "Available_Channels", &(info_ptr->SDAQ_info.num_of_ch), t_integer_ubyte);
 	xml_SDAQ_data(w_node, BAD_CAST "Samplerate", &(info_ptr->SDAQ_info.sample_rate), t_integer_ubyte);
+	xml_SDAQ_data(w_node, BAD_CAST "Maximum Amount of Calibration points per channel", &(info_ptr->SDAQ_info.max_cal_point), t_integer_ubyte);
 	//add calibration data. Calibration data node is the new root
 	root_node = xmlNewChild(root_node, NULL, BAD_CAST "Calibration_Data", NULL);
 	for(int i=0;i<info_ptr->SDAQ_info.num_of_ch;i++)
 	{
-		//add xml_node for Channel 
+		//add xml_node for Channel
 		sprintf((char*)buff, "CH%d", i+1);
 		w_node = xmlNewChild(root_node, NULL, buff, NULL);
 		//add channel's expiration date and amount of used points
@@ -81,16 +82,24 @@ int XML_info_file_write(char *file_path, void *arg)
 		{
 			sprintf((char*)buff, "Point_%d",j);
 			w_node2 = xmlNewChild(w_node1, NULL, buff, NULL);
-			for(int k=0; k<2; k++)
+			for(int k=0; k<6; k++)
 			{
-				buff_ptr = !k ? (unsigned char*)"Measure" :  (unsigned char*)"Reference";
+				switch(k)
+				{
+					case meas: buff_ptr = (unsigned char*)"Measure"; break;
+					case ref: buff_ptr =  (unsigned char*)"Reference"; break;
+					case offset: buff_ptr = (unsigned char*)"Offset"; break;
+					case gain: buff_ptr = (unsigned char*)"Gain"; break;
+					case C2: buff_ptr = (unsigned char*)"C2"; break;
+					case C3: buff_ptr = (unsigned char*)"C3"; break;
+				}
 				xml_SDAQ_data(w_node2, buff_ptr,
 				&(((sdaq_calibration_points_data *)g_slist_nth_data(((GSList *)info_ptr->Cal_points_data_lists[i]),j*2+k))->data_of_point), t_float);
 			}
 		}
 	}
     //write the xml_doc to stdout or to file
-    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", file_path[0]!='-');
+    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", 1);
 	//free allocated memory
 	xmlFreeDoc(xml_doc);
 	xmlCleanupParser();
@@ -129,5 +138,5 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 			return NULL;
 	}
 	node = xmlNewChild(root_node, NULL, node_name, buff_ptr);
-	return node; 
+	return node;
 }

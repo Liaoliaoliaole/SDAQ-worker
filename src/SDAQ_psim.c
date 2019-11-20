@@ -47,8 +47,7 @@ struct pSDAQ_memory_space
 	unsigned char number_of_channels;
 	float out_val[16];
 	sdaq_calibration_date ch_cal_date[16];
-	float data_ref_values[16][8];
-	float data_mes_values[16][8];
+	float data_cal_values[16][16][6];
 };
 
 //Global variables
@@ -119,10 +118,11 @@ int main(int argc, char *argv[])
 
 	pthread_mutex_lock(&SDAQs_mem_access[0]);
 		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
-		pSDAQs_mem[0].ch_cal_date[15].amount_of_points=8;
-		//pSDAQs_mem[0].number_of_channels = 2;
-		pSDAQs_mem[0].data_ref_values[0][0] = 789.321;
-		pSDAQs_mem[0].data_mes_values[0][0] = 321.456;
+		pSDAQs_mem[0].ch_cal_date[0].date = time(NULL);
+		pSDAQs_mem[0].ch_cal_date[2].amount_of_points=8;
+		pSDAQs_mem[0].number_of_channels = 2;
+		pSDAQs_mem[0].data_cal_values[0][0][5] = 789.321;
+		pSDAQs_mem[0].data_cal_values[0][7][5] = 5151.321;
 		pSDAQs_mem[0].out_val[0]+=12.55;
 	pthread_mutex_unlock(&SDAQs_mem_access[0]);
 
@@ -226,7 +226,6 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Send status and info on start
 	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 		p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-		p_DeviceInfo(socket_num, arg.pSDAQ_mem->address, arg.pSDAQ_mem->number_of_channels);
 	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
 	while(SDAQ_psim_run)
 	{
@@ -287,15 +286,15 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 							case Query_Calibration_Data:
 								if(id_dec->device_addr==arg.pSDAQ_mem->address && id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels && id_dec->channel_num)
 								{
-									for(int j=0;j<8;j++)
+									for(int j=0;j<16;j++)
 									{
-										point_enc.data_of_point = arg.pSDAQ_mem->data_ref_values[id_dec->channel_num-1][j];
-										point_enc.type = 1;
-										point_enc.points_num = j;
-										p_calibration_points_data(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &point_enc);
-										point_enc.data_of_point = arg.pSDAQ_mem->data_mes_values[id_dec->channel_num-1][j];
-										point_enc.type = 2;
-										p_calibration_points_data(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &point_enc);
+										for(int k=0; k<6; k++)
+										{
+											point_enc.data_of_point = arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1][j][k];
+											point_enc.type = k+1;
+											point_enc.points_num = j;
+											p_calibration_points_data(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &point_enc);
+										}
 									}
 									p_calibration_date(socket_num, arg.pSDAQ_mem->address, id_dec->channel_num, &(arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1]));
 								}
@@ -319,15 +318,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								{
 									if(point_dec->points_num<8)
 									{
-										switch(point_dec->type)
-										{
-											case meas:
-												(arg.pSDAQ_mem->data_ref_values[id_dec->channel_num-1][point_dec->points_num]) = point_dec->data_of_point;
-												break;
-											case ref:
-												(arg.pSDAQ_mem->data_mes_values[id_dec->channel_num-1][point_dec->points_num]) = point_dec->data_of_point;
-												break;
-										}
+										arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1]
+																	  [point_dec->points_num]
+																	  [point_dec->type] = point_dec->data_of_point;
 									}
 								}
 								break;

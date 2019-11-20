@@ -1,4 +1,4 @@
-/*   
+/*
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -16,9 +16,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define PROTOCOL_ID 0x35
 
-extern const char *unit_str[]; 
+extern const char *unit_str[];
 extern const char *dev_type_str[];
-extern const char *dev_status_str[][8]; 
+extern const char *dev_status_str[][8];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 
@@ -33,7 +33,11 @@ enum status_byte{
 // enumerator for Calibration Point Data type byte
 enum Calibration_Point_Data_type_byte{
 	meas = 1,
-	ref = 2
+	ref = 2,
+	offset = 3,
+	gain = 4,
+	C2 = 5,
+	C3 = 6
 };
 // enumerator for payload_type
 enum payload_type{
@@ -49,8 +53,8 @@ enum payload_type{
 	Change_SDAQ_baudrate = 11,
 	Configure_Additional_data = 12,
 /*Messages payload_type. SDAQ -> Master*/
-	Measurement_value = 0x84, 
-	Device_status = 0x86, 
+	Measurement_value = 0x84,
+	Device_status = 0x86,
 	Device_info = 0x88,
 	Calibration_Date = 0x89,
 	Calibration_Point_Data = 0x8a,
@@ -68,7 +72,7 @@ typedef struct SDAQ_Identifier_Encoder_Decoder{
 	unsigned protocol_id : 6;
 	unsigned priority : 3;
 	unsigned flags : 3;//EFF/RTR/ERR flags
-}sdaq_can_id; 
+}sdaq_can_id;
 
 /* SDAQ's CAN measurement message decoder */
 typedef struct SDAQ_Measurement_Decoder{
@@ -76,14 +80,14 @@ typedef struct SDAQ_Measurement_Decoder{
 	unsigned char unit;
 	unsigned char status;
 	unsigned short timestamp;
-}sdaq_meas; 
+}sdaq_meas;
 
 /* SDAQ's CAN Device_ID/Status message decoder */
 typedef struct SDAQ_Status_Decoder{
-	unsigned int  dev_sn; 
+	unsigned int  dev_sn;
 	unsigned char status;
 	unsigned char dev_type;
-}sdaq_status; 
+}sdaq_status;
 
 /* SDAQ's CAN Device_info message decoder */
 typedef struct SDAQ_Info_Decoder{
@@ -93,37 +97,37 @@ typedef struct SDAQ_Info_Decoder{
 	unsigned char num_of_ch;
 	unsigned char sample_rate;
 	unsigned char max_cal_point;
-}sdaq_info; 
+}sdaq_info;
 
 /* SDAQ's CAN Calibration_date message decoder */
 typedef struct SDAQ_calibration_date_Decoder{
 	unsigned int date;
 	unsigned char amount_of_points;
 	unsigned char cal_units;
-}sdaq_calibration_date; 
+}sdaq_calibration_date;
 
 /* SDAQ's CAN Calibration_point_data message decoder */
 typedef struct SDAQ_calibration_points_data_Decoder{
 	float data_of_point;
 	unsigned char type;
 	unsigned char points_num;
-}sdaq_calibration_points_data; 
+}sdaq_calibration_points_data;
 
 
-//The following RX Decoders used on the pseudo_SDAQ Simulator 
+//The following RX Decoders used on the pseudo_SDAQ Simulator
 /* SDAQ's CAN Set Device Address message decoder */
 typedef struct pSDAQ_Set_new_address{
 	unsigned int  dev_sn;
 	unsigned char new_address;
-}sdaq_set_new_addr; 
+}sdaq_set_new_addr;
 
 /* SDAQ's CAN Debug data message decoder */
 typedef struct pSDAQ_sync_debug_data{
 	unsigned short ref_time;
 	unsigned short dev_time;
-}sdaq_sync_debug_data; 
+}sdaq_sync_debug_data;
 
-#pragma pack(pop)//Disable packing 
+#pragma pack(pop)//Disable packing
 
 				/*Master -> SDAQ Functions*/
 /*All the functions return 0 in success and 1 on failure */
@@ -137,16 +141,16 @@ int Sync(int socket_fd, unsigned short time_seed);
 int Req_Raw_meas(int socket_fd, unsigned char dev_address, const unsigned char Config);
 //Request change of device address with the specific serial number.
 int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_address);
-//Request device info. Device answer with 3 messages types: Device ID/status, Device Info and Calibration Date for each channel  
+//Request device info. Device answer with 3 messages types: Device ID/status, Device Info and Calibration Date for each channel
 int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
-//Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel 
+//Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, unsigned int date,unsigned char NumOfPoints);
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char Point_num, unsigned char type);
 
-//The following RX Functions used on the pseudo_SDAQ Simulator 
+//The following RX Functions used on the pseudo_SDAQ Simulator
 				/*pseudo_SDAQ -> Master Functions*/
 int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_time, unsigned short dev_time);
 int p_DeviceID_and_status(int socket_fd, unsigned char dev_address, unsigned int SN, unsigned char status);

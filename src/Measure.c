@@ -72,7 +72,8 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	thread_arg.dev_addr = dev_addr;
 	thread_arg.socket_num = socket_num;
 	thread_arg.lock_kb_flag = 0;
-
+	if(usr_flag->resize)
+		printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
 	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
@@ -81,8 +82,6 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		printf("Terminal need to be at least %dX%d Characters\n",term_min_width,term_min_height);
 		return EXIT_SUCCESS;
 	}
-	if(usr_flag->resize)
-		printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
 	initscr(); // start the ncurses mode
 	raw();//getch without return
 	noecho();//disable echo
@@ -249,7 +248,7 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
 							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch);
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
-							mvwprintw(arg->info_win,7,3,"#Max_cal_points = %d",info_dec->max_cal_point);
+							mvwprintw(arg->info_win,7,3,"Cal points = %d",info_dec->max_cal_point);
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
