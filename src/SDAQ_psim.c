@@ -417,6 +417,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	}
 	close(socket_num);
 	active_threads--;
+	printf("Thread of pseudoSDAQ with S/N:%2d Exit...\n",arg.serial_number);
 	return NULL;
 }
 
