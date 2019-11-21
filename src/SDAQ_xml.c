@@ -50,7 +50,7 @@ int XML_info_file_write(char *file_path, void *arg)
 	SDAQ_info_cal_data *info_ptr = arg;
 	xmlDocPtr xml_doc = NULL;
     xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
-	unsigned char buff[15],*buff_ptr;
+	unsigned char buff[15],*point_name;
     //Creates a new document, a node and set it as a root node
     xml_doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
@@ -63,7 +63,7 @@ int XML_info_file_write(char *file_path, void *arg)
     xml_SDAQ_data(w_node, BAD_CAST "Hardware_Rev", &(info_ptr->SDAQ_info.hw_rev), t_integer_ubyte);
     xml_SDAQ_data(w_node, BAD_CAST "Available_Channels", &(info_ptr->SDAQ_info.num_of_ch), t_integer_ubyte);
 	xml_SDAQ_data(w_node, BAD_CAST "Samplerate", &(info_ptr->SDAQ_info.sample_rate), t_integer_ubyte);
-	xml_SDAQ_data(w_node, BAD_CAST "Maximum Amount of Calibration points per channel", &(info_ptr->SDAQ_info.max_cal_point), t_integer_ubyte);
+	xml_SDAQ_data(w_node, BAD_CAST "Max_num_of_cal_points", &(info_ptr->SDAQ_info.max_cal_point), t_integer_ubyte);
 	//add calibration data. Calibration data node is the new root
 	root_node = xmlNewChild(root_node, NULL, BAD_CAST "Calibration_Data", NULL);
 	for(int i=0;i<info_ptr->SDAQ_info.num_of_ch;i++)
@@ -78,23 +78,23 @@ int XML_info_file_write(char *file_path, void *arg)
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
 		//add points for channel
 		w_node1 = xmlNewChild(w_node, NULL, BAD_CAST "Points", NULL);
-		for(int j=0; j<info_ptr->SDAQ_info.max_cal_point; j++)
+		for(int j=0; j < info_ptr->SDAQ_info.max_cal_point; j++)
 		{
 			sprintf((char*)buff, "Point_%d",j);
 			w_node2 = xmlNewChild(w_node1, NULL, buff, NULL);
 			for(int k=0; k<6; k++)
 			{
-				switch(k)
+				switch(k+1)
 				{
-					case meas: buff_ptr = (unsigned char*)"Measure"; break;
-					case ref: buff_ptr =  (unsigned char*)"Reference"; break;
-					case offset: buff_ptr = (unsigned char*)"Offset"; break;
-					case gain: buff_ptr = (unsigned char*)"Gain"; break;
-					case C2: buff_ptr = (unsigned char*)"C2"; break;
-					case C3: buff_ptr = (unsigned char*)"C3"; break;
+					case meas: point_name = (unsigned char*)"Measure"; break;
+					case ref: point_name =  (unsigned char*)"Reference"; break;
+					case offset: point_name = (unsigned char*)"Offset"; break;
+					case gain: point_name = (unsigned char*)"Gain"; break;
+					case C2: point_name = (unsigned char*)"C2"; break;
+					case C3: point_name = (unsigned char*)"C3"; break;
 				}
-				xml_SDAQ_data(w_node2, buff_ptr,
-				&(((sdaq_calibration_points_data *)g_slist_nth_data(((GSList *)info_ptr->Cal_points_data_lists[i]),j*2+k))->data_of_point), t_float);
+				xml_SDAQ_data(w_node2, point_name,
+				&(((sdaq_calibration_points_data *)g_slist_nth_data(((GSList *)info_ptr->Cal_points_data_lists[i]), j*6+k))->data_of_point), t_float);
 			}
 		}
 	}

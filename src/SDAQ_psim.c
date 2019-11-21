@@ -119,10 +119,12 @@ int main(int argc, char *argv[])
 	pthread_mutex_lock(&SDAQs_mem_access[0]);
 		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
 		pSDAQs_mem[0].ch_cal_date[0].date = time(NULL);
-		pSDAQs_mem[0].ch_cal_date[2].amount_of_points=8;
+		pSDAQs_mem[0].ch_cal_date[1].amount_of_points=3;
 		pSDAQs_mem[0].number_of_channels = 2;
 		pSDAQs_mem[0].data_cal_values[0][0][5] = 789.321;
-		pSDAQs_mem[0].data_cal_values[0][7][5] = 5151.321;
+		pSDAQs_mem[0].data_cal_values[0][2][5] = 5151.321;
+		pSDAQs_mem[0].data_cal_values[1][0][5] = 5432.101;
+		pSDAQs_mem[0].data_cal_values[1][2][5] = 1234.321;
 		pSDAQs_mem[0].out_val[0]+=12.55;
 	pthread_mutex_unlock(&SDAQs_mem_access[0]);
 
@@ -304,7 +306,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
 								&& id_dec->channel_num)
 								{
-									if(cal_date_dec->amount_of_points<=8)
+									if(cal_date_dec->amount_of_points<=16)
 									{
 										arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1].date = cal_date_dec->date;
 										arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1].amount_of_points = cal_date_dec->amount_of_points;
@@ -316,7 +318,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
 								&& id_dec->channel_num)
 								{
-									if(point_dec->points_num<8)
+									if(point_dec->points_num<16)
 									{
 										arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1]
 																	  [point_dec->points_num]

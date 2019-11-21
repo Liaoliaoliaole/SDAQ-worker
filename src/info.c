@@ -55,7 +55,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 //Declaration of function for Calibration_date_list
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
-gint SDAQ_date_node_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_insert_sorted.
+gint SDAQ_date_node_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
 //Declaration of function for Cal_points_data_lists
 sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists
 void free_SDAQ_cal_point_node(gpointer Point_node);//used with g_slist_free_full to free the data of node
@@ -74,13 +74,13 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	{
 		if(!usr_flag->silent)
 		{
-			printf("------ Info of SDAQ with Address %d ------\n"
-				   "\tHardware rev: %d\n"
-				   "\tSoftware rev: %d\n"
-				   "\tS/N: %d\n"
-				   "\tType: %s\n"
-				   "\tChannels: %d\n"
-				   "\tSamplerate: %d\n",dev_addr,
+			printf("\t------ Info of SDAQ with Address %d ------\n"
+				   "\t\tHardware rev: %d\n"
+				   "\t\tSoftware rev: %d\n"
+				   "\t\tS/N: %d\n"
+				   "\t\tType: %s\n"
+				   "\t\tChannels: %d\n"
+				   "\t\tSamplerate: %d\n",dev_addr,
 									 str.SDAQ_info.hw_rev,
 									 str.SDAQ_info.firm_rev,
 									 str.SDAQ_info.serial_number,
@@ -89,13 +89,14 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 									 str.SDAQ_info.sample_rate);
 			if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
 			{
-				printf("----- Expiration Date & Point's Data -----\n");
+				printf("\t----- Expiration Date & Point's Data -----\n");
 				g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
 			}
 			else
-				printf("All channels have 0 amount of points\n");
+				printf("\tAll channels have 0 amount of points\n");
 			if(usr_flag->info_file)
 				XML_info_file_write(usr_flag->info_file, &str);
+			printf("\nPrint completed\n");
 		}
 		else
 		{
@@ -223,7 +224,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		setitimer (ITIMER_REAL, &timer, NULL);
 		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6)//16 = 8 ref (output) + 8 mes (input) points
+		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3)
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
@@ -318,11 +319,11 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 				break;
 			case C3 :
 				printf(" %8.3f |\n",node_dec->data_of_point);
-				printf(" |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
+				if(node_dec->points_num<amount_of_points-1)
+					printf(" |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
 				break;
 			//default :
 		}
-
 	}
 	return;
 }
@@ -340,14 +341,17 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	strftime (buff,sizeof(buff),"%Y/%m",ptm);
 	if(node_dec->amount_of_points)
 	{
-		printf("  \t\t   CH%02d: Expired @ %s Cal_Points = %d\n",node_dec->ch_num,
-											    	  buff,
-											    	  node_dec->amount_of_points);
-
-		printf(" /---------------------------------------------------------------------------\\\n"
+		puts("\n\n");
+		printf("  -----------------------------------------\n");
+		printf(" | CH%02d: Expired @ %s Cal_Points = %2d |\n",node_dec->ch_num,
+											  buff,
+											  node_dec->amount_of_points);
+		printf(" |---------------------------------------------------------------------------\\\n"
 			   " | # |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |\n"
 		       " |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
+		g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
+		printf(" \\---|-----------|-----------|-----------|-----------|-----------|-----------/\n");
 	}
-	g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
+	
 	return;
 }
