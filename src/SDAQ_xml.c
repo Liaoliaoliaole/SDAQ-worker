@@ -78,7 +78,7 @@ int XML_info_file_write(char *file_path, void *arg)
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
 		//add points for channel
 		w_node1 = xmlNewChild(w_node, NULL, BAD_CAST "Points", NULL);
-		for(int j=0; j<8; j++)
+		for(int j=0; j<info_ptr->SDAQ_info.max_cal_point; j++)
 		{
 			sprintf((char*)buff, "Point_%d",j);
 			w_node2 = xmlNewChild(w_node1, NULL, buff, NULL);
