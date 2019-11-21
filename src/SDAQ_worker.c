@@ -1,4 +1,4 @@
-/*   
+/*
 Program: SDAQ_worker. A controlling software for SDAQ-CAN Devices.
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
@@ -57,24 +57,24 @@ int main(int argc, char *argv[])
 						 .silent=0,
 						 .resize=0,
 						 .timeout = 2 //second
-						}; 
+						};
 	//Variables for Socket CAN
 	struct timeval tv;
 	struct ifreq ifr;
-	struct sockaddr_can addr;	
+	struct sockaddr_can addr;
 	struct can_filter RX_filter;
 	sdaq_can_id *can_filter_enc;
 	int socket_num;
 	//Variables for SDAQ_dev
 	unsigned char dev_addr = 0;
 	unsigned int serial_number;
-	
+
 	if(argc == 1)
 	{
 		print_usage(argv[0]);
 		exit(1);
 	}
-	
+
 	opterr = 1;
 	while ((c = getopt (argc, argv, "hVvrslt:S:T:f:")) != -1)
 	{
@@ -95,9 +95,9 @@ int main(int argc, char *argv[])
 			case 's'://silent
 				usr_opt.silent = 1;
 				break;
-			case 'f'://file  
+			case 'f'://file
 				usr_opt.info_file = optarg;
-				break;	
+				break;
 			case 'v'://verify
 				usr_opt.verify = 1;
 				break;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
 				}
 				break;
 			case 'T':
-				// to be sanitized 
+				// to be sanitized
 				//usr_opt.timestamp_format = optarg;
 				printf("Not implemented\n");
 				printf("-T argument = \"%s\"\n",optarg);
@@ -139,13 +139,13 @@ int main(int argc, char *argv[])
 				exit(EXIT_FAILURE);
 		}
 	}
-	if(argv[optind] == NULL || argv[1] == NULL || argc <=2) 
+	if(argv[optind] == NULL || argv[1] == NULL || argc <=2)
 	{
-		printf("!!! CAN-IF and/or MODE Field are Missing !!!\n"); 
-		exit(EXIT_FAILURE);		
+		printf("!!! CAN-IF and/or MODE Field are Missing !!!\n");
+		exit(EXIT_FAILURE);
 	}
 	//CAN Socket Opening
-	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) 
+	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
 	{
 		perror("Error while opening socket");
 		exit(EXIT_FAILURE);
@@ -168,23 +168,23 @@ int main(int argc, char *argv[])
 	can_filter_enc = (sdaq_can_id *)&RX_filter.can_mask; //Set encoder to filter.can_mask
 	memset(can_filter_enc, 0, sizeof(sdaq_can_id));
 	can_filter_enc->flags = 4;//Received only messages with extended ID (29bit)
-	can_filter_enc->protocol_id = -1; // Protocol_id field marked for examination 
-	can_filter_enc->payload_type = 0x80; // + The most significant bit of Payload_type field marked for examination.  	
+	can_filter_enc->protocol_id = -1; // Protocol_id field marked for examination
+	can_filter_enc->payload_type = 0x80; // + The most significant bit of Payload_type field marked for examination.
 	setsockopt(socket_num, SOL_CAN_RAW, CAN_RAW_FILTER, &RX_filter, sizeof(RX_filter));
-	
+
 	// Add timeout option to the CAN Socket
 	tv.tv_sec = 20;//interval time that a SDAQ send a Status/ID frame.
 	tv.tv_usec = 0;
 	setsockopt(socket_num, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof(tv));
-	
+
 	//Bind CAN Socket to address
 	addr.can_family  = AF_CAN;
 	addr.can_ifindex = ifr.ifr_ifindex;
-	if(bind(socket_num, (struct sockaddr *)&addr, sizeof(addr)) < 0) 
+	if(bind(socket_num, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 	{
 		perror("Error in socket bind");
 		exit(EXIT_FAILURE);
-	}	 
+	}
 
 	/*Scan Mode argument*/
 	//Modes with device address requirement
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
 			{
 				printf("Device address: Out of range or invalid\n");
 				exit(EXIT_FAILURE);
-			}	
+			}
 		}
 		//Scan for the rest of the modes
 		if(!strcmp(argv[optind+1],"setaddress"))
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
 
 int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags *usr_flag)
 {
-	unsigned char amount_of_tests=10;
+	unsigned char amount_of_tests=usr_flag->timeout;
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes;
@@ -260,28 +260,38 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 	SetDeviceAddress(socket_num, serial_number, new_address);
 	if(usr_flag->verify)
 	{
-		printf("Check address of SDAQ with S/N:%d\n",serial_number);
-		QueryDeviceInfo(socket_num,new_address);
+		if(new_address == Parking_address)
+		{
+			printf("\nAddress verification can not be done on Parking !!!!!!\n");
+			return EXIT_SUCCESS;
+		}
+		printf("Check address of SDAQ with S/N:%d ",serial_number);
+		//QueryDeviceInfo(socket_num,new_address);
 		do{
+			sleep(1);
 			putchar('.');
 			fflush(stdout);
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
 				if(id_dec->device_addr==new_address && status_dec->dev_sn == serial_number)
-					break;	
+					break;
 			}
 			else
 			{
 				printf("Timeout\n");
 				return EXIT_FAILURE;
 			}
+
 			amount_of_tests--;
 		}while(amount_of_tests);
 		if(amount_of_tests)
 		{
 			if(!usr_flag->silent)
+			{
 				printf("\nSUCCESS\n");
+				printf("SDAQ with S/N: %d have address %d\n",status_dec->dev_sn,id_dec->device_addr);
+			}
 		}
 		else
 		{
@@ -295,15 +305,15 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 void list_CANIF()
 {
 	struct ifaddrs *ifaddr, *ifa;
-	
-	if (getifaddrs(&ifaddr) == -1) 
+
+	if (getifaddrs(&ifaddr) == -1)
 	{
 		perror("getifaddrs");
 		exit(EXIT_FAILURE);
 	}
 	/*Scan through the list ifaddr.
 	Print ifa_name field of every node where the ifa_addr == NULL -- Possible make it better in future*/
-	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) 
+	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
 	{
 		if (ifa->ifa_addr == NULL)
 			printf("%s\n",ifa->ifa_name);
@@ -317,7 +327,7 @@ void print_usage(char *prog_name)
 	"\tProgram: SDAQ_worker  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
     "\tThis program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
     "\tThis is free software, and you are welcome to redistribute it\n"
-    "\tunder certain conditions; for details see LICENSE.\n"	
+    "\tunder certain conditions; for details see LICENSE.\n"
 	};
 	const char manual[] = {
 		"CAN-IF: The name of the CAN-Bus adapter\n\n"
@@ -341,8 +351,8 @@ void print_usage(char *prog_name)
 		"           -s : Silent print, or with mode 'getinfo' print info at stdout in XML format\n"
 		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
-		"           -l : Print a list of the available CAN-IF.\n" 
-		"           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'\n" 
+		"           -l : Print a list of the available CAN-IF.\n"
+		"           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'\n"
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"

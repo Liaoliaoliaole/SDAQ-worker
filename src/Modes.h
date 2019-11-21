@@ -59,7 +59,6 @@ typedef struct calibration_date{
 	unsigned char amount_of_points;
 }date_list_data_of_node;
 
-
 /*All the functions return EXIT_SUCCESS at success and EXIT_FAILURE on failure*/
 
 //Declaration of function for Discovery mode. Implemented at Discover_and_autoconfig.c

@@ -74,13 +74,13 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	{
 		if(!usr_flag->silent)
 		{
-			printf("\t------ Info of SDAQ with Address %d ------\n"
-				   "\t\tHardware rev: %d\n"
-				   "\t\tSoftware rev: %d\n"
-				   "\t\tS/N: %d\n"
-				   "\t\tType: %s\n"
-				   "\t\tChannels: %d\n"
-				   "\t\tSamplerate: %d\n",dev_addr,
+			printf("------ Info of SDAQ with Address %d ------\n"
+				   "\tHardware rev: %d\n"
+				   "\tSoftware rev: %d\n"
+				   "\tS/N: %d\n"
+				   "\tType: %s\n"
+				   "\tChannels: %d\n"
+				   "\tSamplerate: %d\n",dev_addr,
 									 str.SDAQ_info.hw_rev,
 									 str.SDAQ_info.firm_rev,
 									 str.SDAQ_info.serial_number,
@@ -89,7 +89,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 									 str.SDAQ_info.sample_rate);
 			if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
 			{
-				printf("\t----- Expiration Date & Point's Data -----\n");
+				printf("----- Expiration Date & Point's Data -----\n");
 				g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
 			}
 			else
@@ -341,7 +341,6 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	strftime (buff,sizeof(buff),"%Y/%m",ptm);
 	if(node_dec->amount_of_points)
 	{
-		puts("\n\n");
 		printf("  -----------------------------------------\n");
 		printf(" | CH%02d: Expired @ %s Cal_Points = %2d |\n",node_dec->ch_num,
 											  buff,
@@ -352,6 +351,6 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 		g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
 		printf(" \\---|-----------|-----------|-----------|-----------|-----------|-----------/\n");
 	}
-	
+
 	return;
 }
