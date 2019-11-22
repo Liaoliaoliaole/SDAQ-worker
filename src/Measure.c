@@ -192,6 +192,7 @@ void * CAN_socket_RX(void *varg_pt)
 	//passed arguments decoder
 	struct thread_arguments_passer *arg = (struct thread_arguments_passer *) varg_pt;
 	//local variables for CAN Socket frame and SDAQ messages decoders
+	char timediff_str[20];
 	struct can_frame frame_rx;
 	int RX_bytes;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
@@ -238,8 +239,11 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
 							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
 							wrefresh(arg->status_win);
-							if(!(status_dec->status & 0x01))//no measure
+							if(!(status_dec->status & 1<<State))//no measure
+							{
 								wclean_refresh(arg->meas_win);
+								wclean_refresh(arg->raw_meas_win);
+							}
 							break;
 						case Device_info:
 							mvwprintw(arg->info_win,1,1,"Device_info:");
@@ -252,7 +256,8 @@ void * CAN_socket_RX(void *varg_pt)
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:
-							mvwprintw(arg->status_win,7,3,"Timediff : %6hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
+							sprintf(timediff_str, "%hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
+							mvwprintw(arg->status_win,7,3,"Timediff : %-11s",timediff_str);
 							wrefresh(arg->status_win);
 						default:
 							break;
