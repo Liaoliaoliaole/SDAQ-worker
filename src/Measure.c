@@ -188,7 +188,7 @@ void w_init(struct thread_arguments_passer *arg)
 void * CAN_socket_RX(void *varg_pt)
 {
 	//term size
-	int term_col,term_row;
+	int term_col;
 	//passed arguments decoder
 	struct thread_arguments_passer *arg = (struct thread_arguments_passer *) varg_pt;
 	//local variables for CAN Socket frame and SDAQ messages decoders
@@ -263,8 +263,8 @@ void * CAN_socket_RX(void *varg_pt)
 		else
 		{
 			pthread_mutex_lock(&display_access);
-				getmaxyx(stdscr,term_row,term_col);
-				mvprintw(term_row-3,term_col/2-10,"Error: Socket Timeout");
+				term_col = getmaxx(stdscr);
+				mvprintw(term_min_height-3,term_col/2-10,"Error: Socket Timeout");
 				refresh();
 			pthread_mutex_unlock(&display_access);
 		}
