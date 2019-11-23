@@ -252,7 +252,7 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
 							mvwprintw(arg->info_win,5,3,"Channels = %d",info_dec->num_of_ch);
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
-							mvwprintw(arg->info_win,7,3,"Cal points = %d",info_dec->max_cal_point);
+							mvwprintw(arg->info_win,7,3,"Max Cal points = %d",info_dec->max_cal_point);
 							wrefresh(arg->info_win);
 							break;
 						case Sync_Info:

@@ -1,27 +1,27 @@
 # SDAQ_worker Project
 
 ## Preamp
-This repository related to a software control and emulate suite related to SDAQ devices. An SDAQs is a proprietary (developed by iCraft Oy) acquisition devices with predefined physical input (voltage, current, thermocouple, etc) and CANBus interface as output.  
+This repository related to a software control and emulate suite related to SDAQ devices. An SDAQs is a proprietary (developed by iCraft Oy) acquisition devices with predefined physical input (voltage, current, thermocouple, etc) and CANBus interface as output.
 
 The SDAQ_worker project was started with the phylosophy to make some softwares that can control this devices from a computer that is equip with CAN interface (Linux Socket CAN compatible) and runs GNU operating system.
 
 ## Executables
 After the compilation 2 executable files are produced, that are:
-* SDAQ_worker
-* SDAQ_psim
+* [SDAQ_worker](#Usage of SDAQ_worker)
+* [SDAQ_psim](#Usage of SDAQ_psim)
 
 The SDAQ_worker is the SDAQ manipulation/controlling software.<br>
-The SDAQ_psim is a SDAQ software emulator.  
+The SDAQ_psim is a SDAQ software emulator.
 
 ### Prerequisites
-For compilation of this project the following dependences are required.  
+For compilation of this project the following dependences are required.
 * [GCC](https://gcc.gnu.org/)-The GNU Compiler Collection
 * [GNU Make](https://www.gnu.org/software/make/) - GNU make utility
 * [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
 * [libxml2](http://xmlsoft.org/) -  Library for parsing XML documents
 ##### Optionaly
-* [can-utils](https://elinux.org/Can-utils) - CANBus utilities
+* [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
 
 
 ### Compilation
@@ -74,11 +74,13 @@ Options:
 ```
 ### Usage of SDAQ_psim
 ```
-Usage: SDAQ_psim CAN-IF [Num_of_pSDAQ]
+Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
-        CAN-IF: The name of the CAN-Bus adapter
+	CAN-IF: The name of the CAN-Bus interface
 
-        Num_of_pSDAQ: The number of the pseudo_SDAQ devices, range 1..62
+	Num_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62
+
+	S/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)
 
 ```
 

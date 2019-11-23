@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <sys/select.h>
 #include <pthread.h>
+#include <ncurses.h>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -42,6 +43,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //struct definition of memory space of a pseudo_SDAQ
 struct pSDAQ_memory_space
 {
+	union{
+		struct{
+			unsigned ch1  : 1;
+			unsigned ch2  : 1;
+			unsigned ch3  : 1;
+			unsigned ch4  : 1;
+			unsigned ch5  : 1;
+			unsigned ch6  : 1;
+			unsigned ch7  : 1;
+			unsigned ch8  : 1;
+			unsigned ch9  : 1;
+			unsigned ch10 : 1;
+			unsigned ch11 : 1;
+			unsigned ch12 : 1;
+			unsigned ch13 : 1;
+			unsigned ch14 : 1;
+			unsigned ch15 : 1;
+			unsigned ch16 : 1;
+		}at;
+		unsigned short as_short;
+	}noise;
 	unsigned char status;
 	unsigned char address;
 	unsigned char number_of_channels;
@@ -64,18 +86,13 @@ struct thread_arguments_passer
 
 //application functions
 void print_usage(char *prog_name);
+void user_interface(unsigned int start_sn, unsigned int num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
 short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time);
 void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
-void handle_sigint(int sig)
-{
-    SDAQ_psim_run = 0;
-}
-
 int main(int argc, char *argv[])
 {
-	unsigned int num_of_pSDAQ;
-	//char usr_com[50];
+	unsigned int num_of_pSDAQ, start_sn;
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id;
 	struct thread_arguments_passer thread_arg;
@@ -96,49 +113,29 @@ int main(int argc, char *argv[])
 		printf("Amount of pseudo_SDAQ is invalid. Range 1..%d\n",Parking_address-1);
 		exit(1);
 	}
-
-	//mount signal SIGINT to the signal handler
-	signal(SIGINT, handle_sigint);
-
+	//Check if user have enter serial number start. If yes use it otherwise from 1
+	start_sn = !argv[3] ? 1 : atoi(argv[3]);
+	start_sn = start_sn ? start_sn : 1;
+	//Allocation of memory
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
 	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQ units memory space;
 	SDAQs_mem_access = malloc(sizeof(pthread_mutex_t)*num_of_pSDAQ);
+	//Call and start threads
 	for(int i=0;i<num_of_pSDAQ;i++)
 	{
 		active_threads++;
 		pthread_mutex_init(&SDAQs_mem_access[i], NULL);
 		pthread_mutex_lock(&thread_make_lock);
-		thread_arg.serial_number=i+1;
+		thread_arg.serial_number = i+start_sn;
 		memset(&(pSDAQs_mem[i]), 0, sizeof(struct pSDAQ_memory_space));
 		pSDAQs_mem[i].address = Parking_address;
 		pSDAQs_mem[i].number_of_channels = 16;
 		thread_arg.pSDAQ_mem = &pSDAQs_mem[i];
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
+	//Run user's interface (ncurses)
+	user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
 
-	pthread_mutex_lock(&SDAQs_mem_access[0]);
-		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
-		pSDAQs_mem[0].ch_cal_date[0].date = time(NULL);
-		pSDAQs_mem[0].ch_cal_date[1].amount_of_points=3;
-		pSDAQs_mem[0].number_of_channels = 2;
-		pSDAQs_mem[0].data_cal_values[0][0][5] = 789.321;
-		pSDAQs_mem[0].data_cal_values[0][2][5] = 5151.321;
-		pSDAQs_mem[0].data_cal_values[1][0][5] = 5432.101;
-		pSDAQs_mem[0].data_cal_values[1][2][5] = 1234.321;
-		pSDAQs_mem[0].out_val[0]+=12.55;
-	pthread_mutex_unlock(&SDAQs_mem_access[0]);
-
-	while(SDAQ_psim_run)
-	{
-		/*
-		printf("::");
-		fflush(stdout);
-		scanf("%s",usr_com);
-		printf("User input:%s\n",usr_com);
-		*/
-		//printf("active threads %d\n",active_threads);
-		sleep(1);
-	}
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
 
@@ -274,10 +271,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								if(set_new_addr_dec->dev_sn == arg.serial_number)
 								{
 									if(!set_new_addr_dec->new_address)
-										printf("Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
+										fprintf(stderr, "Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
 									else if(set_new_addr_dec->new_address<=Parking_address)
 									{
-										printf("SDAQ_psim %2d: New address: %2d\n",arg.serial_number,set_new_addr_dec->new_address);
+										//printf("SDAQ_psim %2d: New address: %2d\n",arg.serial_number,set_new_addr_dec->new_address);
 										arg.pSDAQ_mem->address = set_new_addr_dec->new_address;
 										p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									}
@@ -374,7 +371,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 					{
-						noise = ((rand()%20)-10)/1000.0;
+						noise = arg.pSDAQ_mem->noise.as_short & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
 						p_measure(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 						if(raw_meas_cnt >= 10)
 							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
@@ -421,7 +418,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	}
 	close(socket_num);
 	active_threads--;
-	printf("Thread of pseudoSDAQ with S/N:%2d Exit...\n",arg.serial_number);
+	//printf("Thread of pseudoSDAQ with S/N:%2d Exit...\n",arg.serial_number);
 	return NULL;
 }
 
@@ -442,9 +439,67 @@ void print_usage(char *prog_name)
     "under certain conditions; for details see LICENSE.\n"
 	};
 	const char exp[] = {
-	"\tCAN-IF: The name of the CAN-Bus adapter\n\n"
-	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, range 1..62\n"
+	"\tCAN-IF: The name of the CAN-Bus interface\n\n"
+	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62\n\n"
+	"\tS/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)\n"
 	};
-	printf("%s\nUsage: %s CAN-IF [Num_of_pSDAQ]\n\n%s\n", preamp, prog_name,exp);
+	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num]\n\n%s\n", preamp, prog_name,exp);
 	return;
 }
+
+
+//Implementation of the user's Interface function
+void user_interface(unsigned int start_sn, unsigned int num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
+{
+	unsigned int j=0;
+	char key, users_input[100];
+
+	pthread_mutex_lock(&SDAQs_mem_access[0]);
+		pSDAQs_mem[0].noise.at.ch1=1;
+		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
+		pSDAQs_mem[0].ch_cal_date[0].date = time(NULL);
+		pSDAQs_mem[0].ch_cal_date[1].amount_of_points=3;
+		pSDAQs_mem[0].number_of_channels = 16;
+		pSDAQs_mem[0].data_cal_values[0][0][5] = 789.321;
+		pSDAQs_mem[0].data_cal_values[0][2][5] = 5151.321;
+		pSDAQs_mem[0].data_cal_values[1][0][5] = 5432.101;
+		pSDAQs_mem[0].data_cal_values[1][2][5] = 1234.321;
+		pSDAQs_mem[0].out_val[0]+=12.55;
+	pthread_mutex_unlock(&SDAQs_mem_access[0]);
+
+	initscr(); // start the ncurses mode
+	raw();//getch without return
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, TRUE);
+	printw("][ ");
+	while(SDAQ_psim_run)
+	{
+		key = getch();// get the user's entrance
+		switch(key)
+		{
+			case 3 :
+				SDAQ_psim_run = 0;
+				break;
+			case '\b':
+				if(j)
+				{
+					j--;
+				}
+				break;
+			case '\n' :
+				users_input[j] = '\0';
+				printw("User input:%s\n][ ",users_input);
+				j = 0;
+				break;
+			default :
+				users_input[j] = key;
+				j++;
+				break;
+		}
+		//printf("active threads %d\n",active_threads);
+	}
+	endwin();
+	return;
+}
+
+
