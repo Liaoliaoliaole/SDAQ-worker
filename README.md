@@ -7,8 +7,8 @@ The SDAQ_worker project was started with the phylosophy to make some softwares t
 
 ## Executables
 After the compilation 2 executable files are produced, that are:
-* [SDAQ_worker](#usage:-SDAQ_worker)
-* [SDAQ_psim](#usage:-SDAQ_psim)
+* [SDAQ_worker](#usage-sdaq_worker)
+* [SDAQ_psim](#usage-sdaq_psim)
 
 The SDAQ_worker is the SDAQ manipulation/controlling software.<br>
 The SDAQ_psim is a SDAQ software emulator.
