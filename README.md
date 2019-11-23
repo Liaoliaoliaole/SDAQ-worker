@@ -7,8 +7,8 @@ The SDAQ_worker project was started with the phylosophy to make some softwares t
 
 ## Executables
 After the compilation 2 executable files are produced, that are:
-* [SDAQ_worker](#Usage of SDAQ_worker)
-* [SDAQ_psim](#Usage of SDAQ_psim)
+* [SDAQ_worker](#Usage:-SDAQ_worker)
+* [SDAQ_psim](#Usage:-SDAQ_psim)
 
 The SDAQ_worker is the SDAQ manipulation/controlling software.<br>
 The SDAQ_psim is a SDAQ software emulator.
@@ -36,7 +36,7 @@ $ make
 ```
 The binary file located under the build directory.
 
-### Usage of SDAQ_worker
+### Usage: SDAQ_worker
 ```
 Usage: SDAQ_worker CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [LOGGING DIRECTOR] [Options]
 
@@ -72,7 +72,7 @@ Options:
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
   -T <format> : Timestamp format, works with -S Date.
 ```
-### Usage of SDAQ_psim
+### Usage: SDAQ_psim
 ```
 Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
