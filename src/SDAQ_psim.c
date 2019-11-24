@@ -482,6 +482,18 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					}
 				}
 				break;
+			case KEY_UP:
+				printw("key_up\n][ ");
+				break;
+			case KEY_DOWN:
+				printw("key_down\n][ ");
+				break;
+			case KEY_LEFT:
+				printw("key_left\n][ ");
+				break;
+			case KEY_RIGHT:
+				printw("key_right\n][ ");
+				break;
 			case 3 ://ctrl + c
 				move(getcury(stdscr),3);
 				clrtoeol();
