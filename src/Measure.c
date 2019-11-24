@@ -244,6 +244,11 @@ void * CAN_socket_RX(void *varg_pt)
 								wclean_refresh(arg->meas_win);
 								wclean_refresh(arg->raw_meas_win);
 							}
+							//clear "Error: Socket Timeout" print
+							term_col = getmaxx(stdscr);
+							move(term_min_height-3,term_col/2-10);
+							clrtoeol();
+							refresh();
 							break;
 						case Device_info:
 							mvwprintw(arg->info_win,1,1,"Device_info:");

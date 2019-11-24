@@ -45,6 +45,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 struct pSDAQ_memory_space
 {
 	unsigned short noise;
+	unsigned short nosensor;
 	unsigned char status;
 	unsigned char address;
 	unsigned char number_of_channels;
@@ -356,9 +357,11 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 					{
 						noise = arg.pSDAQ_mem->noise & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
-						p_measure(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
+						p_measure(socket_num, arg.pSDAQ_mem->address, i+1, ((arg.pSDAQ_mem->nosensor)>>i)&1, arg.pSDAQ_mem->ch_cal_date[i].cal_units,
+																			 arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 						if(raw_meas_cnt >= 10)
-							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
+							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, (arg.pSDAQ_mem->nosensor>>i)&1,
+																					arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 					}
 				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 				if(raw_meas_cnt)
@@ -438,6 +441,8 @@ void print_usage(char *prog_name)
 int user_inp_dec(char **argv, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
 //function for execution of user's command input
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
+//SDAQ_psim shell help
+void shell_help();
 
 //Implementation of the user's Interface function
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
@@ -492,7 +497,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 				usr_in_buff[i] = '\0';
 				break;
 			case '?' :
-				//call help win func
+				shell_help();
 				break;
 			default :
 				if(isprint(key))
@@ -507,7 +512,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					else
 						i++;
 					printw("%c", key);
-				}else
+				}else if(key!=EOF)
 					printw("Control Key = %d\n][ ",key);
 				break;
 		}
@@ -528,26 +533,26 @@ int user_inp_dec(char **arg, char *usr_in_buff, unsigned int start_sn, unsigned 
 	return i;
 }
 
+int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
+{
+	char *buff_arr[2];
+	memset(exp_date_dec,0,sizeof(struct tm));
+	buff_arr[0] = strtok (buff, "/");
+	buff_arr[1] = strtok (NULL, "/");
+	if(buff_arr[0] && buff_arr[1])
+	{
+		if(atoi(buff_arr[0])<1900 || (atoi(buff_arr[1])>11 && atoi(buff_arr[1])))
+			return 0;
+		exp_date_dec->tm_year = atoi(buff_arr[0]) - 1900;
+		exp_date_dec->tm_mon = atoi(buff_arr[1]) - 1;
+	}
+	return 0;
+}
+
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	//const char *arg1[]={"addr","ch"};
-	/*
-	pthread_mutex_lock(&SDAQs_mem_access[0]);
-		pSDAQs_mem[0].noise.at.ch1=1;
-		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
-		pSDAQs_mem[0].ch_cal_date[0].date = time(NULL);
-		pSDAQs_mem[0].ch_cal_date[1].amount_of_points=3;
-		pSDAQs_mem[0].number_of_channels = 16;
-		pSDAQs_mem[0].data_cal_values[0][0][5] = 789.321;
-		pSDAQs_mem[0].data_cal_values[0][2][5] = 5151.321;
-		pSDAQs_mem[0].data_cal_values[1][0][5] = 5432.101;
-		pSDAQs_mem[0].data_cal_values[1][2][5] = 1234.321;
-		pSDAQs_mem[0].out_val[0]+=12.55;
-	pthread_mutex_unlock(&SDAQs_mem_access[0]);
-	*/
-
-	unsigned char arg_dec, arg1_dec;
-	char *channel_str, date_str[10];
+	unsigned char sn_dec, channel_dec;
+	char *channel_str, str_buff[30];
 	time_t date;
 	if(argv[0])
 	{
@@ -572,86 +577,170 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 			}
 			else
 			{
-				arg_dec = atoi(argv[1]);
-				if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+				sn_dec = atoi(argv[1]);
+				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
 				{
-					pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
-						printw("\n   SDAQ %010d: Addr=",arg_dec);
-						if(pSDAQs_mem[arg_dec - start_sn].address < Parking_address)
-							printw(" %2d",pSDAQs_mem[arg_dec - start_sn].address);
+					pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+						printw("\n   SDAQ %010d: Addr=",sn_dec);
+						if(pSDAQs_mem[sn_dec - start_sn].address < Parking_address)
+							printw("  %2d,",pSDAQs_mem[sn_dec - start_sn].address);
 						else
-							printw("Park");
-						printw(" %2d channels,",pSDAQs_mem[arg_dec - start_sn].number_of_channels);
-						printw(" %s,",pSDAQs_mem[arg_dec - start_sn].status&0x01?"Measuring":"Stand-By");
-						printw(" %sSync",pSDAQs_mem[arg_dec - start_sn].status&(1<<In_sync)?"in":"no");
-						for(int i=0;i<pSDAQs_mem[arg_dec - start_sn].number_of_channels;i++)
+							printw("Park,");
+						printw(" %2d channels,",pSDAQs_mem[sn_dec - start_sn].number_of_channels);
+						printw(" %s,",pSDAQs_mem[sn_dec - start_sn].status&0x01?"Measuring":"Stand-By");
+						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
+						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
 						{
-							date = pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].date;
-							strftime (date_str, sizeof(date_str),"%Y/%m",gmtime(&date));
-							printw("\n\tCH%02d: Expired @ %s, Calibrated with %d point, unit -> %s",i+1
-																		 ,date_str
-																		 ,pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].amount_of_points
-																		 ,unit_str[pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].cal_units]);
+							date = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].date;
+							strftime (str_buff, sizeof(str_buff),"%Y/%m",gmtime(&date));
+							printw("\n\tCH%02d: Expired @ %s, Calibrated with %d point, unit -> %s"
+									,i+1
+									,str_buff
+									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points
+									,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]);
 						}
-					pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 					return;
 				}
 			}
 		}
 		if(!strcmp(argv[0],"get"))
 		{
-
+			if(argv[1])
+			{
+				sn_dec = atoi(argv[1]);//serial number of pseudoSDAQ
+				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
+				{
+					pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+						printw("\n   SDAQ %010d: Addr =",sn_dec);
+						if(pSDAQs_mem[sn_dec - start_sn].address < Parking_address)
+							printw(" %2d,",pSDAQs_mem[sn_dec - start_sn].address);
+						else
+							printw(" Park,");
+						printw(" %2d channels,",pSDAQs_mem[sn_dec - start_sn].number_of_channels);
+						printw(" %s,",pSDAQs_mem[sn_dec - start_sn].status&0x01?"Measuring":"Stand-By");
+						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
+						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
+						{
+							printw("\n\tCH%02d: Out_val = %.3f %s%s%s"
+									  ,i+1
+									  ,pSDAQs_mem[sn_dec-start_sn].out_val[i]
+									  ,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]
+									  ,pSDAQs_mem[sn_dec-start_sn].noise & (1<<i) ? ", With Noise":""
+									  ,pSDAQs_mem[sn_dec-start_sn].nosensor & (1<<i) ? ", No sensor":"");
+						}
+					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+					return;
+				}
+			}
 		}
 		else if(!strcmp(argv[0],"set"))
 		{
 			if(argv[1])
 			{
-				arg_dec = atoi(argv[1]);//serial number of pseudoSDAQ
-				if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+				sn_dec = atoi(argv[1]);//serial number of pseudoSDAQ
+				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
 				{
 					if(!strcmp(argv[2],"addr"))
 					{
 						if(argv[3])
 						{
-							arg1_dec = atoi(argv[3]);//serial number of pseudoSDAQ
-							if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+							unsigned char addr_dec = atoi(argv[3]);//channel_dec of pseudoSDAQ
+							if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
 							{
-								pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
-									pSDAQs_mem[arg_dec-start_sn].address = arg1_dec;
-								pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+									pSDAQs_mem[sn_dec-start_sn].address = addr_dec;
+								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 								return;
 							}
 						}
 					}
 					else if((channel_str = strstr(argv[2],"ch")))
 					{
-						arg1_dec = atoi(channel_str+2);//channel number
-						if(arg1_dec >= 1 && arg1_dec <= 16 && argv[3])
+						channel_dec = atoi(channel_str+2);//channel number
+						if(channel_dec >= 1 && channel_dec <= pSDAQs_mem[sn_dec - start_sn].number_of_channels && argv[3])
 						{
-							pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
-								if(!strcmp(argv[3],"noise"))
-									pSDAQs_mem[arg_dec-start_sn].noise |= 1<<(arg1_dec-1);
+							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+								if(!strcmp(argv[3],"date"))
+								{
+									if(argv[4])//expiration date
+									{
+										if(!strcmp(argv[4],"now"))//if argument is "now"
+											pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = time(NULL);
+										else if(strcmp(argv[4],"-"))//if argument is not "-"
+										{
+											struct tm exp_date_dec;
+											if(!exp_date_dec_validator(&exp_date_dec,argv[4]))
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = mktime(&exp_date_dec);
+											else
+												printw("\n Argument of Date is invalid");
+										}
+									}
+									if(argv[5])//amount of points
+									{
+										if(strcmp(argv[5],"-"))
+										{
+											sprintf(str_buff,"%i",atoi(argv[5]));
+											if(strstr(str_buff,argv[5]) && atoi(argv[5])>= 0 && atoi(argv[5])<=16)
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[5]);
+											else
+												printw("\n Argument for amount of points is invalid");
+										}
+									}
+									if(argv[6])//Unit code
+									{
+										sprintf(str_buff,"%i",atoi(argv[6]));
+										if(strstr(str_buff,argv[6]))
+											pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units = atoi(argv[6]);
+										else
+											printw("\n Argument of units is not a number");
+									}
+								}
+								else if(!strcmp(argv[3],"noise"))
+									pSDAQs_mem[sn_dec-start_sn].noise |= 1<<(channel_dec-1);
 								else if(!strcmp(argv[3],"nonoise"))
-									pSDAQs_mem[arg_dec-start_sn].noise &= ~(1<<(arg1_dec-1));
+									pSDAQs_mem[sn_dec-start_sn].noise &= ~(1<<(channel_dec-1));
+								else if(!strcmp(argv[3],"sensor"))
+									pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+								else if(!strcmp(argv[3],"nosensor"))
+									pSDAQs_mem[sn_dec-start_sn].nosensor |= 1<<(channel_dec-1);
 								else
-									pSDAQs_mem[arg_dec-start_sn].out_val[arg1_dec-1] = atof(argv[3]);
-							pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+								{	//check if the argument is number
+									sprintf(str_buff,"%f",atof(argv[3]));
+									if(strstr(str_buff,argv[3]))
+									{
+										pSDAQs_mem[sn_dec-start_sn].out_val[channel_dec-1] = atof(argv[3]);
+										pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+									}
+									else
+										printw("\nError: out_value argument is not a number");
+								}
+							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 							return;
 						}
 					}
 					else if(!strcmp(argv[2],"all"))
 					{
-						pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+						pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 							if(!strcmp(argv[3],"noise"))
-								pSDAQs_mem[arg_dec-start_sn].noise = -1;
+								pSDAQs_mem[sn_dec-start_sn].noise = -1;
 							else if(!strcmp(argv[3],"nonoise"))
-								pSDAQs_mem[arg_dec-start_sn].noise = 0;
+								pSDAQs_mem[sn_dec-start_sn].noise = 0;
+							else if(!strcmp(argv[3],"nosensor"))
+								pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
 							else
-							{
-								for(int i=0;i<pSDAQs_mem[arg_dec-start_sn].number_of_channels;i++)
-									pSDAQs_mem[arg_dec-start_sn].out_val[i] = atof(argv[3]);
+							{	//check if the argument is number
+								sprintf(str_buff,"%f",atof(argv[3]));
+								if(strstr(str_buff,argv[3]))
+								{
+									pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
+									for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+										pSDAQs_mem[sn_dec-start_sn].out_val[i] = atof(argv[3]);
+								}
+								else
+									printw("\nError: out_value argument is not a number");
 							}
-						pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+						pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 						return;
 					}
 					else if(!strcmp(argv[2],"amount"))// amount of channels
@@ -660,9 +749,9 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						{
 							if(atoi(argv[3])>0 && atoi(argv[3])<=16)
 							{
-								pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
-									pSDAQs_mem[arg_dec-start_sn].number_of_channels = atoi(argv[3]);
-								pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+									pSDAQs_mem[sn_dec-start_sn].number_of_channels = atoi(argv[3]);
+								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 								return;
 							}
 						}
@@ -672,5 +761,12 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 		}
 	}
 	printw("\n????");
+}
+//SDAQ_psim shell help
+void shell_help()
+{
+
+	printw("\nEnter to help\n][ ");
+
 }
 

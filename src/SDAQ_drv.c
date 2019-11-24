@@ -305,7 +305,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	return 0;
 }
 
-int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp)
+int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, unsigned char unit, float value, unsigned short timestamp)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_meas *p_sdaq_meas;
@@ -322,7 +322,7 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, u
 	frame_tx.can_dlc = sizeof(sdaq_meas);//Payload size
 	p_sdaq_meas = (sdaq_meas*) (frame_tx.data);
 	p_sdaq_meas -> meas = value;
-	p_sdaq_meas -> unit = 0;
+	p_sdaq_meas -> unit = unit;
 	p_sdaq_meas -> status = state;
 	p_sdaq_meas -> timestamp = timestamp;
 	usleep(1000);//hack to prevent message lost in case that the CAN-IF is real.
