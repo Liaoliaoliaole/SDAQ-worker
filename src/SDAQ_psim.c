@@ -21,13 +21,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
-#include <sys/types.h>
+#include <ctype.h>
 #include <unistd.h>
 #include <signal.h>
-#include <sys/select.h>
 #include <pthread.h>
 #include <ncurses.h>
+#include <sys/select.h>
+#include <sys/time.h>
+#include <sys/types.h>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
@@ -43,27 +44,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //struct definition of memory space of a pseudo_SDAQ
 struct pSDAQ_memory_space
 {
-	union{
-		struct{
-			unsigned ch1  : 1;
-			unsigned ch2  : 1;
-			unsigned ch3  : 1;
-			unsigned ch4  : 1;
-			unsigned ch5  : 1;
-			unsigned ch6  : 1;
-			unsigned ch7  : 1;
-			unsigned ch8  : 1;
-			unsigned ch9  : 1;
-			unsigned ch10 : 1;
-			unsigned ch11 : 1;
-			unsigned ch12 : 1;
-			unsigned ch13 : 1;
-			unsigned ch14 : 1;
-			unsigned ch15 : 1;
-			unsigned ch16 : 1;
-		}at;
-		unsigned short as_short;
-	}noise;
+	unsigned short noise;
 	unsigned char status;
 	unsigned char address;
 	unsigned char number_of_channels;
@@ -81,18 +62,20 @@ struct thread_arguments_passer
 {
 	char *can_if_name;
 	unsigned int serial_number;
+	unsigned int start_sn;
 	struct pSDAQ_memory_space *pSDAQ_mem;
 };
 
 //application functions
 void print_usage(char *prog_name);
-void user_interface(unsigned int start_sn, unsigned int num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
+void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
 short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time);
 void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
 int main(int argc, char *argv[])
 {
-	unsigned int num_of_pSDAQ, start_sn;
+	unsigned int start_sn;
+	unsigned char num_of_pSDAQ;
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id;
 	struct thread_arguments_passer thread_arg;
@@ -118,7 +101,7 @@ int main(int argc, char *argv[])
 	start_sn = start_sn ? start_sn : 1;
 	//Allocation of memory
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
-	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQ units memory space;
+	pSDAQs_mem = malloc(sizeof(struct pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQs
 	SDAQs_mem_access = malloc(sizeof(pthread_mutex_t)*num_of_pSDAQ);
 	//Call and start threads
 	for(int i=0;i<num_of_pSDAQ;i++)
@@ -127,6 +110,7 @@ int main(int argc, char *argv[])
 		pthread_mutex_init(&SDAQs_mem_access[i], NULL);
 		pthread_mutex_lock(&thread_make_lock);
 		thread_arg.serial_number = i+start_sn;
+		thread_arg.start_sn = start_sn;
 		memset(&(pSDAQs_mem[i]), 0, sizeof(struct pSDAQ_memory_space));
 		pSDAQs_mem[i].address = Parking_address;
 		pSDAQs_mem[i].number_of_channels = 16;
@@ -223,9 +207,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		exit(1);
 	}
 	//Send status and info on start
-	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
+	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 		p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
+	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 	while(SDAQ_psim_run)
 	{
 		// Get time
@@ -248,7 +232,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
-				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
+				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 					if(id_dec->device_addr==arg.pSDAQ_mem->address||id_dec->device_addr==Broadcast)
 					{
 						switch(id_dec->payload_type)
@@ -361,22 +345,22 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								break;
 						}
 					}
-				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
+				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 			}
 		}
 		else //select expired from Timeout
 		{
 			if(arg.pSDAQ_mem->status & 0x01)//check run bit of status byte
 			{
-				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
+				pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 					{
-						noise = arg.pSDAQ_mem->noise.as_short & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
+						noise = arg.pSDAQ_mem->noise & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
 						p_measure(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 						if(raw_meas_cnt >= 10)
 							p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, 0, arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 					}
-				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
+				pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 				if(raw_meas_cnt)
 				{
 					raw_meas_cnt++;
@@ -391,9 +375,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
 			else
 				sync_status_cnt--;
-			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-1]);
+			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 				p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-1]);
+			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 			status_send_cnt = Stat_ID_Interval;
 		}
 		else
@@ -418,7 +402,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	}
 	close(socket_num);
 	active_threads--;
-	//printf("Thread of pseudoSDAQ with S/N:%2d Exit...\n",arg.serial_number);
+	printf("Thread of pseudoSDAQ with S/N:%2d Exit...\n",arg.serial_number);
 	return NULL;
 }
 
@@ -447,13 +431,107 @@ void print_usage(char *prog_name)
 	return;
 }
 
+#define user_inp_buf_size 50
+#define max_amount_of_user_arg 10
+
+//function for decode user input
+int user_inp_dec(char **argv, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
+//function for execution of user's command input
+void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
 
 //Implementation of the user's Interface function
-void user_interface(unsigned int start_sn, unsigned int num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
+void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int j=0;
-	char key, users_input[100];
+	unsigned int i=0, key, argc;
+	char usr_in_buff[user_inp_buf_size] = {'\0'};
+	char *argv[max_amount_of_user_arg] = {NULL};
 
+	initscr(); // start the ncurses mode
+	noecho();//disable echo
+	raw();//getch without return
+	keypad(stdscr, TRUE);
+	scrollok(stdscr, TRUE);
+	printw("press '?' for help.\n");
+	printw("][ ");
+	while(SDAQ_psim_run)
+	{
+		key = getch();// get the user's entrance
+		switch(key)
+		{
+			case 17 ://ctrl + q
+				SDAQ_psim_run = 0;
+				break;
+			case 12 : //ctrl + l
+				clear();
+				printw("][ %s",usr_in_buff);
+				break;
+			case KEY_BACKSPACE :
+				if(getcurx(stdscr) > 3)
+				{
+					move(getcury(stdscr),getcurx(stdscr)-1);
+					delch();
+					if(i)
+					{
+						i--;
+						usr_in_buff[i] = '\0';
+					}
+				}
+				break;
+			case 3 ://ctrl + c
+				move(getcury(stdscr),3);
+				clrtoeol();
+				i=0;
+				break;
+			case '\r' :
+			case '\n' ://return or enter : Command decode and execution
+				usr_in_buff[i] = '\0';
+				argc = user_inp_dec(argv, usr_in_buff, start_sn, num_of_pSDAQ, pSDAQs_mem);
+				user_com(argc, argv, start_sn, num_of_pSDAQ, pSDAQs_mem);
+				printw("\n][ ");
+				i = 0;
+				usr_in_buff[i] = '\0';
+				break;
+			case '?' :
+				//call help win func
+				break;
+			default :
+				if(isprint(key))
+				{
+					usr_in_buff[i] = key;
+					if(i>=user_inp_buf_size-1)
+					{	//shift usr_in_buff
+						for(int j=1;j<user_inp_buf_size;j++)
+							usr_in_buff[j-1] = usr_in_buff[j];
+						i = user_inp_buf_size-1;
+					}
+					else
+						i++;
+					printw("%c", key);
+				}else
+					printw("Control Key = %d\n][ ",key);
+				break;
+		}
+	}
+	endwin();
+	return;
+}
+
+int user_inp_dec(char **arg, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
+{
+	unsigned char i=0;
+	arg[i] = strtok (usr_in_buff," ");
+	while (arg[i] != NULL)
+	{
+		i++;
+		arg[i] = strtok (NULL, " ");
+	}
+	return i;
+}
+
+void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
+{
+	//const char *arg1[]={"addr","ch"};
+	/*
 	pthread_mutex_lock(&SDAQs_mem_access[0]);
 		pSDAQs_mem[0].noise.at.ch1=1;
 		pSDAQs_mem[0].ch_cal_date[0].amount_of_points=8;
@@ -466,40 +544,133 @@ void user_interface(unsigned int start_sn, unsigned int num_of_pSDAQ, struct pSD
 		pSDAQs_mem[0].data_cal_values[1][2][5] = 1234.321;
 		pSDAQs_mem[0].out_val[0]+=12.55;
 	pthread_mutex_unlock(&SDAQs_mem_access[0]);
+	*/
 
-	initscr(); // start the ncurses mode
-	raw();//getch without return
-	keypad(stdscr, TRUE);
-	scrollok(stdscr, TRUE);
-	printw("][ ");
-	while(SDAQ_psim_run)
+	unsigned char arg_dec, arg1_dec;
+	char *channel_str, date_str[10];
+	time_t date;
+	if(argv[0])
 	{
-		key = getch();// get the user's entrance
-		switch(key)
+		if(!strcmp(argv[0],"status"))
 		{
-			case 3 :
-				SDAQ_psim_run = 0;
-				break;
-			case '\b':
-				if(j)
+			if(!argv[1])
+			{
+				for(int i=0; i<num_of_pSDAQ; i++)
 				{
-					j--;
+					pthread_mutex_lock(&SDAQs_mem_access[i]);
+						printw("\n   SDAQ %010d: Addr =",i+start_sn);
+						if(pSDAQs_mem[i].address < Parking_address)
+							printw(" %2d,",pSDAQs_mem[i].address);
+						else
+							printw(" Park,");
+						printw(" %2d channels,",pSDAQs_mem[i].number_of_channels);
+						printw(" %s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
+						printw(" %sSync",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+					pthread_mutex_unlock(&SDAQs_mem_access[i]);
 				}
-				break;
-			case '\n' :
-				users_input[j] = '\0';
-				printw("User input:%s\n][ ",users_input);
-				j = 0;
-				break;
-			default :
-				users_input[j] = key;
-				j++;
-				break;
+				return;
+			}
+			else
+			{
+				arg_dec = atoi(argv[1]);
+				if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+				{
+					pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+						printw("\n   SDAQ %010d: Addr=",arg_dec);
+						if(pSDAQs_mem[arg_dec - start_sn].address < Parking_address)
+							printw(" %2d",pSDAQs_mem[arg_dec - start_sn].address);
+						else
+							printw("Park");
+						printw(" %2d channels,",pSDAQs_mem[arg_dec - start_sn].number_of_channels);
+						printw(" %s,",pSDAQs_mem[arg_dec - start_sn].status&0x01?"Measuring":"Stand-By");
+						printw(" %sSync",pSDAQs_mem[arg_dec - start_sn].status&(1<<In_sync)?"in":"no");
+						for(int i=0;i<pSDAQs_mem[arg_dec - start_sn].number_of_channels;i++)
+						{
+							date = pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].date;
+							strftime (date_str, sizeof(date_str),"%Y/%m",gmtime(&date));
+							printw("\n\tCH%02d: Expired @ %s, Calibrated with %d point, unit -> %s",i+1
+																		 ,date_str
+																		 ,pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].amount_of_points
+																		 ,unit_str[pSDAQs_mem[arg_dec-start_sn].ch_cal_date[i].cal_units]);
+						}
+					pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+					return;
+				}
+			}
 		}
-		//printf("active threads %d\n",active_threads);
-	}
-	endwin();
-	return;
-}
+		if(!strcmp(argv[0],"get"))
+		{
 
+		}
+		else if(!strcmp(argv[0],"set"))
+		{
+			if(argv[1])
+			{
+				arg_dec = atoi(argv[1]);//serial number of pseudoSDAQ
+				if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+				{
+					if(!strcmp(argv[2],"addr"))
+					{
+						if(argv[3])
+						{
+							arg1_dec = atoi(argv[3]);//serial number of pseudoSDAQ
+							if(arg_dec >= start_sn && arg_dec <= start_sn + num_of_pSDAQ-1)
+							{
+								pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+									pSDAQs_mem[arg_dec-start_sn].address = arg1_dec;
+								pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+								return;
+							}
+						}
+					}
+					else if((channel_str = strstr(argv[2],"ch")))
+					{
+						arg1_dec = atoi(channel_str+2);//channel number
+						if(arg1_dec >= 1 && arg1_dec <= 16 && argv[3])
+						{
+							pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+								if(!strcmp(argv[3],"noise"))
+									pSDAQs_mem[arg_dec-start_sn].noise |= 1<<(arg1_dec-1);
+								else if(!strcmp(argv[3],"nonoise"))
+									pSDAQs_mem[arg_dec-start_sn].noise &= ~(1<<(arg1_dec-1));
+								else
+									pSDAQs_mem[arg_dec-start_sn].out_val[arg1_dec-1] = atof(argv[3]);
+							pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+							return;
+						}
+					}
+					else if(!strcmp(argv[2],"all"))
+					{
+						pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+							if(!strcmp(argv[3],"noise"))
+								pSDAQs_mem[arg_dec-start_sn].noise = -1;
+							else if(!strcmp(argv[3],"nonoise"))
+								pSDAQs_mem[arg_dec-start_sn].noise = 0;
+							else
+							{
+								for(int i=0;i<pSDAQs_mem[arg_dec-start_sn].number_of_channels;i++)
+									pSDAQs_mem[arg_dec-start_sn].out_val[i] = atof(argv[3]);
+							}
+						pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+						return;
+					}
+					else if(!strcmp(argv[2],"amount"))// amount of channels
+					{
+						if(argv[3])
+						{
+							if(atoi(argv[3])>0 && atoi(argv[3])<=16)
+							{
+								pthread_mutex_lock(&SDAQs_mem_access[arg_dec - start_sn]);
+									pSDAQs_mem[arg_dec-start_sn].number_of_channels = atoi(argv[3]);
+								pthread_mutex_unlock(&SDAQs_mem_access[arg_dec - start_sn]);
+								return;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	printw("\n????");
+}
 
