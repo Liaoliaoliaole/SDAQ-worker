@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
 	if(term_init_size.ws_col<110 || term_init_size.ws_row<33)
-		printf("Terminal need to be at least 110X33 Characters\n");
+		printf("Terminal need to be at least 110X33 Characters to run shell\n The SDAQ_psim forced to run head-less\n");
 	else
 		user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
 
