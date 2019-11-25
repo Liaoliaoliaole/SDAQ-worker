@@ -605,15 +605,6 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 						cur_pos++;
 						move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					}
-					/*
-					else
-					{
-						printw("\nBuffer Overflow\n");
-						//shift usr_in_buff
-						for(int j=1;j<user_inp_buf_size;j++)
-							usr_in_buff[j-1] = usr_in_buff[j];
-						i = user_inp_buf_size-1;
-					}*/
 				}
 				//else
 					//printw("\ncontrol key = %d\n",key);
