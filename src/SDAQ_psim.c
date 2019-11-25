@@ -658,7 +658,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						if(argv[3])
 						{
 							unsigned char addr_dec = atoi(argv[3]);//channel_dec of pseudoSDAQ
-							if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
+							if(addr_dec && addr_dec < Parking_address)
 							{
 								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 									pSDAQs_mem[sn_dec-start_sn].address = addr_dec;
