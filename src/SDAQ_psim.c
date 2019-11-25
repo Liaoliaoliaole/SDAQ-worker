@@ -447,7 +447,7 @@ void shell_help();
 //Implementation of the user's Interface function
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int i=0, j=0, key, argc;
+	unsigned int end_index=0, cur_pos=0, key, argc;
 	char usr_in_buff[user_inp_buf_size] = {'\0'};
 	char *argv[max_amount_of_user_arg] = {NULL};
 
@@ -469,75 +469,107 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 			case 12 : //ctrl + l
 				clear();
 				printw("][ %s",usr_in_buff);
-				break;
-			case KEY_BACKSPACE :
-				if(getcurx(stdscr) > 3)
-				{
-					move(getcury(stdscr),getcurx(stdscr)-1);
-					delch();
-					if(i)
-					{
-						i--;
-						j--;
-						usr_in_buff[i] = '\0';
-					}
-				}
+				cur_pos = end_index;
 				break;
 			case KEY_UP:
-				printw("key_up\n][ ");
-				break;
-			case KEY_DOWN:
-				printw("key_down\n][ ");
-				break;
-			case KEY_LEFT:
-				printw("key_left\n][ ");
-				break;
-			case KEY_RIGHT:
-				printw("key_right\n][ ");
-				break;
-			case 3 ://ctrl + c
 				move(getcury(stdscr),3);
 				clrtoeol();
-				i = 0;
-				j = 0;
-				usr_in_buff[0] = '\0';
+				printw("%s",usr_in_buff);
+				cur_pos = end_index;
+				break;
+			case KEY_DOWN:
+				move(getcury(stdscr),3);
+				clrtoeol();
+				printw("%s",usr_in_buff);
+				cur_pos = end_index;
+				break;
+			case KEY_LEFT:
+				if(cur_pos)
+				{
+					move(getcury(stdscr),getcurx(stdscr)-1);
+					cur_pos--;
+				}
+				break;
+			case KEY_RIGHT:
+				if(cur_pos<end_index)
+				{
+					move(getcury(stdscr),getcurx(stdscr)+1);
+					cur_pos++;
+				}
+				break;
+			case KEY_BACKSPACE :
+				if(cur_pos)
+				{   
+					for(int i=cur_pos-1;i<=end_index;i++)
+						usr_in_buff[i] = usr_in_buff[i+1];
+					move(getcury(stdscr),getcurx(stdscr)-1);//move cursor one left 
+					clrtoeol(); //clear from buffer to the end of line 
+					end_index--;
+					cur_pos--;
+					usr_in_buff[end_index] = '\0';
+					printw("%s", usr_in_buff + cur_pos);
+					move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
+				}
+				break;
+			case KEY_DC ://Delete key
+				if(cur_pos<end_index)
+				{
+					for(int i=cur_pos;i<=end_index;i++)
+						usr_in_buff[i] = usr_in_buff[i+1];
+					end_index--;
+					clrtoeol();
+					printw("%s", usr_in_buff + cur_pos);
+					move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
+					usr_in_buff[end_index] = '\0';
+				}			
+				break;
+			case 3 ://ctrl + c clear buffer
+				move(getcury(stdscr),3);
+				clrtoeol();
+				end_index = 0;
+				cur_pos = 0;
+				for(int i=0;i<user_inp_buf_size;i++)
+					usr_in_buff[i] = '\0';
 				break;
 			case '\r' :
 			case '\n' ://return or enter : Command decode and execution
-				usr_in_buff[i] = '\0';
+				usr_in_buff[end_index] = '\0';
 				argc = user_inp_dec(argv, usr_in_buff, start_sn, num_of_pSDAQ, pSDAQs_mem);
 				user_com(argc, argv, start_sn, num_of_pSDAQ, pSDAQs_mem);
 				printw("\n][ ");
-				i = 0;
-				j = 0;
-				usr_in_buff[i] = '\0';
+				end_index = 0;
+				cur_pos = 0;
+				for(int i=0;i<user_inp_buf_size;i++)
+					usr_in_buff[i] = '\0';
 				break;
-			case '?' :
+			case '?' : //user request for help
 				shell_help();
 				break;
-			default :
+			default : //normal key press
 				if(isprint(key))
 				{
-					if(i<=user_inp_buf_size-1)
-					{
-						printw("%c", key);
-						usr_in_buff[i] = key;
-						i++;
-						j++;
+					if(end_index<user_inp_buf_size-1)
+					{	//check if cursor has moved from the user 
+						if(cur_pos<end_index)
+						{	//roll right side of the buffer by one postition  
+							for(int i=end_index; i>=cur_pos && i>=0; i--)
+								usr_in_buff[i+1] = usr_in_buff[i];
+						}
+						usr_in_buff[cur_pos] = key; // add new pressed key to the buffer
+						end_index++; 
+						printw("%s", usr_in_buff+cur_pos);
+						cur_pos++;
+						move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					}
-					/*
 					else
 					{
-						//shift usr_in_buff
+						printw("\nBuffer Overflow\n");
+						/*//shift usr_in_buff
 						for(int j=1;j<user_inp_buf_size;j++)
 							usr_in_buff[j-1] = usr_in_buff[j];
-						i = user_inp_buf_size-1;
+						i = user_inp_buf_size-1;*/
 					}
-					*/
-				}/*
-				else if(key!=EOF)
-					printw("Control Key = %d\n][ ",key);
-				*/
+				}
 				break;
 		}
 	}
@@ -665,7 +697,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				sn_dec = atoi(argv[1]);//serial number of pseudoSDAQ
 				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
 				{
-					if(!strcmp(argv[2],"addr"))
+					if(strstr(argv[2],"addr"))
 					{
 						if(argv[3])
 						{
@@ -673,6 +705,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 							{
 								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 									pSDAQs_mem[sn_dec-start_sn].address = Parking_address;
+									pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measure in address change
 								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 								return;
 							}
