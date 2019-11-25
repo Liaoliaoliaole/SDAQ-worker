@@ -434,8 +434,8 @@ void print_usage(char *prog_name)
 	return;
 }
 
-#define user_inp_buf_size 50
-#define max_amount_of_user_arg 10
+#define user_inp_buf_size 80
+#define max_amount_of_user_arg 20
 
 //function for decode user input
 int user_inp_dec(char **argv, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
@@ -447,7 +447,7 @@ void shell_help();
 //Implementation of the user's Interface function
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int i=0, key, argc;
+	unsigned int i=0, j=0, key, argc;
 	char usr_in_buff[user_inp_buf_size] = {'\0'};
 	char *argv[max_amount_of_user_arg] = {NULL};
 
@@ -478,6 +478,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					if(i)
 					{
 						i--;
+						j--;
 						usr_in_buff[i] = '\0';
 					}
 				}
@@ -497,7 +498,9 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 			case 3 ://ctrl + c
 				move(getcury(stdscr),3);
 				clrtoeol();
-				i=0;
+				i = 0;
+				j = 0;
+				usr_in_buff[0] = '\0';
 				break;
 			case '\r' :
 			case '\n' ://return or enter : Command decode and execution
@@ -506,6 +509,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 				user_com(argc, argv, start_sn, num_of_pSDAQ, pSDAQs_mem);
 				printw("\n][ ");
 				i = 0;
+				j = 0;
 				usr_in_buff[i] = '\0';
 				break;
 			case '?' :
@@ -514,18 +518,26 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 			default :
 				if(isprint(key))
 				{
-					usr_in_buff[i] = key;
-					if(i>=user_inp_buf_size-1)
-					{	//shift usr_in_buff
+					if(i<=user_inp_buf_size-1)
+					{
+						printw("%c", key);
+						usr_in_buff[i] = key;
+						i++;
+						j++;
+					}
+					/*
+					else
+					{
+						//shift usr_in_buff
 						for(int j=1;j<user_inp_buf_size;j++)
 							usr_in_buff[j-1] = usr_in_buff[j];
 						i = user_inp_buf_size-1;
 					}
-					else
-						i++;
-					printw("%c", key);
-				}else if(key!=EOF)
+					*/
+				}/*
+				else if(key!=EOF)
 					printw("Control Key = %d\n][ ",key);
+				*/
 				break;
 		}
 	}
@@ -657,13 +669,23 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 					{
 						if(argv[3])
 						{
-							unsigned char addr_dec = atoi(argv[3]);//channel_dec of pseudoSDAQ
-							if(addr_dec && addr_dec < Parking_address)
+							if(strstr(argv[3],"park"))
 							{
 								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-									pSDAQs_mem[sn_dec-start_sn].address = addr_dec;
+									pSDAQs_mem[sn_dec-start_sn].address = Parking_address;
 								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 								return;
+							}
+							else
+							{
+								unsigned char addr_dec = atoi(argv[3]);//channel_dec of pseudoSDAQ
+								if(addr_dec && addr_dec < Parking_address)
+								{
+									pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+										pSDAQs_mem[sn_dec-start_sn].address = addr_dec;
+									pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+									return;
+								}
 							}
 						}
 					}
