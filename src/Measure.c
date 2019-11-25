@@ -74,7 +74,6 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	thread_arg.lock_kb_flag = 0;
 	if(usr_flag->resize)
 		printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
-	//Init Measurement mode with ncurses
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
 	if(term_init_size.ws_col<term_min_width || term_init_size.ws_row<term_min_height)
@@ -82,6 +81,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		printf("Terminal need to be at least %dX%d Characters\n",term_min_width,term_min_height);
 		return EXIT_SUCCESS;
 	}
+	//Init Measurement mode with ncurses
 	initscr(); // start the ncurses mode
 	raw();//getch without return
 	noecho();//disable echo

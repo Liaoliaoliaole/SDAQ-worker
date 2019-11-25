@@ -67,6 +67,12 @@ struct thread_arguments_passer
 	struct pSDAQ_memory_space *pSDAQ_mem;
 };
 
+void sigint_signal_handler(int signum)
+{
+	SDAQ_psim_run = 0;
+	return;
+}
+
 //application functions
 void print_usage(char *prog_name);
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
@@ -77,6 +83,7 @@ int main(int argc, char *argv[])
 {
 	unsigned int start_sn;
 	unsigned char num_of_pSDAQ;
+	struct winsize term_init_size;
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id;
 	struct thread_arguments_passer thread_arg;
@@ -97,6 +104,8 @@ int main(int argc, char *argv[])
 		printf("Amount of pseudo_SDAQ is invalid. Range 1..%d\n",Parking_address-1);
 		exit(1);
 	}
+	//Link signal SIGINT to quit_signal_handler
+	signal(SIGINT, sigint_signal_handler);
 	//Check if user have enter serial number start. If yes use it otherwise from 1
 	start_sn = !argv[3] ? 1 : atoi(argv[3]);
 	start_sn = start_sn ? start_sn : 1;
@@ -119,7 +128,12 @@ int main(int argc, char *argv[])
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
 	//Run user's interface (ncurses)
-	user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
+	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
+	//Check if the terminal have the minimum size for the application
+	if(term_init_size.ws_col<110 || term_init_size.ws_row<33)
+		printf("Terminal need to be at least 110X33 Characters\n");
+	else
+		user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
 
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
@@ -127,14 +141,13 @@ int main(int argc, char *argv[])
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
 	free(SDAQs_mem_access);
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 {
 	struct thread_arguments_passer arg;
 	memcpy(&arg, varg_pt, sizeof(arg));//copy *varg_pt to arg (struct thread_arguments_passer)
-	pthread_mutex_unlock(&thread_make_lock);//Unlock threading making
 
 	//Variables for Socket CAN
 	struct can_frame frame_rx;
@@ -211,6 +224,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 		p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
+	//Unlock threading making
+	pthread_mutex_unlock(&thread_make_lock);
 	while(SDAQ_psim_run)
 	{
 		// Get time
@@ -417,6 +432,30 @@ short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time)
 	return ret;
 }
 
+const char shell_help_str[]={
+	"\t\t\t      -----SDAQ_psim Shell-----\n"
+	"\n KEYS:\n"
+	"\tKEY_UP    = Buffer up\n"
+	"\tKEY_DOWN  = Buffer Down\n"
+	"\tKEY_LEFT  = Cursor move left by 1\n"
+	"\tKEY_RIGTH = Cursor move Right by 1\n"
+	"\tCtrl + C  = Clear current buffer\n"
+	"\tCtrl + L  = Clear screen\n"
+	"\tCtrl + Q  = Quit\n"
+	"\n COMMANDS:\n"
+	"\tstatus = Print a list of with status from all the pseudo-SDAQs\n"
+	"\tstatus [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ\n"
+	"\tget (pseudo-SDAQ S/N) = Get the current state of the pseudo-SDAQ\n"
+	"\tset (pseudo-SDAQ S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)\n"
+	"\tset (pseudo-SDAQ S/N) (ch# || all) nonoise = Remove noise from channel(s)\n"
+	"\tset (pseudo-SDAQ S/N) (ch# || all) sensor = Reset No sensor flag(s)\n"
+	"\tset (pseudo-SDAQ S/N) (ch# || all) nosensor = Set No sensor flag(s)\n"
+	"\tset (pseudo-SDAQ S/N) (ch# || all) value.num = Write value to Channel(s) output\n"
+	"\tset (pseudo-SDAQ S/N) addr (new_address_# || parking) = Set pseudo-SDAQ address\n"
+	"\tset (pseudo-SDAQ S/N) amount  = Set pseudo-SDAQ amount of channels. Range 1..16\n"
+};
+
+
 void print_usage(char *prog_name)
 {
 	const char preamp[] = {
@@ -430,7 +469,7 @@ void print_usage(char *prog_name)
 	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62\n\n"
 	"\tS/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)\n"
 	};
-	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num]\n\n%s\n", preamp, prog_name,exp);
+	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
 }
 
@@ -447,7 +486,7 @@ void shell_help();
 //Implementation of the user's Interface function
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int end_index=0, cur_pos=0, key, argc;
+	unsigned int end_index=0, cur_pos=0, key, argc, last_curx;
 	char usr_in_buff[user_inp_buf_size] = {'\0'};
 	char *argv[max_amount_of_user_arg] = {NULL};
 
@@ -499,11 +538,11 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 				break;
 			case KEY_BACKSPACE :
 				if(cur_pos)
-				{   
+				{
 					for(int i=cur_pos-1;i<=end_index;i++)
 						usr_in_buff[i] = usr_in_buff[i+1];
-					move(getcury(stdscr),getcurx(stdscr)-1);//move cursor one left 
-					clrtoeol(); //clear from buffer to the end of line 
+					move(getcury(stdscr),getcurx(stdscr)-1);//move cursor one left
+					clrtoeol(); //clear from buffer to the end of line
 					end_index--;
 					cur_pos--;
 					usr_in_buff[end_index] = '\0';
@@ -521,7 +560,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					printw("%s", usr_in_buff + cur_pos);
 					move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					usr_in_buff[end_index] = '\0';
-				}			
+				}
 				break;
 			case 3 ://ctrl + c clear buffer
 				move(getcury(stdscr),3);
@@ -543,33 +582,41 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					usr_in_buff[i] = '\0';
 				break;
 			case '?' : //user request for help
+				last_curx = getcurx(stdscr);
 				shell_help();
+				refresh();
+				clear();
+				printw("][ %s",usr_in_buff);
+				move(0,last_curx);
 				break;
 			default : //normal key press
 				if(isprint(key))
 				{
 					if(end_index<user_inp_buf_size-1)
-					{	//check if cursor has moved from the user 
+					{	//check if cursor has moved from the user
 						if(cur_pos<end_index)
-						{	//roll right side of the buffer by one postition  
+						{	//roll right side of the buffer by one postition
 							for(int i=end_index; i>=cur_pos && i>=0; i--)
 								usr_in_buff[i+1] = usr_in_buff[i];
 						}
 						usr_in_buff[cur_pos] = key; // add new pressed key to the buffer
-						end_index++; 
+						end_index++;
 						printw("%s", usr_in_buff+cur_pos);
 						cur_pos++;
 						move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					}
+					/*
 					else
 					{
 						printw("\nBuffer Overflow\n");
-						/*//shift usr_in_buff
+						//shift usr_in_buff
 						for(int j=1;j<user_inp_buf_size;j++)
 							usr_in_buff[j-1] = usr_in_buff[j];
-						i = user_inp_buf_size-1;*/
-					}
+						i = user_inp_buf_size-1;
+					}*/
 				}
+				//else
+					//printw("\ncontrol key = %d\n",key);
 				break;
 		}
 	}
@@ -827,13 +874,29 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 			}
 		}
 	}
-	printw("\n????");
+	printw("\n  ????");
 }
 //SDAQ_psim shell help
 void shell_help()
 {
-
-	printw("\nEnter to help\n][ ");
-
+	const int height = 28;
+	const int width = 90;
+	int starty = (LINES - height) / 2;	/* Calculating for a center placement */
+	int startx = (COLS - width) / 2;	/* of the window		*/
+	WINDOW *help_win = newwin(height, width, starty, startx);
+	keypad(help_win, TRUE);
+	curs_set(0);//hide cursor
+	//scrollok(help_win, TRUE);
+	do{
+		mvwprintw(help_win,1,1,"%s",shell_help_str);
+		wprintw(help_win,"\n\n\n  Press Ctrl+C to exit help");
+		box(help_win, 0 , 0);
+		wrefresh(help_win);
+	}while(getch()!=3);
+	wborder(help_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+	wclear(help_win);
+	wrefresh(help_win);
+	delwin(help_win);
+	curs_set(1);//hide cursor
 }
 
