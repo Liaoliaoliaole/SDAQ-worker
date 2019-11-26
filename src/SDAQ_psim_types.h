@@ -17,6 +17,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <pthread.h>
 #include "SDAQ_drv.h"
 
+//Run flag
+extern unsigned char SDAQ_psim_run;
+// Array of Mutex one for each pseudo SDAQ mem space, Used to block simultaneous access between UI and pseudo SDAQ thread
+extern pthread_mutex_t *SDAQs_mem_access;
+
 //struct definition of memory space of a pseudo_SDAQ
 typedef struct pSDAQ_memory_space_struct{
 	unsigned short noise;
@@ -29,6 +34,3 @@ typedef struct pSDAQ_memory_space_struct{
 	float data_cal_values[16][16][6];
 }pSDAQ_memory_space;
 
-
-extern unsigned char SDAQ_psim_run;
-extern pthread_mutex_t *SDAQs_mem_access;

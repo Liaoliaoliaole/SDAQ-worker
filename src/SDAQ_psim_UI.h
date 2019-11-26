@@ -15,7 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "SDAQ_psim_types.h"
-extern pthread_mutex_t *SDAQs_mem_access;
+//string with the usage of the shell
 extern const char shell_help_str[];
-extern unsigned char SDAQ_psim_run;
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);

@@ -25,9 +25,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
-#include <ncurses.h>
-#include <glib.h>
-#include <gmodule.h>
 
 #include <sys/select.h>
 #include <sys/time.h>
