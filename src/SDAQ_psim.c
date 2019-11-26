@@ -26,6 +26,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <pthread.h>
 #include <ncurses.h>
+#include <glib.h>
+#include <gmodule.h>
+
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -131,7 +134,7 @@ int main(int argc, char *argv[])
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
 	if(term_init_size.ws_col<110 || term_init_size.ws_row<33)
-		printf("Terminal need to be at least 110X33 Characters to run shell\n The SDAQ_psim forced to run head-less\n");
+		printf("Terminal need to be at least 110X33 Characters to run shell\n The SDAQ_psim forced to run Headless\n");
 	else
 		user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
 
@@ -475,6 +478,11 @@ void print_usage(char *prog_name)
 
 #define user_inp_buf_size 80
 #define max_amount_of_user_arg 20
+#define history_buff_length 10
+
+typedef struct{
+	char usr_in_buff[user_inp_buf_size];
+}history_buffer_entry;
 
 //function for decode user input
 int user_inp_dec(char **argv, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem);
@@ -483,12 +491,28 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 //SDAQ_psim shell help
 void shell_help();
 
+void print_hist_buffs(gpointer data,gpointer user_data)
+{
+	static int i = 0; 
+	history_buffer_entry *node_data = data;
+	printf("buffer %d -> %s\n",i++,node_data->usr_in_buff);
+}
+
+//slice free function for history_buffs_nodes
+void history_buff_free_node(gpointer node)
+{
+	g_slice_free(history_buffer_entry, node);
+}
+
 //Implementation of the user's Interface function
 void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int end_index=0, cur_pos=0, key, argc, last_curx;
-	char usr_in_buff[user_inp_buf_size] = {'\0'};
+	unsigned int end_index=0, cur_pos=0, key, argc, last_curx, history_buffs_index=0;
 	char *argv[max_amount_of_user_arg] = {NULL};
+	GQueue hist_buffs = G_QUEUE_INIT;
+	g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
+	gpointer nth_node = NULL;
+	char *usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
 
 	initscr(); // start the ncurses mode
 	noecho();//disable echo
@@ -511,16 +535,26 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 				cur_pos = end_index;
 				break;
 			case KEY_UP:
-				move(getcury(stdscr),3);
-				clrtoeol();
-				printw("%s",usr_in_buff);
-				cur_pos = end_index;
+				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index+1)))
+				{
+					usr_in_buff = ((history_buffer_entry *)nth_node)->usr_in_buff;
+					history_buffs_index++;
+					move(getcury(stdscr),3);
+					clrtoeol();
+					printw("%s",usr_in_buff);
+					cur_pos = end_index;
+				}
 				break;
 			case KEY_DOWN:
-				move(getcury(stdscr),3);
-				clrtoeol();
-				printw("%s",usr_in_buff);
-				cur_pos = end_index;
+				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index-1)))
+				{
+					usr_in_buff = ((history_buffer_entry *)nth_node)->usr_in_buff;
+					history_buffs_index--;
+					move(getcury(stdscr),3);
+					clrtoeol();
+					printw("%s",usr_in_buff);
+					cur_pos = end_index;
+				}
 				break;
 			case KEY_LEFT:
 				if(cur_pos)
@@ -586,8 +620,14 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 				printw("\n][ ");
 				end_index = 0;
 				cur_pos = 0;
+				g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
+				usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
+				if(g_queue_get_length(&hist_buffs)>history_buff_length)
+					history_buff_free_node(g_queue_pop_tail(&hist_buffs));
+				/*
 				for(int i=0;i<user_inp_buf_size;i++)
 					usr_in_buff[i] = '\0';
+				*/
 				break;
 			case '?' : //user request for help
 				last_curx = getcurx(stdscr);
@@ -620,6 +660,8 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 		}
 	}
 	endwin();
+	//g_queue_foreach(&hist_buffs, print_hist_buffs, NULL);
+	g_queue_free_full(&hist_buffs,history_buff_free_node);//free the allocated space of the history buffers
 	return;
 }
 
