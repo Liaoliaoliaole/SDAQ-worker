@@ -562,6 +562,14 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, struct pS
 					usr_in_buff[end_index] = '\0';
 				}
 				break;
+			case KEY_HOME ://Home key
+				cur_pos = 0;
+				move(getcury(stdscr),3);
+				break;
+			case KEY_END ://End key
+				cur_pos = end_index;
+				move(getcury(stdscr),3+end_index);
+				break;
 			case 3 ://ctrl + c clear buffer
 				move(getcury(stdscr),3);
 				clrtoeol();

@@ -82,6 +82,29 @@ Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
 	S/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)
 
+                             -----SDAQ_psim Shell-----
+
+ KEYS:
+        KEY_UP    = Buffer up
+        KEY_DOWN  = Buffer Down
+        KEY_LEFT  = Cursor move left by 1
+        KEY_RIGTH = Cursor move Right by 1
+        Ctrl + C  = Clear current buffer
+        Ctrl + L  = Clear screen
+        Ctrl + Q  = Quit
+
+ COMMANDS:
+        status = Print a list of with status from all the pseudo-SDAQs
+        status [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ
+        get (pseudo-SDAQ S/N) = Get the current state of the pseudo-SDAQ
+        set (pseudo-SDAQ S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)
+        set (pseudo-SDAQ S/N) (ch# || all) nonoise = Remove noise from channel(s)
+        set (pseudo-SDAQ S/N) (ch# || all) sensor = Reset No sensor flag(s)
+        set (pseudo-SDAQ S/N) (ch# || all) nosensor = Set No sensor flag(s)
+        set (pseudo-SDAQ S/N) (ch# || all) value.num = Write value to Channel(s) output
+        set (pseudo-SDAQ S/N) addr (new_address_# || parking) = Set pseudo-SDAQ address
+        set (pseudo-SDAQ S/N) amount  = Set pseudo-SDAQ amount of channels. Range 1..16
+
 ```
 
 ## Examples
@@ -120,7 +143,7 @@ $ SDAQ_worker vcan0 measure 1
 7. 'logging'
 
 #### TODO-list SDAQ_psim
-1. User Interface
+1. ~~User~~ Interface
 
 ## Authors
 * **Sam Harry Tzavaras** - *Initial work*
