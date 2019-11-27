@@ -526,16 +526,31 @@ void shell_help()
 	const int width = 90;
 	int starty = (LINES - height) / 2;	/* Calculating for a center placement */
 	int startx = (COLS - width) / 2;	/* of the window		*/
+	int key, scroll_lines=0;
 	WINDOW *help_win = newwin(height, width, starty, startx);
 	keypad(help_win, TRUE);
 	curs_set(0);//hide cursor
-	//scrollok(help_win, TRUE);
+	scrollok(help_win, TRUE);
+	mvwprintw(help_win,1,1,"%s",shell_help_str);
+	wprintw(help_win,"\n  Press Ctrl+C to exit help");
+	box(help_win, 0 , 0);
+	wrefresh(help_win);
 	do{
-		mvwprintw(help_win,1,1,"%s",shell_help_str);
-		wprintw(help_win,"\n  Press Ctrl+C to exit help");
-		box(help_win, 0 , 0);
-		wrefresh(help_win);
-	}while(getch()!=3);
+		key = getch();
+		switch(key)
+		{
+			case KEY_UP:
+				scroll_lines++;
+				wscrl(help_win, 1);
+				wrefresh(help_win);
+				break;
+			case KEY_DOWN:
+				scroll_lines--;
+				wscrl(help_win, -1);
+				wrefresh(help_win);
+				break;
+		}
+	}while(key!=3);
 	wborder(help_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
 	wclear(help_win);
 	wrefresh(help_win);
