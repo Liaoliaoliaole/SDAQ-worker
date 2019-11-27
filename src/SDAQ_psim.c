@@ -150,7 +150,6 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	sdaq_calibration_points_data point_enc, *point_dec = (sdaq_calibration_points_data*)frame_rx.data;
 	float noise;
 	unsigned char raw_meas_cnt=0, in_sync_cnt=0;
-	unsigned int status_send_cnt=Stat_ID_Interval;
 	unsigned int sync_status_cnt=0;
 	unsigned short pseudo_SDAQ_timestamp=0, ref_timestamp=0, loop_time_diff=0;
 	short loop_time_diff_acc = TIME_REF; //time_corrector, accumulator for the Time Loop Lock
@@ -206,9 +205,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		perror("Error in socket bind");
 		exit(1);
 	}
-	//Send status and info on start
+	//Send status and info on start and init status send counter
 	pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 		p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
+		arg.pSDAQ_mem->status_send_cnt=Stat_ID_Interval;
 	pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 	//Unlock threading making
 	pthread_mutex_unlock(&thread_make_lock);
@@ -372,7 +372,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				}
 			}
 		}
-		if(!status_send_cnt) //in every status_send_cnt zero a status message transmitted
+		if(!arg.pSDAQ_mem->status_send_cnt) //in every status_send_cnt zero a status message transmitted
 		{
 			if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
 			 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
@@ -381,10 +381,10 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 				p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
-			status_send_cnt = Stat_ID_Interval;
+			arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
 		}
 		else
-			status_send_cnt--;
+			arg.pSDAQ_mem->status_send_cnt--;
 
 		// get time and calc different
 		clock_gettime(CLOCK_MONOTONIC_RAW, &tend);

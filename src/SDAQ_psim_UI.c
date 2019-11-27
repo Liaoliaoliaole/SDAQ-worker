@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define user_inp_buf_size 80
 #define max_amount_of_user_arg 20
-#define history_buff_length 10
+#define history_buffs_length 10
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -84,6 +84,14 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 		key = getch();// get the user's entrance
 		switch(key)
 		{
+			case 3 ://ctrl + c clear buffer
+				move(getcury(stdscr),3);
+				clrtoeol();
+				end_index = 0;
+				cur_pos = 0;
+				for(int i=0;i<user_inp_buf_size;i++)
+					usr_in_buff[i] = '\0';
+				break;
 			case 17 ://ctrl + q
 				SDAQ_psim_run = 0;
 				break;
@@ -91,6 +99,14 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				clear();
 				printw("][ %s",usr_in_buff);
 				cur_pos = end_index;
+				break;
+			case '?' : //user request for help
+				last_curx = getcurx(stdscr);
+				shell_help();
+				refresh();
+				clear();
+				printw("][ %s",usr_in_buff);
+				move(0,last_curx);
 				break;
 			case KEY_UP:
 				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index+1)))
@@ -164,14 +180,6 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				cur_pos = end_index;
 				move(getcury(stdscr),3+end_index);
 				break;
-			case 3 ://ctrl + c clear buffer
-				move(getcury(stdscr),3);
-				clrtoeol();
-				end_index = 0;
-				cur_pos = 0;
-				for(int i=0;i<user_inp_buf_size;i++)
-					usr_in_buff[i] = '\0';
-				break;
 			case '\r' :
 			case '\n' ://return or enter : Command decode and execution
 				usr_in_buff[end_index] = '\0';
@@ -181,25 +189,19 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				printw("\n][ ");
 				end_index = 0;
 				cur_pos = 0;
-				if(*usr_in_buff && !history_buffs_index)//make new entry in the history queue only if the current usr_in_buff is not empty and not used
+				if(history_buffs_index)//check if last command was from past, and place it on the head
+				{
+					history_buff_free_node(g_queue_pop_head(&hist_buffs));//remove head, size of queue hist_buffs decrised by 1
+					g_queue_push_head(&hist_buffs, g_queue_pop_nth(&hist_buffs,history_buffs_index-1)); //replace head with selected buff
+				}
+				if(*usr_in_buff)//make new entry in the history queue only if the current usr_in_buff is not empty and not used
 				{
 					g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
 					usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
-					if(g_queue_get_length(&hist_buffs)>history_buff_length)
+					if(g_queue_get_length(&hist_buffs)>history_buffs_length)
 						history_buff_free_node(g_queue_pop_tail(&hist_buffs));
 				}
-				else
-					for(int i=0;i<user_inp_buf_size;i++)
-						usr_in_buff[i] = '\0';
 				history_buffs_index = 0;
-				break;
-			case '?' : //user request for help
-				last_curx = getcurx(stdscr);
-				shell_help();
-				refresh();
-				clear();
-				printw("][ %s",usr_in_buff);
-				move(0,last_curx);
 				break;
 			default : //normal key press
 				if(isprint(key))
@@ -207,7 +209,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 					if(end_index<user_inp_buf_size-1)
 					{	//check if cursor has moved from the user
 						if(cur_pos<end_index)
-						{	//roll right side of the buffer by one postition
+						{	//roll right side of the buffer by one position
 							for(int i=end_index; i>=cur_pos && i>=0; i--)
 								usr_in_buff[i+1] = usr_in_buff[i];
 						}
@@ -363,6 +365,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 										pSDAQs_mem[sn_dec-start_sn].address = Parking_address;
 										pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
+										pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;
 									pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 									return;
 								}
@@ -373,6 +376,8 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									{
 										pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 											pSDAQs_mem[sn_dec-start_sn].address = addr_dec;
+											pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
+											pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;
 										pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 										return;
 									}
@@ -404,7 +409,8 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										{
 											if(strcmp(argv[5],"-"))
 											{
-												sprintf(str_buff,"%i",atoi(argv[5]));
+
+												sprintf(str_buff,"%i",atoi(argv[5]));//verification
 												if(strstr(str_buff,argv[5]) && atoi(argv[5])>= 0 && atoi(argv[5])<=16)
 													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[5]);
 												else
