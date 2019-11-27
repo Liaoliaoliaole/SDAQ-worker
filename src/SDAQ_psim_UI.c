@@ -362,7 +362,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 								{
 									pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 										pSDAQs_mem[sn_dec-start_sn].address = Parking_address;
-										pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measure in address change
+										pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
 									pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 									return;
 								}
@@ -490,7 +490,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 
 const char shell_help_str[]={
 	"\t\t\t      -----SDAQ_psim Shell-----\n"
-	"\n KEYS:\n"
+	" KEYS:\n"
 	"\tKEY_UP    = Buffer up\n"
 	"\tKEY_DOWN  = Buffer Down\n"
 	"\tKEY_LEFT  = Cursor move left by 1\n"
@@ -501,14 +501,16 @@ const char shell_help_str[]={
 	"\n COMMANDS:\n"
 	"\tstatus = Print a list of with status from all the pseudo-SDAQs\n"
 	"\tstatus [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ\n"
-	"\tget (pseudo-SDAQ S/N) = Get the current state of the pseudo-SDAQ\n"
-	"\tset (pseudo-SDAQ S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)\n"
-	"\tset (pseudo-SDAQ S/N) (ch# || all) nonoise = Remove noise from channel(s)\n"
-	"\tset (pseudo-SDAQ S/N) (ch# || all) sensor = Reset No sensor flag(s)\n"
-	"\tset (pseudo-SDAQ S/N) (ch# || all) nosensor = Set No sensor flag(s)\n"
-	"\tset (pseudo-SDAQ S/N) (ch# || all) value.num = Write value to Channel(s) output\n"
-	"\tset (pseudo-SDAQ S/N) addr (new_address_# || parking) = Set pseudo-SDAQ address\n"
-	"\tset (pseudo-SDAQ S/N) amount  = Set pseudo-SDAQ amount of channels. Range 1..16\n"
+	"\tget (S/N) = Get the current state of the pseudo-SDAQ\n"
+	"\tset (S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)\n"
+	"\tset (S/N) (ch# || all) nonoise = Remove noise from channel(s)\n"
+	"\tset (S/N) (ch# || all) sensor = Reset No sensor flag(s)\n"
+	"\tset (S/N) (ch# || all) nosensor = Set No sensor flag(s)\n"
+	"\tset (S/N) (ch# || all) value.num = Write value to Channel(s) output\n"
+	"\tset (S/N) address (# || parking) = Set pseudo-SDAQ address\n"
+	"\tset (S/N) amount = Set pseudo-SDAQ amount of channels. Range 1..16\n"
+	"\tset (S/N) (ch#) date (\"-\" || YYYY/MM) (# || \"-\") (#) = Load Calibration data\n"
+	"\t\tArguments: Exp_date, Amount of point, Unit_code\n"
 };
 
 //SDAQ_psim shell help
@@ -524,7 +526,7 @@ void shell_help()
 	//scrollok(help_win, TRUE);
 	do{
 		mvwprintw(help_win,1,1,"%s",shell_help_str);
-		wprintw(help_win,"\n\n\n  Press Ctrl+C to exit help");
+		wprintw(help_win,"\n  Press Ctrl+C to exit help");
 		box(help_win, 0 , 0);
 		wrefresh(help_win);
 	}while(getch()!=3);
