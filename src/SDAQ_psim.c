@@ -229,7 +229,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			close(socket_num);
 			pthread_exit(NULL);
 		}
-		else if(retval)// Socket_num ready to read
+		else if(retval && !arg.pSDAQ_mem->disable)// Socket_num ready to read and PseudoSDAQ not disabled
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
@@ -372,20 +372,22 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				}
 			}
 		}
-		if(!arg.pSDAQ_mem->status_send_cnt) //in every status_send_cnt zero a status message transmitted
-		{
-			if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
-			 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
+		pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
+			if(!arg.pSDAQ_mem->status_send_cnt) //in every status_send_cnt zero a status message transmitted
+			{
+				if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
+				 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
+				else
+					sync_status_cnt--;
+				if(!arg.pSDAQ_mem->disable)
+				{
+					p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
+					arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
+				}
+			}
 			else
-				sync_status_cnt--;
-			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
-				p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
-			arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
-		}
-		else
-			arg.pSDAQ_mem->status_send_cnt--;
-
+				arg.pSDAQ_mem->status_send_cnt--;
+		pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 		// get time and calc different
 		clock_gettime(CLOCK_MONOTONIC_RAW, &tend);
 		loop_time_diff = (tend.tv_nsec - tstart.tv_nsec)/1000000;

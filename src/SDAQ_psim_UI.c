@@ -49,13 +49,14 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 //SDAQ_psim shell help
 void shell_help();
 
+/*
 void print_hist_buffs(gpointer data,gpointer user_data)
 {
 	static int i = 0;
 	history_buffer_entry *node_data = data;
 	printf("buffer %d -> %s\n",i++,node_data->usr_in_buff);
 }
-
+*/
 //slice free function for history_buffs_nodes
 void history_buff_free_node(gpointer node)
 {
@@ -226,7 +227,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 		}
 	}
 	endwin();
-	g_queue_foreach(&hist_buffs, print_hist_buffs, NULL);
+	//g_queue_foreach(&hist_buffs, print_hist_buffs, NULL);
 	g_queue_free_full(&hist_buffs,history_buff_free_node);//free the allocated space of the history buffers
 	return;
 }
@@ -276,14 +277,19 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				for(int i=0; i<num_of_pSDAQ; i++)
 				{
 					pthread_mutex_lock(&SDAQs_mem_access[i]);
-						printw("\n   SDAQ %010d: Addr =",i+start_sn);
-						if(pSDAQs_mem[i].address < Parking_address)
-							printw(" %2d,",pSDAQs_mem[i].address);
+						if(!pSDAQs_mem[i].disable)
+						{
+							printw("\n   SDAQ %010d: Addr =",i+start_sn);
+							if(pSDAQs_mem[i].address < Parking_address)
+								printw(" %2d,",pSDAQs_mem[i].address);
+							else
+								printw(" Park,");
+							printw(" %2d channels,",pSDAQs_mem[i].number_of_channels);
+							printw(" %s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
+							printw(" %sSync",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+						}
 						else
-							printw(" Park,");
-						printw(" %2d channels,",pSDAQs_mem[i].number_of_channels);
-						printw(" %s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
-						printw(" %sSync",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+							printw("\n   SDAQ %010d: Offline",i+start_sn);
 					pthread_mutex_unlock(&SDAQs_mem_access[i]);
 				}
 				return;
@@ -356,7 +362,23 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				{
 					if(argv[2])
 					{
-						if(strstr(argv[2],"addr"))
+						if(strstr(argv[2],"off"))// Disable PseudoSDAQ
+						{
+							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+								pSDAQs_mem[sn_dec-start_sn].disable = 1;
+							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+							printw("\n   SDAQ %010d: Offline",sn_dec);
+							return;
+						}
+						else if(strstr(argv[2],"on"))// Enable PseudoSDAQ
+						{
+							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+								pSDAQs_mem[sn_dec-start_sn].disable = 0;
+							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+							printw("\n   SDAQ %010d: online",sn_dec);
+							return;
+						}
+						else if(strstr(argv[2],"addr"))// Change address of PseudoSDAQ
 						{
 							if(argv[3])
 							{
@@ -384,7 +406,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 								}
 							}
 						}
-						else if((channel_str = strstr(argv[2],"ch")))
+						else if((channel_str = strstr(argv[2],"ch"))) // access specific PseudoSDAQ channel
 						{
 							channel_dec = atoi(channel_str+2);//channel number
 							if(channel_dec >= 1 && channel_dec <= pSDAQs_mem[sn_dec - start_sn].number_of_channels && argv[3])

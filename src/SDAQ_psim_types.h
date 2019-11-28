@@ -26,7 +26,8 @@ extern pthread_mutex_t *SDAQs_mem_access;
 typedef struct pSDAQ_memory_space_struct{
 	unsigned short noise;
 	unsigned short nosensor;
-	unsigned char status;
+	unsigned char status;// status byte of the pseudo_SDAQ
+	unsigned char disable;// flag that if is set disable an pseudo_SDAQ
 	unsigned int status_send_cnt;//counter, that when is 0 a device ID/ status message transmitted
 	unsigned char address;
 	unsigned char number_of_channels;
