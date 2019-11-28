@@ -530,11 +530,10 @@ const char shell_help_str[]={
 	"\tstatus = Print a list of with status from all the pseudo-SDAQs\n"
 	"\tstatus [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ\n"
 	"\tget (S/N) = Get the current state of the pseudo-SDAQ\n"
-	"\tset (S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)\n"
-	"\tset (S/N) (ch# || all) nonoise = Remove noise from channel(s)\n"
-	"\tset (S/N) (ch# || all) sensor = Reset No sensor flag(s)\n"
-	"\tset (S/N) (ch# || all) nosensor = Set No sensor flag(s)\n"
-	"\tset (S/N) (ch# || all) value.num = Write value to Channel(s) output\n"
+	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
+	"\tset (S/N) (ch# || all) [no]noise = Set or reset pseudo-random noise on channel(s)\n"
+	"\tset (S/N) (ch# || all) [no]sensor = Set or reset No sensor flag(s)\n"
+	"\tset (S/N) (ch# || all) float_val = Write value to Channel(s) output\n"
 	"\tset (S/N) address (# || parking) = Set pseudo-SDAQ address\n"
 	"\tset (S/N) amount = Set pseudo-SDAQ amount of channels. Range 1..16\n"
 	"\tset (S/N) (ch#) date (\"-\" || YYYY/MM) (# || \"-\") (#) = Load Calibration data\n"
@@ -563,12 +562,12 @@ void shell_help()
 		{
 			case KEY_UP:
 				scroll_lines++;
-				wscrl(help_win, 1);
+				//wscrl(help_win, 1);
 				wrefresh(help_win);
 				break;
 			case KEY_DOWN:
 				scroll_lines--;
-				wscrl(help_win, -1);
+				//wscrl(help_win, -1);
 				wrefresh(help_win);
 				break;
 		}

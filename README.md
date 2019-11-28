@@ -82,28 +82,28 @@ Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
 	S/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)
 
-                             -----SDAQ_psim Shell-----
-
+			      -----SDAQ_psim Shell-----
  KEYS:
-        KEY_UP    = Buffer up
-        KEY_DOWN  = Buffer Down
-        KEY_LEFT  = Cursor move left by 1
-        KEY_RIGTH = Cursor move Right by 1
-        Ctrl + C  = Clear current buffer
-        Ctrl + L  = Clear screen
-        Ctrl + Q  = Quit
+	KEY_UP    = Buffer up
+	KEY_DOWN  = Buffer Down
+	KEY_LEFT  = Cursor move left by 1
+	KEY_RIGTH = Cursor move Right by 1
+	Ctrl + C  = Clear current buffer
+	Ctrl + L  = Clear screen
+	Ctrl + Q  = Quit
 
  COMMANDS:
-        status = Print a list of with status from all the pseudo-SDAQs
-        status [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ
-        get (pseudo-SDAQ S/N) = Get the current state of the pseudo-SDAQ
-        set (pseudo-SDAQ S/N) (ch# || all) noise = Set pseudo-random noise on channel(s)
-        set (pseudo-SDAQ S/N) (ch# || all) nonoise = Remove noise from channel(s)
-        set (pseudo-SDAQ S/N) (ch# || all) sensor = Reset No sensor flag(s)
-        set (pseudo-SDAQ S/N) (ch# || all) nosensor = Set No sensor flag(s)
-        set (pseudo-SDAQ S/N) (ch# || all) value.num = Write value to Channel(s) output
-        set (pseudo-SDAQ S/N) addr (new_address_# || parking) = Set pseudo-SDAQ address
-        set (pseudo-SDAQ S/N) amount  = Set pseudo-SDAQ amount of channels. Range 1..16
+	status = Print a list of with status from all the pseudo-SDAQs
+	status [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ
+	get (S/N) = Get the current state of the pseudo-SDAQ
+	set (S/N) on/off = Set a pseudo-SDAQ on or off line
+	set (S/N) (ch# || all) [no]noise = Set or reset pseudo-random noise on channel(s)
+	set (S/N) (ch# || all) [no]sensor = Set or reset No sensor flag(s)
+	set (S/N) (ch# || all) float_val = Write value to Channel(s) output
+	set (S/N) address (# || parking) = Set pseudo-SDAQ address
+	set (S/N) amount = Set pseudo-SDAQ amount of channels. Range 1..16
+	set (S/N) (ch#) date ("-" || YYYY/MM) (# || "-") (#) = Load Calibration data
+		Arguments: Exp_date, Amount of point, Unit_code
 
 ```
 
@@ -115,7 +115,7 @@ $ # Make a new network device with name 'vcan0' and type 'vcan'
 $ sudo ip link add dev vcan0 type vcan
 $ sudo ip link set up vcan0
 ```
-###### Throw 10 pseudo_SDAQ on the vitual CANBus vcan0.
+###### Throw 10 pseudo_SDAQ on the vitual CANBus "vcan0".
 ```
 $ SDAQ_psim vcan0 10
 ```
