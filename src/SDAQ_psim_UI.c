@@ -442,11 +442,12 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										}
 										if(argv[6])//Unit code
 										{
-											sprintf(str_buff,"%i",atoi(argv[6]));
-											if(strstr(str_buff,argv[6]))
-												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units = atoi(argv[6]);
+											unsigned char unit_code = atoi(argv[6]);
+											sprintf(str_buff,"%i",unit_code);
+											if(strstr(str_buff,argv[6])&&unit_str[unit_code])
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units = unit_code;
 											else
-												printw("\n Argument of units is not a number");
+												printw("\n Argument of unit code is out of range");
 										}
 									}
 									else if(!strcmp(argv[3],"noise"))

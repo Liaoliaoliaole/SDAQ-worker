@@ -1,4 +1,5 @@
 /*
+File: SDAQ_drv.c, implementation of SDAQ driver.
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -27,11 +28,47 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "SDAQ_drv.h"
 
-const char *unit_str[]={"\\Q/","V","A","°C","Pa","mV"};
-const char *dev_type_str[]={"Pseudo_SDAQ","SDAQ-TC-1","SDAQ-TC-16","SDAQ-PT100-1"};
-const char *dev_status_str[][8]={{"Stand-By","No","No","","","","","Normal"},{"Measuring","Yes","Yes","","","","","Booting"}};
 const unsigned char Parking_address=63;
 const unsigned char Broadcast=0;
+const char *unit_str[256]={
+//Base units
+"--","V","mA","°C","","","","","","","","","","","","","","","","",
+//Specific units
+"V","uV","mV","kV",//Voltage
+"A","uA","mA","kA",//Amperage
+"°C",//Temperature
+"bar","barg","Pa","kPa","MPa","GPa",//Pressure
+"um/m",//Strain
+"N","kN","MN",//Force
+"m","um","mm","cm","dm",//Displacement
+"m/s","mm/s","km/h",//Velocity
+"m/s2","g",//Acceleration
+"Ohm","kOhm","MOhm",//Resistance
+"Nm","kNm","MNm",//Torque
+"kg","gram","Tonn",//Mass
+"deg","rad",//Angle
+"Hz","kHz","MHz","rpm",//Frequency
+"rad/s2","deg/s2",//Angular Acceleration
+"rad/s","deg/s",//Angular Velocity
+"kg/s","kg/min","kg/h",//Mass Flow
+"m3/s","m3/min","m3/h","l/s","l/min","l/h",//Volumetric flow
+"%",//percentage
+"W","kW","MW",//Power
+"J","kJ","MJ","Wh","kWh","MWh",//Energy
+"mV/V","mV/mA",//Ratio
+"l","m3"//Volume
+};
+
+const char *dev_type_str[]={
+	"Pseudo_SDAQ",
+	"SDAQ-TC-1",
+	"SDAQ-TC-16",
+	"SDAQ-PT100-1"
+};
+
+const char *dev_status_str[][8]={
+{"Stand-By","No","No","","","","","Normal"},
+{"Measuring","Yes","Yes","","","","","Booting"}};
 
 //Decoder for the status byte field from "CAN Device_ID/Status" message
 const char * status_byte_dec(unsigned char status_byte,unsigned char field)
