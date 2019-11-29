@@ -281,15 +281,14 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						{
 							printw("\n   SDAQ %010d: Addr =",i+start_sn);
 							if(pSDAQs_mem[i].address < Parking_address)
-								printw(" %2d,",pSDAQs_mem[i].address);
+								printw(" %4d,",pSDAQs_mem[i].address);
 							else
 								printw(" Park,");
 							printw(" %2d channels,",pSDAQs_mem[i].number_of_channels);
 							printw(" %s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
-							printw(" %sSync",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+							printw(" %sSync,",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+							printw(" %s",!pSDAQs_mem[i].disable?"OnLine":"OffLine");
 						}
-						else
-							printw("\n   SDAQ %010d: Offline",i+start_sn);
 					pthread_mutex_unlock(&SDAQs_mem_access[i]);
 				}
 				return;

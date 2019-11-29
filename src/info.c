@@ -251,7 +251,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 // Allocates space for a new SDAQ entrance
 date_list_data_of_node* new_SDAQ_date_node()
 {
-    date_list_data_of_node *new_date_node_data = (date_list_data_of_node *) g_slice_alloc(sizeof(date_list_data_of_node));
+    date_list_data_of_node *new_date_node_data = (date_list_data_of_node *) g_slice_alloc0(sizeof(date_list_data_of_node));
     if(!new_date_node_data)
 	{
 		fprintf(stderr,"Memory Error\n");
@@ -269,7 +269,7 @@ void free_SDAQ_Date_node(gpointer Date_node)
 //allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists
 sdaq_calibration_points_data* new_SDAQ_cal_point_node()
 {
-	sdaq_calibration_points_data *new_point_node_data = (sdaq_calibration_points_data *) g_slice_alloc(sizeof(sdaq_calibration_points_data));
+	sdaq_calibration_points_data *new_point_node_data = (sdaq_calibration_points_data *) g_slice_alloc0(sizeof(sdaq_calibration_points_data));
     if(!new_point_node_data)
 	{
 		fprintf(stderr,"Memory Error\n");
