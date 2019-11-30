@@ -25,7 +25,7 @@ For compilation of this project the following dependences are required.
 
 
 ### Compilation
-To compile the firmware (tested under GNU/Linux only)
+To compile the programs (tested under GNU/Linux only)
 ```
 $ # Clone the project's source code
 $ git clone https://gitlab.com/fantomsam/sdaq-worker.git
@@ -34,7 +34,16 @@ $ # Make the compilation directory tree
 $ make tree
 $ make
 ```
-The binary file located under the build directory.
+The binary files located under the ./build directory.
+
+### Installation
+```
+$ sudo make install
+```
+### Un-installation
+```
+$ sudo make uninstall
+```
 
 ### Usage: SDAQ_worker
 ```
@@ -74,7 +83,7 @@ Options:
 ```
 ### Usage: SDAQ_psim
 ```
-Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
+Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
 	CAN-IF: The name of the CAN-Bus interface
 
@@ -93,18 +102,19 @@ Usage: ./build/SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 	Ctrl + Q  = Quit
 
  COMMANDS:
-	status = Print a list of with status from all the pseudo-SDAQs
-	status [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ
-	get (S/N) = Get the current state of the pseudo-SDAQ
-	set (S/N) on/off = Set a pseudo-SDAQ on or off line
-	set (S/N) (ch# || all) [no]noise = Set or reset pseudo-random noise on channel(s)
-	set (S/N) (ch# || all) [no]sensor = Set or reset No sensor flag(s)
-	set (S/N) (ch# || all) float_val = Write value to Channel(s) output
-	set (S/N) address (# || parking) = Set pseudo-SDAQ address
-	set (S/N) amount = Set pseudo-SDAQ amount of channels. Range 1..16
-	set (S/N) (ch#) date ("-" || YYYY/MM) (# || "-") (#) = Load Calibration data
-		Arguments: Exp_date, Amount of point, Unit_code
+	status (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing
 
+	get (S/N) = Get the current outputs state
+
+	set (S/N) on/off = Set a pseudo-SDAQ on/off-line
+	set (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)
+	set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
+	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
+	set (S/N) address (# || parking) = Set pSDAQ's address
+	set (S/N) amount = Set the amount of channels. Range 1..16
+	set (S/N) (ch#) date (now || YYYY/MM) = Load Exp_date
+	set (S/N) (ch#) points # = Load Amount of Calibration points
+	set (S/N) (ch# || all) unit # = Load unit code
 ```
 
 ## Examples

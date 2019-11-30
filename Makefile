@@ -11,6 +11,7 @@ DEP=$(WORK_dir)/Discover_and_autoconfig.o \
    $(WORK_dir)/SDAQ_psim_UI.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim
+install:install-SDAQ_worker install-SDAQ_psim
 
 $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
@@ -42,12 +43,16 @@ $(WORK_dir)/SDAQ_psim_UI.o: $(SRC_dir)/SDAQ_psim_UI.c
 
 tree:
 	mkdir -p $(BUILD_dir) $(WORK_dir)
-
 delete-the-tree:
 	rm -f -r $(WORK_dir) $(BUILD_dir)
-
 clean:
 	rm -f $(WORK_dir)/* $(BUILD_dir)/*
+install-SDAQ_worker:
+	install $(BUILD_dir)/SDAQ_worker -t /usr/local/bin/
+install-SDAQ_psim:
+	install $(BUILD_dir)/SDAQ_psim -t /usr/local/bin/
+uninstall:
+	rm /usr/local/bin/SDAQ_*
 
 .PHONY: all clean delete-the-tree tree
 
