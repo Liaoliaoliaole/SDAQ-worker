@@ -32,7 +32,7 @@ const unsigned char Parking_address=63;
 const unsigned char Broadcast=0;
 const char *unit_str[256]={
 //Base units
-"--","V","mA","°C","","","","","","","","","","","","","","","","",
+"-","V","mA","°C","","","","","","","","","","","","","","","","",
 //Specific units
 "V","uV","mV","kV",//Voltage
 "A","uA","mA","kA",//Amperage

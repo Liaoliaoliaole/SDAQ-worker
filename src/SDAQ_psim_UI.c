@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define user_inp_buf_size 80
 #define max_amount_of_user_arg 20
-#define history_buffs_length 10
+#define history_buffs_length 30
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,14 +49,14 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 //SDAQ_psim shell help
 void shell_help();
 
-/*
+
 void print_hist_buffs(gpointer data,gpointer user_data)
 {
 	static int i = 0;
 	history_buffer_entry *node_data = data;
 	printf("buffer %d -> %s\n",i++,node_data->usr_in_buff);
 }
-*/
+
 //slice free function for history_buffs_nodes
 void history_buff_free_node(gpointer node)
 {
@@ -72,6 +72,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 	g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
 	gpointer nth_node = NULL;
 	char *usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
+	char temp_usr_in_buff[user_inp_buf_size];
 
 	initscr(); // start the ncurses mode
 	noecho();//disable echo
@@ -112,7 +113,10 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 			case KEY_UP:
 				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index+1)))
 				{
-					usr_in_buff = ((history_buffer_entry *)nth_node)->usr_in_buff;
+					if(!history_buffs_index)
+						memcpy(temp_usr_in_buff, usr_in_buff, sizeof(char)*user_inp_buf_size);
+					memset(usr_in_buff, '\0', sizeof(char)*user_inp_buf_size);
+					strcpy(usr_in_buff, ((history_buffer_entry *)nth_node)->usr_in_buff);
 					history_buffs_index++;
 					move(getcury(stdscr),3);
 					clrtoeol();
@@ -124,14 +128,21 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 			case KEY_DOWN:
 				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index-1)))
 				{
-					usr_in_buff = ((history_buffer_entry *)nth_node)->usr_in_buff;
+					memset(usr_in_buff, '\0', sizeof(char)*user_inp_buf_size);
+					strcpy(usr_in_buff, ((history_buffer_entry *)nth_node)->usr_in_buff);
 					history_buffs_index--;
 					move(getcury(stdscr),3);
 					clrtoeol();
+					if(!history_buffs_index)
+					{
+						memcpy(usr_in_buff, temp_usr_in_buff, sizeof(char)*user_inp_buf_size);
+						move(getcury(stdscr),3);
+					}
 					printw("%s",usr_in_buff);
 					end_index = strlen(usr_in_buff);
 					cur_pos = end_index;
 				}
+
 				break;
 			case KEY_LEFT:
 				if(cur_pos)
@@ -190,11 +201,13 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				printw("\n][ ");
 				end_index = 0;
 				cur_pos = 0;
+				/*
 				if(history_buffs_index)//check if last command was from past, and place it on the head
 				{
-					history_buff_free_node(g_queue_pop_head(&hist_buffs));//remove head, size of queue hist_buffs decrised by 1
-					g_queue_push_head(&hist_buffs, g_queue_pop_nth(&hist_buffs,history_buffs_index-1)); //replace head with selected buff
+					history_buff_free_node(g_queue_pop_head(&hist_buffs));//remove head, size of queue hist_buffs decrease by 1
+					g_queue_push_head(&hist_buffs, g_queue_pop_nth(&hist_buffs, history_buffs_index-1));//replace head with selected buff
 				}
+				*/
 				if(*usr_in_buff)//make new entry in the history queue only if the current usr_in_buff is not empty and not used
 				{
 					g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
@@ -221,8 +234,6 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 						move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					}
 				}
-				//else
-					//printw("\ncontrol key = %d\n",key);
 				break;
 		}
 	}
@@ -277,18 +288,15 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				for(int i=0; i<num_of_pSDAQ; i++)
 				{
 					pthread_mutex_lock(&SDAQs_mem_access[i]);
-						if(!pSDAQs_mem[i].disable)
-						{
-							printw("\n   SDAQ %010d: Addr =",i+start_sn);
-							if(pSDAQs_mem[i].address < Parking_address)
-								printw(" %4d,",pSDAQs_mem[i].address);
-							else
-								printw(" Park,");
-							printw(" %2d channels,",pSDAQs_mem[i].number_of_channels);
-							printw(" %s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
-							printw(" %sSync,",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
-							printw(" %s",!pSDAQs_mem[i].disable?"OnLine":"OffLine");
-						}
+						printw("\n   SDAQ %010d: Addr =",i+start_sn);
+						if(pSDAQs_mem[i].address < Parking_address)
+							printw(" %2d,",pSDAQs_mem[i].address);
+						else
+							printw("  P,");
+						printw(" %-2d channels,",pSDAQs_mem[i].number_of_channels);
+						printw(" %9s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
+						printw(" %2sSync,",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
+						printw(" %s",!pSDAQs_mem[i].disable?"OnLine":"OffLine");
 					pthread_mutex_unlock(&SDAQs_mem_access[i]);
 				}
 				return;
@@ -437,7 +445,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 												if(strstr(str_buff,argv[5]) && atoi(argv[5])>= 0 && atoi(argv[5])<=16)
 													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[5]);
 												else
-													printw("\n Argument for amount of points is invalid");
+													printw("\n Argument for amount of points is out of range");
 											}
 										}
 										if(argv[6])//Unit code
