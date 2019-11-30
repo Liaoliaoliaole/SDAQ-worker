@@ -427,7 +427,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										{
 											if(!strcmp(argv[4],"now"))//if argument is "now"
 												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = time(NULL);
-											else if(strcmp(argv[4],"-"))//if argument is not "-"
+											else
 											{
 												struct tm exp_date_dec;
 												if(!exp_date_dec_validator(&exp_date_dec,argv[4]))
@@ -436,28 +436,32 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 													printw("\n Argument of Date is invalid");
 											}
 										}
-										if(argv[5])//amount of points
+									}
+									else if(!strcmp(argv[3],"points"))
+									{
+										if(argv[4])//amount of points
 										{
-											if(strcmp(argv[5],"-"))
-											{
-
-												sprintf(str_buff,"%i",atoi(argv[5]));//verification
-												if(strstr(str_buff,argv[5]) && atoi(argv[5])>= 0 && atoi(argv[5])<=16)
-													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[5]);
-												else
-													printw("\n Argument for amount of points is out of range");
-											}
+											sprintf(str_buff,"%i",atoi(argv[4]));//verification
+											if(strstr(str_buff,argv[4]) && atoi(argv[4])>= 0 && atoi(argv[4])<=16)
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[4]);
+											else
+												printw("\n Argument for amount of points is out of range");
 										}
-										if(argv[6])//Unit code
+									}
+									else if(!strcmp(argv[3],"unit"))
+									{
+										if(argv[4])//Unit code
 										{
-											unsigned char unit_code = atoi(argv[6]);
+											unsigned char unit_code = atoi(argv[4]);
 											sprintf(str_buff,"%i",unit_code);
-											if(strstr(str_buff,argv[6])&&unit_str[unit_code])
+											if(strstr(str_buff,argv[4])&&unit_str[unit_code])
+											{
 												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units = unit_code;
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
 											else
 												printw("\n Argument of unit code is out of range");
 										}
-										pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 									}
 									else if(!strcmp(argv[3],"noise"))
 										pSDAQs_mem[sn_dec-start_sn].noise |= 1<<(channel_dec-1);
@@ -491,6 +495,22 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									pSDAQs_mem[sn_dec-start_sn].noise = 0;
 								else if(!strcmp(argv[3],"nosensor"))
 									pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
+								else if(!strcmp(argv[3],"unit"))
+								{
+									if(argv[4])//Unit code
+									{
+										unsigned char unit_code = atoi(argv[4]);
+										sprintf(str_buff,"%i",unit_code);
+										if(strstr(str_buff,argv[4])&&unit_str[unit_code])
+										{
+											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units = unit_code;
+											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_date message
+										}
+										else
+											printw("\n Argument of unit code is out of range");
+									}
+								}
 								else
 								{	//check if the argument is number
 									sprintf(str_buff,"%f",atof(argv[3]));
@@ -538,17 +558,17 @@ const char shell_help_str[]={
 	"\tCtrl + L  = Clear screen\n"
 	"\tCtrl + Q  = Quit\n"
 	"\n COMMANDS:\n"
-	"\tstatus = Print a list of with status from all the pseudo-SDAQs\n"
-	"\tstatus [pseudo-SDAQ S/N] = Print a list with status of the specified pseudo-SDAQ\n"
-	"\tget (S/N) = Get the current state of the pseudo-SDAQ\n"
+	"\tstatus (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing\n\n"
+	"\tget (S/N) = Get the current outputs state\n\n"
 	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
-	"\tset (S/N) (ch# || all) [no]noise = Set or reset pseudo-random noise on channel(s)\n"
-	"\tset (S/N) (ch# || all) [no]sensor = Set or reset No sensor flag(s)\n"
-	"\tset (S/N) (ch# || all) float_val = Write value to Channel(s) output\n"
-	"\tset (S/N) address (# || parking) = Set pseudo-SDAQ address\n"
-	"\tset (S/N) amount = Set pseudo-SDAQ amount of channels. Range 1..16\n"
-	"\tset (S/N) (ch#) date (\"-\" || YYYY/MM) (# || \"-\") (#) = Load Calibration data\n"
-	"\t\tArguments: Exp_date, Amount of point, Unit_code\n"
+	"\tset (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)\n"
+	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
+	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
+	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"
+	"\tset (S/N) amount = Set the amount of channels. Range 1..16\n"
+	"\tset (S/N) (ch#) date (now || YYYY/MM) = Load Exp_date \n"
+	"\tset (S/N) (ch#) points # = Load Amount of Calibration points \n"
+	"\tset (S/N) (ch# || all) unit # = Load unit code\n"
 };
 
 //SDAQ_psim shell help

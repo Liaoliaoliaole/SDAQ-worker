@@ -386,8 +386,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				}
 				else
 					arg.pSDAQ_mem->status_send_cnt--;
-				if(arg.pSDAQ_mem->pSDAQ_flags & 1<<cal_dates_send)
+				if(arg.pSDAQ_mem->pSDAQ_flags & 1<<cal_dates_send)//check if the force send of the cal dates flag is on.
 				{
+					arg.pSDAQ_mem->pSDAQ_flags &= ~(1<<cal_dates_send); //reset force send of the cal dates flag
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 						p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
 				}
