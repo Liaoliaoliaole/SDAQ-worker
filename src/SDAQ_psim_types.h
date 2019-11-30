@@ -22,12 +22,17 @@ extern unsigned char SDAQ_psim_run;
 // Array of Mutex one for each pseudo SDAQ mem space, Used to block simultaneous access between UI and pseudo SDAQ thread
 extern pthread_mutex_t *SDAQs_mem_access;
 
+enum pSDAQ_flags_mask{
+	disable = 0,
+	cal_dates_send = 1
+};
+
 //struct definition of memory space of a pseudo_SDAQ
 typedef struct pSDAQ_memory_space_struct{
 	unsigned short noise;
 	unsigned short nosensor;
 	unsigned char status;// status byte of the pseudo_SDAQ
-	unsigned char disable;// flag that if is set disable an pseudo_SDAQ
+	unsigned char pSDAQ_flags;// flags of the pSDAQ_flags
 	unsigned int status_send_cnt;//counter, that when is 0 a device ID/ status message transmitted
 	unsigned char address;
 	unsigned char number_of_channels;

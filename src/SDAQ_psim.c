@@ -221,7 +221,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 		FD_SET(socket_num, &ready_for_read); //link Socket_num with ready_for_read
 		tv.tv_sec = 0;
 		tv.tv_usec = loop_time_diff_acc * 1000;// timeout of select, ~100ms adjuster in every loop
-		if(!arg.pSDAQ_mem->disable)
+		if(!(arg.pSDAQ_mem->pSDAQ_flags&(1<<disable)))
 		{
 			//wait socket_num to be ready for read, or expired after timeout
 			retval = select(socket_num+1, &ready_for_read, NULL, NULL, &tv);
@@ -231,7 +231,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 				close(socket_num);
 				pthread_exit(NULL);
 			}
-			else if(retval && !arg.pSDAQ_mem->disable)// Socket_num ready to read and PseudoSDAQ not disabled
+			else if(retval)// Socket_num ready to read
 			{
 				RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 				if(RX_bytes==sizeof(frame_rx))
@@ -381,14 +381,16 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
 					else
 						sync_status_cnt--;
-					if(!arg.pSDAQ_mem->disable)
-					{
-						p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
-						arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
-					}
+					p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
+					arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
 				}
 				else
 					arg.pSDAQ_mem->status_send_cnt--;
+				if(arg.pSDAQ_mem->pSDAQ_flags & 1<<cal_dates_send)
+				{
+					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
+						p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
+				}
 			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 			// get time and calc different
 			clock_gettime(CLOCK_MONOTONIC_RAW, &tend);

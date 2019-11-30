@@ -296,7 +296,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						printw(" %-2d channels,",pSDAQs_mem[i].number_of_channels);
 						printw(" %9s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
 						printw(" %2sSync,",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
-						printw(" %s",!pSDAQs_mem[i].disable?"OnLine":"OffLine");
+						printw(" %s",!pSDAQs_mem[i].pSDAQ_flags&(1<<disable)?"OnLine":"OffLine");
 					pthread_mutex_unlock(&SDAQs_mem_access[i]);
 				}
 				return;
@@ -372,7 +372,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						if(strstr(argv[2],"off"))// Disable PseudoSDAQ
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								pSDAQs_mem[sn_dec-start_sn].disable = 1;
+								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<disable;
 								pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
 								pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;
 							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
@@ -382,7 +382,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						else if(strstr(argv[2],"on"))// Enable PseudoSDAQ
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								pSDAQs_mem[sn_dec-start_sn].disable = 0;
+								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags &= ~(1<<disable);
 							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 							printw("\n   SDAQ %010d: online",sn_dec);
 							return;
@@ -457,6 +457,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 											else
 												printw("\n Argument of unit code is out of range");
 										}
+										pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 									}
 									else if(!strcmp(argv[3],"noise"))
 										pSDAQs_mem[sn_dec-start_sn].noise |= 1<<(channel_dec-1);
