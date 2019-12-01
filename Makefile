@@ -53,11 +53,13 @@ clean:
 	rm -f $(WORK_dir)/* $(BUILD_dir)/*
 install-SDAQ_worker:
 	install $(BUILD_dir)/SDAQ_worker -t /usr/local/bin/
+	install $(SRC_dir)/autocomplete/SDAQ_worker-completion -t /usr/share/bash-completion/completions/
 install-SDAQ_psim:
 	install $(BUILD_dir)/SDAQ_psim -t /usr/local/bin/
+	install $(SRC_dir)/autocomplete/SDAQ_psim-completion -t /usr/share/bash-completion/completions/
 uninstall:
 	rm /usr/local/bin/SDAQ_*
-
+	rm /usr/share/bash-completion/completions/SDAQ*
 .PHONY: all clean delete-the-tree tree
 
 

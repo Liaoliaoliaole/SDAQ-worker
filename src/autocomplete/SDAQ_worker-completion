@@ -1,2 +1,103 @@
 #/usr/bin/env bash
-complete -W "now tomorrow never" SDAQ_worker
+#
+# Bash completion script for SDAQ_worker
+#
+_SDAQ_worker()
+{
+    local cur prev firstword ifs_names modes discover_opts autoconfig_opts setaddress_opts getinfo_opts setinfo_opts measure_opts logging_opts
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+	firstword=$(get_firstword)
+
+	#Network interfaces names
+	ifs_names=$(ls "/sys/class/net")
+    # The options we'll complete.
+    modes="
+    	  discover \
+          autoconfig \
+          setaddress \
+		  getinfo \
+	      setinfo \
+	      measure \
+	      logging"
+
+	default_opts="-V -h -l"
+
+	discover_opts="-t -s "
+
+    autoconfig_opts="-t"
+
+    setaddress_opts="parking -t -v"
+
+    getinfo_opts="-t -s -f"
+
+    setinfo_opts="-t -s -f"
+
+	measure_opts=""
+
+	logging_opts="-T -t -S"
+
+    # Complete the options
+    case "${COMP_CWORD}" in
+        1)
+            COMPREPLY=( $(compgen -W "${ifs_names} ${default_opts}" -- ${cur}) )
+            ;;
+
+		2)
+			COMPREPLY=( $(compgen -W "${modes}" -- ${cur}) )
+            ;;
+        *)
+            case ${prev} in
+                discover)
+                    COMPREPLY=( $(compgen -W "${discover_opts}" -- ${cur}) )
+                    ;;
+                autoconfig)
+                    COMPREPLY=( $(compgen -W "${autoconfig_opts}" -- ${cur}) )
+                    ;;
+                setaddress)
+                	COMPREPLY=( $(compgen -W "${setaddress_opts}" -- ${cur}) )
+                	;;
+                getinfo)
+                    COMPREPLY=( $(compgen -W "${getinfo_opts}" -- ${cur}) )
+                    ;;
+                setinfo)
+                    COMPREPLY=( $(compgen -W "${setinfo_opts}" -- ${cur}) )
+                    ;;
+                measure)
+                    COMPREPLY=() # $(compgen -W "${measure_opts}" -- ${cur}) )
+                    ;;
+                logging)
+                    COMPREPLY=( $(compgen -W "${logging_opts}" -- ${cur}) )
+                    #COMPREPLY=( $(compgen -o filenames -A file -W "${run_opts}" -- ${cur}) )
+                    ;;
+                *)
+                    COMPREPLY="test"
+                    ;;
+	        esac
+            ;;
+    esac
+
+    return 0
+}
+
+get_firstword() {
+    local firstword i
+
+    firstword=
+    for ((i = 1; i < ${#COMP_WORDS[@]}; ++i)); do
+        if [[ ${COMP_WORDS[i]} != -* ]]; then
+            firstword=${COMP_WORDS[i]}
+            break
+        fi
+    done
+
+    echo $firstword
+}
+
+# Bind completion to lxi command
+complete -o default -F _SDAQ_worker SDAQ_worker
+
+#complete -F _SDAQ_worker_completions SDAQ_worker
+#complete -A directory SDAQ_worker
