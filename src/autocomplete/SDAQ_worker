@@ -9,7 +9,6 @@ _SDAQ_worker()
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
-	firstword=$(get_firstword)
 
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
@@ -25,7 +24,7 @@ _SDAQ_worker()
 
 	default_opts="-V -h -l"
 
-	discover_opts="-t -s "
+	discover_opts="-t -s"
 
     autoconfig_opts="-t"
 
@@ -57,7 +56,7 @@ _SDAQ_worker()
                     COMPREPLY=( $(compgen -W "${autoconfig_opts}" -- ${cur}) )
                     ;;
                 setaddress)
-                	COMPREPLY=( $(compgen -W "${setaddress_opts}" -- ${cur}) )
+                	COMPREPLY=( $(compgen -W "newaddress ${setaddress_opts}" -- ${cur}) )
                 	;;
                 getinfo)
                     COMPREPLY=( $(compgen -W "${getinfo_opts}" -- ${cur}) )
@@ -70,10 +69,14 @@ _SDAQ_worker()
                     ;;
                 logging)
                     COMPREPLY=( $(compgen -W "${logging_opts}" -- ${cur}) )
-                    #COMPREPLY=( $(compgen -o filenames -A file -W "${run_opts}" -- ${cur}) )
                     ;;
                 *)
-                    COMPREPLY="test"
+                    reg_t='^[0-9]+$|^parking$'
+                    if [[ "${prev}" =~ $reg_t ]] ; then
+						COMPREPLY=( $(compgen -W "SDAQ_Serial-Number" -- ${cur}) )
+					else
+                    	COMPREPLY=()
+                    fi
                     ;;
 	        esac
             ;;
@@ -82,22 +85,5 @@ _SDAQ_worker()
     return 0
 }
 
-get_firstword() {
-    local firstword i
-
-    firstword=
-    for ((i = 1; i < ${#COMP_WORDS[@]}; ++i)); do
-        if [[ ${COMP_WORDS[i]} != -* ]]; then
-            firstword=${COMP_WORDS[i]}
-            break
-        fi
-    done
-
-    echo $firstword
-}
-
-# Bind completion to lxi command
+# Bind completion to SDAQ_worker
 complete -o default -F _SDAQ_worker SDAQ_worker
-
-#complete -F _SDAQ_worker_completions SDAQ_worker
-#complete -A directory SDAQ_worker

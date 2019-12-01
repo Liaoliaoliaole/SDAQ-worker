@@ -1,0 +1,39 @@
+#/usr/bin/env bash
+#
+# Bash completion script for SDAQ_psim
+#
+_SDAQ_psim()
+{
+    local cur prev firstword ifs_names
+
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+	#Network interfaces names
+	ifs_names=$(ls "/sys/class/net")
+    # The options we'll complete.
+
+	default_opts="-V -h -l"
+
+    # Complete the options
+    case "${COMP_CWORD}" in
+        1)
+            COMPREPLY=( $(compgen -W "${ifs_names} ${default_opts}" -- ${cur}) )
+            ;;
+		2)
+			COMPREPLY=( $(compgen -W "Amount_of_pSDAQ ${default_opts}" -- ${cur}) )
+            ;;
+        3)
+			COMPREPLY=( $(compgen -W "Start_S/N ${default_opts}" -- ${cur}) )
+            ;;
+        *)
+            COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )
+            ;;
+    esac
+
+    return 0
+}
+
+# Bind completion to SDAQ_worker
+complete -F _SDAQ_psim SDAQ_psim
