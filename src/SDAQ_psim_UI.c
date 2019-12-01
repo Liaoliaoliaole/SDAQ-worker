@@ -431,7 +431,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 											{
 												struct tm exp_date_dec;
 												if(!exp_date_dec_validator(&exp_date_dec,argv[4]))
+												{
 													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = mktime(&exp_date_dec);
+													pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+												}
 												else
 													printw("\n Argument of Date is invalid");
 											}
@@ -443,7 +446,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										{
 											sprintf(str_buff,"%i",atoi(argv[4]));//verification
 											if(strstr(str_buff,argv[4]) && atoi(argv[4])>= 0 && atoi(argv[4])<=16)
+											{
 												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points = atoi(argv[4]);
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
 											else
 												printw("\n Argument for amount of points is out of range");
 										}

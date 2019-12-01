@@ -34,7 +34,7 @@ _SDAQ_worker()
 
     setinfo_opts="-t -s -f"
 
-	measure_opts=""
+	measure_opts="address_of_SDAQ"
 
 	logging_opts="-T -t -S"
 
@@ -56,7 +56,7 @@ _SDAQ_worker()
                     COMPREPLY=( $(compgen -W "${autoconfig_opts}" -- ${cur}) )
                     ;;
                 setaddress)
-                	COMPREPLY=( $(compgen -W "newaddress ${setaddress_opts}" -- ${cur}) )
+                	COMPREPLY=( $(compgen -W "new_SDAQ_address ${setaddress_opts}" -- ${cur}) )
                 	;;
                 getinfo)
                     COMPREPLY=( $(compgen -W "${getinfo_opts}" -- ${cur}) )
@@ -65,7 +65,7 @@ _SDAQ_worker()
                     COMPREPLY=( $(compgen -W "${setinfo_opts}" -- ${cur}) )
                     ;;
                 measure)
-                    COMPREPLY=() # $(compgen -W "${measure_opts}" -- ${cur}) )
+                    COMPREPLY=( $(compgen -W "${measure_opts}" -- ${cur}) )
                     ;;
                 logging)
                     COMPREPLY=( $(compgen -W "${logging_opts}" -- ${cur}) )

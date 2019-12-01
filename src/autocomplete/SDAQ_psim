@@ -35,5 +35,5 @@ _SDAQ_psim()
     return 0
 }
 
-# Bind completion to SDAQ_worker
+# Bind completion to SDAQ_psim
 complete -F _SDAQ_psim SDAQ_psim
