@@ -421,6 +421,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 											if(!strcmp(argv[4],"now"))//if argument is "now"
 											{
 												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = time(NULL);
+												printw("\nExp date for ch%d set to %s",ctime((time_t*)&(pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date)));
 												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 											}
 											else
