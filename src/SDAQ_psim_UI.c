@@ -201,14 +201,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				printw("\n][ ");
 				end_index = 0;
 				cur_pos = 0;
-				/*
-				if(history_buffs_index)//check if last command was from past, and place it on the head
-				{
-					history_buff_free_node(g_queue_pop_head(&hist_buffs));//remove head, size of queue hist_buffs decrease by 1
-					g_queue_push_head(&hist_buffs, g_queue_pop_nth(&hist_buffs, history_buffs_index-1));//replace head with selected buff
-				}
-				*/
-				if(*usr_in_buff)//make new entry in the history queue only if the current usr_in_buff is not empty and not used
+				if(*usr_in_buff)//make new entry in the history queue only if the current usr_in_buff is not empty
 				{
 					g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
 					usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
@@ -265,7 +258,7 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 	if(buff_arr[0] && buff_arr[1])
 	{
 		printw("\nyear= %d month = %d",atoi(buff_arr[0]),atoi(buff_arr[1]));
-		if(atoi(buff_arr[0])<1900 || (atoi(buff_arr[1])>11 || !atoi(buff_arr[1])))
+		if(atoi(buff_arr[0])<1900 || (atoi(buff_arr[1])>12 || !atoi(buff_arr[1])))
 			return 1;
 		memset(exp_date_dec,0,sizeof(struct tm));
 		exp_date_dec->tm_year = atoi(buff_arr[0]) - 1900;
@@ -426,7 +419,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										if(argv[4])//expiration date
 										{
 											if(!strcmp(argv[4],"now"))//if argument is "now"
+											{
 												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = time(NULL);
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
 											else
 											{
 												struct tm exp_date_dec;
