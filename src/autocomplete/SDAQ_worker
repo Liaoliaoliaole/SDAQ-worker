@@ -34,8 +34,6 @@ _SDAQ_worker()
 
     setinfo_opts="-t -s -f"
 
-	measure_opts="address_of_SDAQ"
-
 	logging_opts="-T -t -S"
 
     # Complete the options
@@ -59,20 +57,20 @@ _SDAQ_worker()
                 	COMPREPLY=( $(compgen -W "new_SDAQ_address ${setaddress_opts}" -- ${cur}) )
                 	;;
                 getinfo)
-                    COMPREPLY=( $(compgen -W "${getinfo_opts}" -- ${cur}) )
+                    COMPREPLY=( $(compgen -W "SDAQ_address ${getinfo_opts}" -- ${cur}) )
                     ;;
                 setinfo)
-                    COMPREPLY=( $(compgen -W "${setinfo_opts}" -- ${cur}) )
+                    COMPREPLY=( $(compgen -W "SDAQ_address ${setinfo_opts}" -- ${cur}) )
                     ;;
                 measure)
-                    COMPREPLY=( $(compgen -W "${measure_opts}" -- ${cur}) )
+                    COMPREPLY=( $(compgen -W "SDAQ_address ${default_opts}" -- ${cur}) )
                     ;;
                 logging)
                     COMPREPLY=( $(compgen -W "${logging_opts}" -- ${cur}) )
                     ;;
                 *)
                     reg_t='^[0-9]+$|^parking$'
-                    if [[ "${prev}" =~ $reg_t ]] ; then
+                    if [[ "${prev}" =~ $reg_t ]]  &&  [[ "${COMP_WORDS[COMP_CWORD-2]}" == "setaddress" ]] ; then
 						COMPREPLY=( $(compgen -W "SDAQ_Serial-Number" -- ${cur}) )
 					else
                     	COMPREPLY=()
