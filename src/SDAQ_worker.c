@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <ctype.h>
 
@@ -37,13 +38,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_drv.h"
 //Include Functions implementation header
 #include "Modes.h"
-
-#include <time.h>
-
-//global variables
+//Include CAN-if_discovery
+#include "CANif_discovery.h"
 
 //application functions
-void list_CANIF();//print a list of the available can interfaces
 void print_usage(char *prog_name);//print the usage manual
 
 int main(int argc, char *argv[])
@@ -72,7 +70,7 @@ int main(int argc, char *argv[])
 	if(argc == 1)
 	{
 		print_usage(argv[0]);
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	opterr = 1;
@@ -87,7 +85,7 @@ int main(int argc, char *argv[])
 				printf(VERSION"\n");
 				exit(EXIT_SUCCESS);
 			case 'l'://List of CAN-IF
-				list_CANIF();
+				CANif_discovery();
 				exit(EXIT_SUCCESS);
 			case 'r':
 				usr_opt.resize = 1;
@@ -141,7 +139,7 @@ int main(int argc, char *argv[])
 	}
 	if(argv[optind] == NULL || argv[1] == NULL || argc <=2)
 	{
-		printf("!!! CAN-IF and/or MODE Field are Missing !!!\n");
+		printf("!!! CAN-IF and/or MODE argument Missing !!!\n");
 		exit(EXIT_FAILURE);
 	}
 	//CAN Socket Opening
@@ -302,24 +300,6 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 	return EXIT_SUCCESS;
 }
 
-void list_CANIF()
-{
-	struct ifaddrs *ifaddr, *ifa;
-
-	if (getifaddrs(&ifaddr) == -1)
-	{
-		perror("getifaddrs");
-		exit(EXIT_FAILURE);
-	}
-	/*Scan through the list ifaddr.
-	Print ifa_name field of every node where the ifa_addr == NULL -- Possible make it better in future*/
-	for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-	{
-		if (ifa->ifa_addr == NULL)
-			printf("%s\n",ifa->ifa_name);
-	}
-	freeifaddrs(ifaddr);
-}
 
 void print_usage(char *prog_name)
 {
@@ -351,7 +331,7 @@ void print_usage(char *prog_name)
 		"           -s : Silent print, or with mode 'getinfo' print info at stdout in XML format\n"
 		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
-		"           -l : Print a list of the available CAN-IF.\n"
+		"           -l : Print a list of the available CAN-IFs.\n"
 		"           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'\n"
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"

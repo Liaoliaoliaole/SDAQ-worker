@@ -75,7 +75,7 @@ Options:
            -s : Silent print, or with mode 'getinfo' print info at stdout in XML format
            -r : resize terminal. Used with mode 'measure'.
            -v : Address Verification. Used with mode 'setaddress'.
-           -l : Print a list of the available CAN-IF.
+           -l : Print a list of the available CAN-IFs.
            -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'.
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
@@ -83,13 +83,18 @@ Options:
 ```
 ### Usage: SDAQ_psim
 ```
-Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
+Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num] [Options]
 
 	CAN-IF: The name of the CAN-Bus interface
 
 	Num_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62
 
 	S/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)
+
+	Options:
+	         -h : Print Help
+	         -v : Print Version
+	         -l : Print list of CAN-IFs
 
 			      -----SDAQ_psim Shell-----
  KEYS:
@@ -106,7 +111,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num]
 
 	get (S/N) = Get the current outputs state
 
-	set (S/N) on/off = Set a pseudo-SDAQ on/off-line
+	set (S/N) on/off = Set a pseudo-SDAQ on or off line
 	set (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)
 	set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
 	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output

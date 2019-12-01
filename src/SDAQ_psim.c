@@ -14,6 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#define VERSION "0.9 beta" /*Release Version of SDAQ_psim*/
+
 #define TIME_REF 100 //loop time ref
 #define Stat_ID_Interval 10000/TIME_REF //for 10 sec with base time TIME_REF
 #define Sync_Status_Interval 120/(Stat_ID_Interval) //for 120 seconds reset time for In_Sync flag based on Stat_ID_Interval
@@ -40,6 +42,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 //Include SDAQ Driver header
 #include "SDAQ_psim_UI.h" // <-- #include "SDAQ_drv.h" and #include "SDAQ_psim_types.h"
+#include "CANif_discovery.h"
 
 //Global variables
 unsigned char active_threads=0;
@@ -67,24 +70,51 @@ void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
 int main(int argc, char *argv[])
 {
-	unsigned int start_sn;
+	unsigned int start_sn, c;
 	unsigned char num_of_pSDAQ;
 	struct winsize term_init_size;
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id;
 	struct thread_arguments_passer thread_arg;
 	pSDAQ_memory_space *pSDAQs_mem;
-	if(argc <= 2|| argv[1]==NULL || argv[2]==NULL)
+
+	if(argc == 1)
 	{
 		print_usage(argv[0]);
-		exit(1);
+		exit(EXIT_FAILURE);
+	}
+
+	opterr = 1;
+	while ((c = getopt (argc, argv, "hvl")) != -1)
+	{
+		switch (c)
+		{
+			case 'h'://help
+				print_usage(argv[0]);
+				exit(EXIT_SUCCESS);
+			case 'v'://Version
+				printf(VERSION"\n");
+				exit(EXIT_SUCCESS);
+			case 'l'://List of CAN-IF
+				CANif_discovery();
+				exit(EXIT_SUCCESS);
+			case '?':
+				//print_usage(argv[0]);
+				exit(EXIT_FAILURE);
+		}
+	}
+
+	if(argv[optind]==NULL || argv[optind+1]==NULL)
+	{
+		printf("!!! CAN-IF and/or Num_of_pSDAQ argument Missing !!!\n");
+		exit(EXIT_FAILURE);
 	}
 	//init pseudo random generator
 	srand(time(NULL));
 
 	//sanitize, decode and copy the CAN-if name.
-	thread_arg.can_if_name=argv[1];
-	num_of_pSDAQ = atoi(argv[2]);
+	thread_arg.can_if_name=argv[optind];
+	num_of_pSDAQ = atoi(argv[optind+1]);
 	if(!num_of_pSDAQ || num_of_pSDAQ >= Parking_address)
 	{
 		printf("Amount of pseudo_SDAQ is invalid. Range 1..%d\n",Parking_address-1);
@@ -93,7 +123,7 @@ int main(int argc, char *argv[])
 	//Link signal SIGINT to quit_signal_handler
 	signal(SIGINT, sigint_signal_handler);
 	//Check if user have enter serial number start. If yes use it otherwise from 1
-	start_sn = !argv[3] ? 1 : atoi(argv[3]);
+	start_sn = !argv[optind+2] ? 1 : atoi(argv[optind+2]);
 	start_sn = start_sn ? start_sn : 1;
 	//Allocation of memory
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
@@ -436,8 +466,12 @@ void print_usage(char *prog_name)
 	const char exp[] = {
 	"\tCAN-IF: The name of the CAN-Bus interface\n\n"
 	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62\n\n"
-	"\tS/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)\n"
+	"\tS/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)\n\n"
+	"\tOptions:\n"
+	"\t         -h : Print Help\n"
+	"\t         -v : Print Version\n"
+	"\t         -l : Print list of CAN-IFs\n"
 	};
-	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
+	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num] [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
 }

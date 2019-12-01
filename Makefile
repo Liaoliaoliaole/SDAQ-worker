@@ -8,7 +8,8 @@ DEP=$(WORK_dir)/Discover_and_autoconfig.o \
     $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o \
     $(WORK_dir)/info.o $(WORK_dir)/SDAQ_drv.o \
     $(WORK_dir)/SDAQ_xml.o \
-   $(WORK_dir)/SDAQ_psim_UI.o
+    $(WORK_dir)/SDAQ_psim_UI.o \
+    $(WORK_dir)/CANif_discovery.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim
 install:install-SDAQ_worker install-SDAQ_psim
@@ -39,6 +40,9 @@ $(WORK_dir)/SDAQ_xml.o: $(SRC_dir)/SDAQ_xml.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 $(WORK_dir)/SDAQ_psim_UI.o: $(SRC_dir)/SDAQ_psim_UI.c
+	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
+
+$(WORK_dir)/CANif_discovery.o: $(SRC_dir)/CANif_discovery.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 tree:
