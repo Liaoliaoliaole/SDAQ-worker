@@ -334,7 +334,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 	p_sdaq_info -> firm_rev = 0;
 	p_sdaq_info -> hw_rev = 0;
 	p_sdaq_info -> num_of_ch = amount_of_channel;
-	p_sdaq_info -> sample_rate = 100;
+	p_sdaq_info -> sample_rate = 10;
 	p_sdaq_info -> max_cal_point = 16;
 	usleep(10000);//hack to prevent message lost in case that the CAN-IF is real.
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
