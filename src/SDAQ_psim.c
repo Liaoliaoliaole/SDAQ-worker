@@ -331,10 +331,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									&& id_dec->channel_num)
 									{
 										if(cal_date_dec->amount_of_points<=16)
-										{
-											arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1].date = cal_date_dec->date;
-											arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1].amount_of_points = cal_date_dec->amount_of_points;
-										}
+											memcpy(&(arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1]), cal_date_dec, sizeof(sdaq_calibration_date));
 									}
 									break;
 								case Write_calibration_Point_Data:

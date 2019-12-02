@@ -55,7 +55,10 @@ typedef struct SDAQ_information_and_calibration_data{
 //struct used as container type for the data of the Calibration_date_list
 typedef struct calibration_date{
 	unsigned char ch_num;
-	unsigned int date;
+	unsigned char year;//after 12000
+	unsigned char month;// 1 to 12
+	unsigned char day;//1 to 31
+	unsigned char period;//Calibration interval in months 
 	unsigned char amount_of_points;
 }date_list_data_of_node;
 

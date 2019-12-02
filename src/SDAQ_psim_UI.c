@@ -252,18 +252,23 @@ int user_inp_dec(char **arg, char *usr_in_buff, unsigned int start_sn, unsigned 
 
 int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 {
-	char *buff_arr[2];
+	char *buff_arr[3];
 	buff_arr[0] = strtok (buff, "/");
 	buff_arr[1] = strtok (NULL, "/");
-	if(buff_arr[0] && buff_arr[1])
+	buff_arr[2] = strtok (NULL, "/");
+	if(buff_arr[0] && buff_arr[1] && buff_arr[2])
 	{
-		printw("\nyear= %d month = %d",atoi(buff_arr[0]),atoi(buff_arr[1]));
-		if(atoi(buff_arr[0])<1900 || (atoi(buff_arr[1])>12 || !atoi(buff_arr[1])))
+		if(atoi(buff_arr[0])<2000 || 
+		   atoi(buff_arr[1])>12 || !atoi(buff_arr[1]) ||
+		   atoi(buff_arr[2])>31 || !atoi(buff_arr[2]))
 			return 1;
 		memset(exp_date_dec,0,sizeof(struct tm));
 		exp_date_dec->tm_year = atoi(buff_arr[0]) - 1900;
 		exp_date_dec->tm_mon = atoi(buff_arr[1]) - 1;
+		exp_date_dec->tm_mday = atoi(buff_arr[2]);
 	}
+	else
+		return 1;
 	return 0;
 }
 
@@ -271,7 +276,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 {
 	unsigned char sn_dec, channel_dec;
 	char *channel_str, str_buff[30];
-	time_t date;
+	struct tm cal_date;
 	if(argv[0])
 	{
 		if(!strcmp(argv[0],"status"))
@@ -310,11 +315,15 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
 						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
 						{
-							date = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].date;
-							strftime (str_buff, sizeof(str_buff),"%Y/%m",gmtime(&date));
-							printw("\n\tCH%02d: Expired @ %s, Calibrated with %d point, unit -> %s"
+							memset(&cal_date, 0, sizeof(struct tm));
+							cal_date.tm_year = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year + 100; //100 = 2000-1900
+							cal_date.tm_mon = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month - 1;
+							cal_date.tm_mday =  pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day;
+							strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+							printw("\n\tCH%02d: Calibrated @ %s, period %hhu month, Calibrated with %d point, unit -> %s"
 									,i+1
 									,str_buff
+									,pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].period
 									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points
 									,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]);
 						}
@@ -416,26 +425,45 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 									if(!strcmp(argv[3],"date"))
 									{
-										if(argv[4])//expiration date
+										if(argv[4])//Calibration date
 										{
 											if(!strcmp(argv[4],"now"))//if argument is "now"
 											{
-												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = time(NULL);
-												printw("\nSet Exp date for ch%d @ %s", channel_dec,
-												            ctime((time_t*)&(pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date)));
+												time_t now = time(NULL);
+												memcpy(&cal_date, gmtime(&now), sizeof(struct tm));
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].year = cal_date.tm_year - 100; //100 = 2000-1900
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].month = cal_date.tm_mon + 1; //+1 to get 12
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].day = cal_date.tm_mday;
+												strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+												printw("\nSet Cal date for ch%d @ %s", channel_dec, str_buff);
 												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 											}
 											else
 											{
-												struct tm exp_date_dec;
-												if(!exp_date_dec_validator(&exp_date_dec,argv[4]))
+												if(!exp_date_dec_validator(&cal_date,argv[4]))
 												{
-													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].date = mktime(&exp_date_dec);
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].year = cal_date.tm_year - 100; //100 = 2000-1900
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].month = cal_date.tm_mon + 1; //+1 to get 12
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].day = cal_date.tm_mday;
 													pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 												}
 												else
 													printw("\n Argument of Date is invalid");
 											}
+										}
+									}
+									else if(!strcmp(argv[3],"period"))
+									{
+										if(argv[4])// Calibration period
+										{
+											sprintf(str_buff,"%i",atoi(argv[4]));//verification
+											if(strstr(str_buff,argv[4]) && atoi(argv[4]) < 255)
+											{
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].period = atoi(argv[4]);
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
+											else
+												printw("\n Argument for Calibration Period is out of range");
 										}
 									}
 									else if(!strcmp(argv[3],"points"))
@@ -570,7 +598,7 @@ const char shell_help_str[]={
 	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
 	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"
 	"\tset (S/N) amount = Set the amount of channels. Range 1..16\n"
-	"\tset (S/N) (ch#) date (now || YYYY/MM) = Load Exp_date \n"
+	"\tset (S/N) (ch#) date (now || YYYY/MM/DD) = Load Calibration Date \n"
 	"\tset (S/N) (ch#) points # = Load Amount of Calibration points \n"
 	"\tset (S/N) (ch# || all) unit # = Load unit code\n"
 };

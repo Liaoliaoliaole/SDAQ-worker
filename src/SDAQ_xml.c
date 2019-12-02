@@ -37,7 +37,7 @@ enum contens_type{
 	t_integer_ubyte,
 	t_integer_ushort,
 	t_integer_uint,
-	t_time_t,
+	t_cal_date, //special, send wholly container
 	t_string
 };
 
@@ -71,9 +71,11 @@ int XML_info_file_write(char *file_path, void *arg)
 		//add xml_node for Channel
 		sprintf((char*)buff, "CH%d", i+1);
 		w_node = xmlNewChild(root_node, NULL, buff, NULL);
-		//add channel's expiration date and amount of used points
-		xml_SDAQ_data(w_node, BAD_CAST "Expiration_Date",
-			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->date, t_time_t);
+		//add channel's Calibration date and amount of used points
+		xml_SDAQ_data(w_node, BAD_CAST "Calibration_date",
+			g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i), t_cal_date);
+		xml_SDAQ_data(w_node, BAD_CAST "Calibration_Period",
+			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->period, t_integer_ubyte);
 		xml_SDAQ_data(w_node, BAD_CAST "Used_Points",
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
 		//add points for channel
@@ -111,7 +113,8 @@ int XML_info_file_write(char *file_path, void *arg)
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type)
 {
 	unsigned char buff[60],*buff_ptr=buff;
-	struct tm * ptm;
+	date_list_data_of_node * node_dec = contents_ptr;
+	struct tm ptm;
 	xmlNodePtr node;
 	switch(type)
 	{
@@ -127,9 +130,11 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 		case t_integer_uint:
 			sprintf((char*)buff,"%u",*((unsigned int*)contents_ptr));
 			break;
-		case t_time_t:
-			ptm = gmtime(((time_t*)contents_ptr));
-			strftime((char*)buff_ptr,sizeof(buff),"%Y/%m",ptm);
+		case t_cal_date:
+			ptm.tm_year = node_dec->year + 100; //100 = 2000-1900
+			ptm.tm_mon = node_dec->month - 1;
+			ptm.tm_mday =  node_dec->day;
+			strftime((char*)buff_ptr,sizeof(buff),"%Y/%m/%d",&ptm);
 			break;
 		case t_string:
 			buff_ptr = (unsigned char*)contents_ptr;

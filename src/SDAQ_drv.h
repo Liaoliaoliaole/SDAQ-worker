@@ -102,7 +102,10 @@ typedef struct SDAQ_Info_Decoder{
 
 /* SDAQ's CAN Calibration_date message decoder */
 typedef struct SDAQ_calibration_date_Decoder{
-	unsigned int date;
+	unsigned char year;//after 12000
+	unsigned char month;// 1 to 12
+	unsigned char day;//1 to 31
+	unsigned char period;//Calibration interval in months 
 	unsigned char amount_of_points;
 	unsigned char cal_units;
 }sdaq_calibration_date;
@@ -147,7 +150,7 @@ int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
-int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, unsigned int date,unsigned char NumOfPoints);
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints);
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char Point_num, unsigned char type);
 

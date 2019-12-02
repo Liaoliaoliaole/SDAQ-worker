@@ -188,7 +188,10 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						new_date_node = new_SDAQ_date_node();
 						//Load data from decoded "frame_rx" buffer to node
 						new_date_node->ch_num = id_dec->channel_num;
-						new_date_node->date = date_dec->date;
+						new_date_node->year = date_dec->year;
+						new_date_node->month = date_dec->month;
+						new_date_node->day = date_dec->day;
+						new_date_node->period = date_dec->period;
 						new_date_node->amount_of_points = date_dec->amount_of_points;
 						str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
 						rfb.as_flags.amount_of_waiting_channel--;
@@ -302,22 +305,22 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 	{
 		switch(node_dec->type)
 		{
-			case meas  :
+			case meas:
 				printf(" | %d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
 				break;
-			case ref :
+			case ref:
 				printf(" %8.3f | ",node_dec->data_of_point);
 				break;
-			case offset :
+			case offset:
 				printf(" %8.3f | ",node_dec->data_of_point);
 				break;
-			case gain :
+			case gain:
 				printf(" %8.3f | ",node_dec->data_of_point);
 				break;
-			case C2 :
+			case C2:
 				printf(" %8.3f | ",node_dec->data_of_point);
 				break;
-			case C3 :
+			case C3:
 				printf(" %8.3f |\n",node_dec->data_of_point);
 				if(node_dec->points_num<amount_of_points-1)
 					printf(" |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
@@ -334,22 +337,24 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 {
 	struct GSlist **point_data_lists = (struct GSlist **) arg_pass;
 	char buff[60];
-	struct tm * ptm;
+	struct tm ptm = {0};
 	date_list_data_of_node *node_dec = (date_list_data_of_node *)Date_node;
-	time_t exp_cal_date = node_dec->date;
-	ptm = gmtime(&exp_cal_date);
-	strftime (buff,sizeof(buff),"%Y/%m",ptm);
+	
+	ptm.tm_year = node_dec->year + 100; //100 = 2000-1900
+	ptm.tm_mon = node_dec->month - 1;
+	ptm.tm_mday =  node_dec->day;
+	strftime(buff,sizeof(buff),"%Y/%m/%d",&ptm);
 	if(node_dec->amount_of_points)
 	{
-		printf("\n  -----------------------------------------\n");
-		printf(" | CH%02d: Expired @ %s Cal_Points = %2d |\n",node_dec->ch_num,
+		printf("   CH%02d: Calibrated @ %s valid for %03d Months, Cal_Points = %2d\n",node_dec->ch_num,
 											  buff,
+											  node_dec->period,
 											  node_dec->amount_of_points);
-		printf(" |                                          ---------------------------------\\\n"
+		printf(" /---------------------------------------------------------------------------\\\n"
 			   " | # |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |\n"
 		       " |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
 		g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
-		printf(" \\---|-----------|-----------|-----------|-----------|-----------|-----------/\n");
+		printf(" \\---------------------------------------------------------------------------/\n");
 	}
 
 	return;

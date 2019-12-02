@@ -20,7 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <math.h>
-#include <string.h>
+#include <time.h>
 
 #include <arpa/inet.h>
 #include <linux/can.h>
@@ -218,10 +218,11 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 }
 
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
-int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, unsigned int date,unsigned char NumOfPoints)
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints)
 {
 	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx;
+	struct tm *date = date_ptr;
 	sdaq_calibration_date *sdaq_cal_date_enc = (sdaq_calibration_date*) frame_tx.data;
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
@@ -233,7 +234,10 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_id_ptr->device_addr = dev_address;
 	sdaq_id_ptr->channel_num = channel_num;
 	frame_tx.can_dlc = sizeof(sdaq_calibration_date);//Payload size
-	sdaq_cal_date_enc->date = date;
+	sdaq_cal_date_enc->year = date->tm_year - 100;//100 = 2000-1900
+	sdaq_cal_date_enc->month = date->tm_mon;
+	sdaq_cal_date_enc->day = date->tm_mday;
+	sdaq_cal_date_enc->period = period;
 	sdaq_cal_date_enc->amount_of_points = NumOfPoints;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
