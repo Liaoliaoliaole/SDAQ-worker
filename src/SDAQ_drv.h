@@ -25,9 +25,9 @@ extern const unsigned char Broadcast;
 
 // enumerator for Status byte
 enum status_byte{
-	State =0,
-	In_sync =1,
-	Error =2,
+	State = 0,
+	In_sync = 1,
+	Error = 2,
 	Mode = 7
 };
 
@@ -105,7 +105,7 @@ typedef struct SDAQ_calibration_date_Decoder{
 	unsigned char year;//after 12000
 	unsigned char month;// 1 to 12
 	unsigned char day;//1 to 31
-	unsigned char period;//Calibration interval in months 
+	unsigned char period;//Calibration interval in months
 	unsigned char amount_of_points;
 	unsigned char cal_units;
 }sdaq_calibration_date;
