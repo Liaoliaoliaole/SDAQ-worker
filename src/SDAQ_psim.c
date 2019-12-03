@@ -272,13 +272,13 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 							switch(id_dec->payload_type)
 							{
 								case Stop_command:
-									arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte
+									arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte, stop measure
 									p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									break;
 								case Start_command:
 									if(arg.pSDAQ_mem->address != Parking_address)
 									{
-										arg.pSDAQ_mem->status |= 1; //set run bit of status byte
+										arg.pSDAQ_mem->status |= 1; //set run bit of status byte, start measure 
 										p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									}
 									break;
@@ -292,13 +292,14 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 											fprintf(stderr, "Error at SDAQ_psim %2d: Invalid address (%d)\n",arg.serial_number,set_new_addr_dec->new_address);
 										else if(set_new_addr_dec->new_address<=Parking_address)
 										{
-											//printf("SDAQ_psim %2d: New address: %2d\n",arg.serial_number,set_new_addr_dec->new_address);
+											arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte, stop measure
 											arg.pSDAQ_mem->address = set_new_addr_dec->new_address;
 											p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 										}
 									}
 									break;
 								case Change_SDAQ_baudrate:
+									arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte, stop measure 
 									p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									break;
 								case Query_Dev_info:
