@@ -22,7 +22,7 @@ extern const char *dev_type_str[];
 extern const char *dev_status_str[][8];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
-
+extern const unsigned char Unit_code_base_region_size;
 // enumerator for Status byte
 enum status_byte{
 	State = 0,

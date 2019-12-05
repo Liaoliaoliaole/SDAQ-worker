@@ -30,6 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 const unsigned char Parking_address=63;
 const unsigned char Broadcast=0;
+const unsigned char Unit_code_base_region_size=20;
 const char *unit_str[256]={
 //Base units
 "-","V","mA","°C","","","","","","","","","","","","","","","","",
