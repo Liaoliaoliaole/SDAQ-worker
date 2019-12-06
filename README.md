@@ -104,6 +104,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num] [Options]
 	KEY_RIGTH = Cursor move Right by 1
 	Ctrl + C  = Clear current buffer
 	Ctrl + L  = Clear screen
+	Ctrl + I  = print used CAN-if
 	Ctrl + Q  = Quit
 
  COMMANDS:
