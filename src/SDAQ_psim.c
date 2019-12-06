@@ -149,7 +149,7 @@ int main(int argc, char *argv[])
 	if(term_init_size.ws_col<100 || term_init_size.ws_row<32)
 		printf("Terminal need to be at least 100X32 Characters to run shell\n The SDAQ_psim forced to run Headless\n");
 	else
-		user_interface(start_sn, num_of_pSDAQ, pSDAQs_mem);
+		user_interface(thread_arg.can_if_name, start_sn, num_of_pSDAQ, pSDAQs_mem);
 
 	for(int i=0;i<num_of_pSDAQ;i++)
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
@@ -278,7 +278,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								case Start_command:
 									if(arg.pSDAQ_mem->address != Parking_address)
 									{
-										arg.pSDAQ_mem->status |= 1; //set run bit of status byte, start measure 
+										arg.pSDAQ_mem->status |= 1; //set run bit of status byte, start measure
 										p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									}
 									break;
@@ -299,7 +299,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									}
 									break;
 								case Change_SDAQ_baudrate:
-									arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte, stop measure 
+									arg.pSDAQ_mem->status &= ~(1); //clear run bit of status byte, stop measure
 									p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									break;
 								case Query_Dev_info:

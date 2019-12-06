@@ -17,4 +17,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_psim_types.h"
 //string with the usage of the shell
 extern const char shell_help_str[];
-void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);
+void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);

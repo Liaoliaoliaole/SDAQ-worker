@@ -64,7 +64,7 @@ void history_buff_free_node(gpointer node)
 }
 
 //Implementation of the user's Interface function
-void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
+void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
 	unsigned int end_index=0, cur_pos=0, key, argc, last_curx, history_buffs_index=0;
 	char *argv[max_amount_of_user_arg] = {NULL};
@@ -86,6 +86,7 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 		key = getch();// get the user's entrance
 		switch(key)
 		{
+
 			case 3 ://ctrl + c clear buffer
 				move(getcury(stdscr),3);
 				clrtoeol();
@@ -93,6 +94,10 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 				cur_pos = 0;
 				for(int i=0;i<user_inp_buf_size;i++)
 					usr_in_buff[i] = '\0';
+				break;
+			case 9 ://ctrl + i print CAN-if
+				printw("SDAQ_psim interfacing with \"%s\"",CAN_if);
+				printw("\n][ ");
 				break;
 			case 17 ://ctrl + q
 				SDAQ_psim_run = 0;
@@ -227,6 +232,11 @@ void user_interface(unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_mem
 						move(getcury(stdscr),getcurx(stdscr)-(end_index-cur_pos));
 					}
 				}
+				else
+				{
+					printw("Special key = %d",key);
+					printw("\n][ ");
+				}
 				break;
 		}
 	}
@@ -258,7 +268,7 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 	buff_arr[2] = strtok (NULL, "/");
 	if(buff_arr[0] && buff_arr[1] && buff_arr[2])
 	{
-		if(atoi(buff_arr[0])<2000 || 
+		if(atoi(buff_arr[0])<2000 ||
 		   atoi(buff_arr[1])>12 || !atoi(buff_arr[1]) ||
 		   atoi(buff_arr[2])>31 || !atoi(buff_arr[2]))
 			return 1;
@@ -586,12 +596,13 @@ const char shell_help_str[]={
 	"\tKEY_DOWN  = Buffer Down\n"
 	"\tKEY_LEFT  = Cursor move left by 1\n"
 	"\tKEY_RIGTH = Cursor move Right by 1\n"
-	"\tCtrl + C  = Clear current buffer\n"
-	"\tCtrl + L  = Clear screen\n"
-	"\tCtrl + Q  = Quit\n"
-	"\n COMMANDS:\n"
-	"\tstatus (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing\n\n"
-	"\tget (S/N) = Get the current outputs state\n\n"
+	"\tCtrl + c  = Clear current buffer\n"
+	"\tCtrl + l  = Clear screen\n"
+	"\tCtrl + i  = print used CAN-if\n"
+	"\tCtrl + q  = Quit\n"
+	" COMMANDS:\n"
+	"\tstatus (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing\n"
+	"\tget (S/N) = Get the current outputs state\n"
 	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
 	"\tset (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)\n"
 	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
@@ -615,8 +626,8 @@ void shell_help()
 	keypad(help_win, TRUE);
 	curs_set(0);//hide cursor
 	scrollok(help_win, TRUE);
-	mvwprintw(help_win,1,1,"%s",shell_help_str);
-	wprintw(help_win,"\n  Press Ctrl+C to exit help");
+	mvwprintw(help_win, 1, 1, "%s", shell_help_str);
+	mvwprintw(help_win, height-2, 1, " Press Ctrl+C to exit help");
 	box(help_win, 0 , 0);
 	wrefresh(help_win);
 	do{
