@@ -96,8 +96,8 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 					usr_in_buff[i] = '\0';
 				break;
 			case 9 ://ctrl + i print CAN-if
-				printw("SDAQ_psim interfacing with \"%s\"",CAN_if);
-				printw("\n][ ");
+				printw("\nSDAQ_psim interfacing with \"%s\"",CAN_if);
+				printw("\n][ %s",usr_in_buff);
 				break;
 			case 17 ://ctrl + q
 				SDAQ_psim_run = 0;
