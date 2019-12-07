@@ -53,7 +53,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		{
 			dev_address = atoi(argv[1]);
 			channel_num = atoi(argv[2]);
-			if(!strcmp(argv[0], "WriteCalibrationDate"))
+			if(!strcmp(argv[0], "WriteCalibrationDate") && argc == 7)
 			{
 				if(dev_address && dev_address<Parking_address)
 				{
@@ -65,7 +65,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 					return 0;
 				}
 			}
-			else if(!strcmp(argv[0], "WriteCalibrationPoint"))
+			else if(!strcmp(argv[0], "WriteCalibrationPoint") && argc == 6)
 			{
 				if(dev_address && dev_address<Parking_address)
 				{
