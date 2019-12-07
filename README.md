@@ -61,7 +61,7 @@ MODE:
        getinfo: Get all the available information of a SDAQ device.
                 (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')
        setinfo: Set the Calibration data and points information on a SDAQ device.
-                (Usage: SDAQ_worker CAN-IF getinfo 'SDAQ_address')
+                (Usage: SDAQ_worker CAN-IF setinfo 'SDAQ_address')
        measure: Get the measurements, status and info of a SDAQ device.
                 (Usage: SDAQ_worker CAN-IF measure 'SDAQ_address')
        logging: Get and log the measurement of a SDAQ device to a file.
@@ -73,11 +73,12 @@ Options:
            -h : Print help.
            -V : Version.
            -s : Silent print, or with mode 'getinfo' print info at stdout in XML format
-           -r : resize terminal. Used with mode 'measure'.
+           -r : resize terminal. Used with mode 'measure'
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IFs.
-           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'.
-  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.
+           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'
+           -e : External command. Used with modes 'setinfo'
+  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
   -T <format> : Timestamp format, works with -S Date.
 ```
