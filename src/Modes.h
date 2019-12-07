@@ -25,6 +25,7 @@ typedef struct option_flags{
 	unsigned char timestamp_mode;
 	char *timestamp_format;
 	char *info_file;
+	char *ext_com;
 	unsigned silent : 1;
 	unsigned verify : 1;
 	unsigned resize : 1;
@@ -52,13 +53,14 @@ typedef struct SDAQ_information_and_calibration_data{
 	struct GSList *Calibration_date_list; //list with data type date_list_data_of_node
 	struct GSlist **Cal_points_data_lists;//array of lists with data type sdaq_calibration_points_data
 }SDAQ_info_cal_data;
+
 //struct used as container type for the data of the Calibration_date_list
 typedef struct calibration_date{
 	unsigned char ch_num;
 	unsigned char year;//after 12000
 	unsigned char month;// 1 to 12
 	unsigned char day;//1 to 31
-	unsigned char period;//Calibration interval in months 
+	unsigned char period;//Calibration interval in months
 	unsigned char amount_of_points;
 }date_list_data_of_node;
 

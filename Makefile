@@ -6,7 +6,8 @@ WORK_dir=work
 SRC_dir=src
 DEP=$(WORK_dir)/Discover_and_autoconfig.o \
     $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o \
-    $(WORK_dir)/info.o $(WORK_dir)/SDAQ_drv.o \
+    $(WORK_dir)/getinfo.o $(WORK_dir)/setinfo.o\
+    $(WORK_dir)/SDAQ_drv.o \
     $(WORK_dir)/SDAQ_xml.o \
     $(WORK_dir)/SDAQ_psim_UI.o \
     $(WORK_dir)/CANif_discovery.o
@@ -30,7 +31,10 @@ $(WORK_dir)/Measure.o: $(SRC_dir)/Measure.c
 $(WORK_dir)/Logging.o: $(SRC_dir)/Logging.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
-$(WORK_dir)/info.o: $(SRC_dir)/info.c
+$(WORK_dir)/getinfo.o: $(SRC_dir)/getinfo.c
+	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
+
+$(WORK_dir)/setinfo.o: $(SRC_dir)/setinfo.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 $(WORK_dir)/SDAQ_drv.o: $(SRC_dir)/SDAQ_drv.c

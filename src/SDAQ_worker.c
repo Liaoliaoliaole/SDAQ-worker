@@ -51,6 +51,7 @@ int main(int argc, char *argv[])
 	opt_flags usr_opt = {.timestamp_mode=relative,
 						 .timestamp_format=NULL,
 						 .info_file=NULL,
+						 .ext_com=NULL,
 						 .verify=0,
 						 .silent=0,
 						 .resize=0,
@@ -74,7 +75,7 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvrslt:S:T:f:")) != -1)
+	while ((c = getopt (argc, argv, "hVvrslt:S:T:f:e:")) != -1)
 	{
 		switch (c)
 		{
@@ -95,6 +96,9 @@ int main(int argc, char *argv[])
 				break;
 			case 'f'://file
 				usr_opt.info_file = optarg;
+				break;
+			case 'e'://external command on argument
+				usr_opt.ext_com = optarg;
 				break;
 			case 'v'://verify
 				usr_opt.verify = 1;
@@ -333,6 +337,7 @@ void print_usage(char *prog_name)
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IFs.\n"
 		"           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'\n"
+		"           -e : External command. Used with modes 'setinfo'\n"
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"

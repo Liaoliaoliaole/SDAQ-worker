@@ -150,7 +150,7 @@ int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
-int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints);
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit);
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char Point_num, unsigned char type);
 

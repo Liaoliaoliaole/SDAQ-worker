@@ -219,7 +219,7 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 }
 
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
-int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints)
+int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit)
 {
 	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx;
@@ -240,6 +240,7 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_cal_date_enc->day = date->tm_mday;
 	sdaq_cal_date_enc->period = period;
 	sdaq_cal_date_enc->amount_of_points = NumOfPoints;
+	sdaq_cal_date_enc->cal_units = unit;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;

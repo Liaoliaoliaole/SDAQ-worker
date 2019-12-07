@@ -43,7 +43,7 @@ pthread_mutex_t *SDAQs_mem_access;
 unsigned char SDAQ_psim_run=1;
 
 //function for decode user input
-int user_inp_dec(char **argv, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);
+int user_inp_dec(char **argv, char *usr_in_buff);
 //function for execution of user's command input
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);
 //SDAQ_psim shell help
@@ -201,7 +201,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 			case '\n' ://return or enter : Command decode and execution
 				usr_in_buff[end_index] = '\0';
 				move(getcury(stdscr),getcurx(stdscr)+(end_index-cur_pos));
-				argc = user_inp_dec(argv, usr_in_buff, start_sn, num_of_pSDAQ, pSDAQs_mem);
+				argc = user_inp_dec(argv, usr_in_buff);
 				user_com(argc, argv, start_sn, num_of_pSDAQ, pSDAQs_mem);
 				printw("\n][ ");
 				end_index = 0;
@@ -246,7 +246,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 	return;
 }
 
-int user_inp_dec(char **arg, char *usr_in_buff, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
+int user_inp_dec(char **arg, char *usr_in_buff)
 {
 	unsigned char i=0;
 	static char decode_buff[user_inp_buf_size];//assistance copy buffer, used instead of usr_in_buff to do not destroy the contents
@@ -330,12 +330,13 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 							cal_date.tm_mon = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month - 1;
 							cal_date.tm_mday =  pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day;
 							strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
-							printw("\n\tCH%02d: Calibrated @ %s, period %hhu month, Calibrated with %d point, unit -> %s"
+							printw("\n\tCH%02d: Calibrated @ %s, period %3hhu month, Calibrated with %2d point, unit -> %s%s"
 									,i+1
 									,str_buff
 									,pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].period
 									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points
-									,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]);
+									,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]
+									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units<Unit_code_base_region_size?"(BASE)":"");
 						}
 					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 					return;

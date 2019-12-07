@@ -32,7 +32,7 @@ _SDAQ_worker()
 
     getinfo_opts="-t -s -f"
 
-    setinfo_opts="-t -s -f"
+    setinfo_opts="-t -s -f -e"
 
 	logging_opts="-T -t -S"
 
