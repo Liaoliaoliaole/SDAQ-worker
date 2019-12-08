@@ -297,7 +297,7 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 		switch(node_dec->type)
 		{
 			case meas:
-				printf(" | %d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
+				printf(" | %2d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
 				break;
 			case ref:
 				printf(" %8.3f | ",node_dec->data_of_point);
@@ -314,7 +314,7 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 			case C3:
 				printf(" %8.3f |\n",node_dec->data_of_point);
 				if(node_dec->points_num<amount_of_points-1)
-					printf(" |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
+					printf(" |----|-----------|-----------|-----------|-----------|-----------|-----------|\n");
 				break;
 			//default :
 		}
@@ -341,11 +341,11 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 											  buff,
 											  node_dec->period,
 											  node_dec->amount_of_points);
-		printf(" /---------------------------------------------------------------------------\\\n"
-			   " | # |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |\n"
-		       " |---|-----------|-----------|-----------|-----------|-----------|-----------|\n");
+		printf(" /----------------------------------------------------------------------------\\\n"
+			   " | #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |\n"
+		       " |----|-----------|-----------|-----------|-----------|-----------|-----------|\n");
 		g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
-		printf(" \\---------------------------------------------------------------------------/\n");
+		printf(" \\----------------------------------------------------------------------------/\n");
 	}
 
 	return;
