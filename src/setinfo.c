@@ -82,7 +82,6 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		if(usr_flag->info_file)
 		{
 			printf("info XML File is \"%s\"\n",usr_flag->info_file);
-			return 0;
 		}
 		else
 		{
