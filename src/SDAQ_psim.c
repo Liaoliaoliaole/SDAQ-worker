@@ -412,8 +412,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 					arg.pSDAQ_mem->status_send_cnt = Stat_ID_Interval;
 				}
-				else
-					arg.pSDAQ_mem->status_send_cnt--;
+				arg.pSDAQ_mem->status_send_cnt--;
 				if(arg.pSDAQ_mem->pSDAQ_flags & 1<<cal_dates_send)//check if the force send of the cal dates flag is on.
 				{
 					arg.pSDAQ_mem->pSDAQ_flags &= ~(1<<cal_dates_send); //reset force send of the cal dates flag
