@@ -1,4 +1,5 @@
 /*
+File: setinfo.c. Implementation of function for mode "setinfo"
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify

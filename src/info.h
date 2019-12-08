@@ -1,4 +1,5 @@
 /*
+File: Info.h, Declaration of functions Shared between setinfo and getinfo.
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify

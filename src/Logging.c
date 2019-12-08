@@ -1,4 +1,5 @@
-/*   
+/*
+File: Logging.c, Implementation of function for mode "logging"
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -20,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <math.h>
 #include <signal.h>
-#include <pthread.h> 
+#include <pthread.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>

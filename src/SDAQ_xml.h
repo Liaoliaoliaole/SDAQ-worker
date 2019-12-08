@@ -1,4 +1,5 @@
-/*   
+/*
+File: SDAQ_xml.c, Declaration of functions for read and write SDAQ related XMLs
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
@@ -16,5 +17,5 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 /* SDAQ_xml function declaration*/
 /*function used in info.c convert the arg (aka SDAQ_info_cal_data*) to xml.
-  if file_path is valid save, otherwise it's print it to stdout*/ 
+  if file_path is valid save, otherwise it's print it to stdout*/
 int XML_info_file_write(char *file_path, void *arg);

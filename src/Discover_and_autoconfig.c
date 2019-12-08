@@ -1,4 +1,5 @@
 /*
+File: Discovery_and_autoconfig.c.  Implementation of functions for modes "Discovery" and "autoconfig".
 Copyright (C) 12019-12020  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
