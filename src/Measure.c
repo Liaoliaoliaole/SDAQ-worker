@@ -218,18 +218,18 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %-4s"
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]);
 							else
-								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor  ",id_dec->channel_num);
+								mvwprintw(arg->raw_meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor    ",id_dec->channel_num);
 							wrefresh(arg->raw_meas_win);
 							break;
 						case Measurement_value:
 							mvwprintw(arg->meas_win,1,2,"Calibrated:");
 							mvwprintw(arg->meas_win,2,4,"Time -> %5d (msec)",meas_dec->timestamp);
 							if(!(meas_dec->status))
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %s%6s  "
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %s%3s  "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]
-													,meas_dec->unit<Unit_code_base_region_size?"(Base)":"");
+													,meas_dec->unit<Unit_code_base_region_size?"(B)":"");
 							else
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor   ",id_dec->channel_num);
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor     ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
 							break;
 						case Device_status:

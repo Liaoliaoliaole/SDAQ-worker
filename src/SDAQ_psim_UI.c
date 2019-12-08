@@ -385,9 +385,8 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						if(strstr(argv[2],"off"))// Disable PseudoSDAQ
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<disable;
+								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<disable;//Set pSDAQ offLine
 								pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
-								pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;
 							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 							printw("\n   SDAQ %010d: Offline",sn_dec);
 							return;
@@ -395,7 +394,8 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						else if(strstr(argv[2],"on"))// Enable PseudoSDAQ
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags &= ~(1<<disable);
+								pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags &= ~(1<<disable);//Set pSDAQ onLine
+								pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;//force a send of status message
 							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 							printw("\n   SDAQ %010d: online",sn_dec);
 							return;
@@ -409,7 +409,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 										pSDAQs_mem[sn_dec-start_sn].address = Parking_address;
 										pSDAQs_mem[sn_dec-start_sn].status &= ~(0x01); // stop measuring
-										pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;
+										pSDAQs_mem[sn_dec-start_sn].status_send_cnt = 0;//force a send of status message
 									pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 									return;
 								}
