@@ -101,7 +101,7 @@ int XML_info_file_write(char *file_path, void *arg)
 		}
 	}
     //write the xml_doc to stdout or to file
-    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", 1);
+    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", file_path[0]=='-'?0:1);
 	//free allocated memory
 	xmlFreeDoc(xml_doc);
 	xmlCleanupParser();
@@ -119,7 +119,7 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 	switch(type)
 	{
 		case t_float:
-			sprintf((char*)buff,"%f",*((float *)contents_ptr));
+			sprintf((char*)buff,"%g",*((float *)contents_ptr));
 			break;
 		case t_integer_ubyte:
 			sprintf((char*)buff,"%u",*((unsigned char*)contents_ptr));

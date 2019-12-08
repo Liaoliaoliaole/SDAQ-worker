@@ -236,7 +236,7 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_id_ptr->channel_num = channel_num;
 	frame_tx.can_dlc = sizeof(sdaq_calibration_date);//Payload size
 	sdaq_cal_date_enc->year = date->tm_year - 100;//100 = 2000-1900
-	sdaq_cal_date_enc->month = date->tm_mon;
+	sdaq_cal_date_enc->month = date->tm_mon + 1;
 	sdaq_cal_date_enc->day = date->tm_mday;
 	sdaq_cal_date_enc->period = period;
 	sdaq_cal_date_enc->amount_of_points = NumOfPoints;

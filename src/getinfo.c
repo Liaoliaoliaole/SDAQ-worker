@@ -19,19 +19,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <math.h>
 
-#include <ncurses.h>
-
-#include <glib.h>
-#include <gmodule.h>
-
 #include <sys/time.h>
 #include <signal.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "SDAQ_drv.h"
-#include "Modes.h"
+#include "info.h"//including -> "SDAQ_drv.h", "Modes.h"
 #include "SDAQ_xml.h"
 
 //message reception flags union. Contains a struct with the flags and the amount of available channel,
@@ -47,27 +41,13 @@ union RX_info_calibration_date_flags_short{
 //Global Variables
 volatile unsigned char info_TMR_exp=1;
 
-	/*----- local functions  -----*/
-int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
-//Declaration of function for Calibration_date_list
-date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date
-void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
-gint SDAQ_date_node_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
-//Declaration of function for Cal_points_data_lists
-sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists
-void free_SDAQ_cal_point_node(gpointer Point_node);//used with g_slist_free_full to free the data of node
-//Called from g_slist_foreach. the pass_arg is the array with with the list of calibration data points
-void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer pass_arg);
-
 	/*------ Implementation of functions------*/
-
 int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
 	//Local variables, SDAQ information and calibration date and data.
 	SDAQ_info_cal_data str={0};
 	int retval;
-	retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str);
-	if(!retval)
+	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str)))
 	{
 		if(!usr_flag->silent)
 		{
@@ -103,7 +83,6 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 				XML_info_file_write("-", &str);
 		}
 	}
-
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
@@ -297,22 +276,22 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 		switch(node_dec->type)
 		{
 			case meas:
-				printf(" | %2d | %8.3f  | ",node_dec->points_num, node_dec->data_of_point);
+				printf(" | %2d | %8.3g  | ",node_dec->points_num, node_dec->data_of_point);
 				break;
 			case ref:
-				printf(" %8.3f | ",node_dec->data_of_point);
+				printf(" %8.3g | ",node_dec->data_of_point);
 				break;
 			case offset:
-				printf(" %8.3f | ",node_dec->data_of_point);
+				printf(" %8.3g | ",node_dec->data_of_point);
 				break;
 			case gain:
-				printf(" %8.3f | ",node_dec->data_of_point);
+				printf(" %8.3g | ",node_dec->data_of_point);
 				break;
 			case C2:
-				printf(" %8.3f | ",node_dec->data_of_point);
+				printf(" %8.3g | ",node_dec->data_of_point);
 				break;
 			case C3:
-				printf(" %8.3f |\n",node_dec->data_of_point);
+				printf(" %8.3g |\n",node_dec->data_of_point);
 				if(node_dec->points_num<amount_of_points-1)
 					printf(" |----|-----------|-----------|-----------|-----------|-----------|-----------|\n");
 				break;

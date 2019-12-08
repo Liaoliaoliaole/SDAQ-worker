@@ -21,17 +21,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <ncurses.h>
 
-#include <glib.h>
-#include <gmodule.h>
-
 #include <sys/time.h>
 #include <signal.h>
 
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include "SDAQ_drv.h"
-#include "Modes.h"
+#include "info.h"//including -> "SDAQ_drv.h", "Modes.h"
 #include "SDAQ_xml.h"
 
 //Local Functions
@@ -43,36 +39,37 @@ int date_to_tm(struct tm *output_date, char *input_buff);
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
 	char *argv[10];
-	unsigned char argc, dev_address, channel_num, period, NumOfPoints, Point_num, type, unit;
+	unsigned char argc, channel_num, period, NumOfPoints, Point_num, type, unit;
 	float point_val;
 	struct tm date;
+	SDAQ_info_cal_data str={0};
+	int retval;
 	if(usr_flag->ext_com)
 	{
 		argc = str_dec(argv, usr_flag->ext_com, " ");
-		if(argc == 7 || argc == 6)
+		if(argc == 6 || argc == 5)
 		{
-			dev_address = atoi(argv[1]);
-			channel_num = atoi(argv[2]);
-			if(!strcmp(argv[0], "WriteCalibrationDate") && argc == 7)
+			channel_num = atoi(argv[1]);
+			if(!strcmp(argv[0], "WriteCalibrationDate") && argc == 6)
 			{
-				if(dev_address && dev_address<Parking_address)
+				if(dev_addr && dev_addr<Parking_address)
 				{
-					date_to_tm(&date, argv[3]);
-					period = atoi(argv[4]);
-					NumOfPoints = atoi(argv[5]);
-					unit = atoi(argv[6]);
-					WriteCalibrationDate(socket_num, dev_address, channel_num, &date, period, NumOfPoints, unit);
+					date_to_tm(&date, argv[2]);
+					period = atoi(argv[3]);
+					NumOfPoints = atoi(argv[4]);
+					unit = atoi(argv[5]);
+					WriteCalibrationDate(socket_num, dev_addr, channel_num, &date, period, NumOfPoints, unit);
 					return 0;
 				}
 			}
-			else if(!strcmp(argv[0], "WriteCalibrationPoint") && argc == 6)
+			else if(!strcmp(argv[0], "WriteCalibrationPoint") && argc == 5)
 			{
-				if(dev_address && dev_address<Parking_address)
+				if(dev_addr && dev_addr<Parking_address)
 				{
-					point_val = atof(argv[3]);
-					Point_num = atoi(argv[4]);
-					type = atoi(argv[5]);
-					WriteCalibrationPoint(socket_num, dev_address, channel_num, point_val, Point_num, type);
+					point_val = atof(argv[2]);
+					Point_num = atoi(argv[3]);
+					type = atoi(argv[4]);
+					WriteCalibrationPoint(socket_num, dev_addr, channel_num, point_val, Point_num, type);
 					return 0;
 				}
 			}
@@ -80,14 +77,24 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		printf("External command is Unknown\n");
 		return 0;
 	}
-
-	if(usr_flag->info_file)
+	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str)))
 	{
-		printf("info XML File is \"%s\"\n",usr_flag->info_file);
-		return 0;
+		if(usr_flag->info_file)
+		{
+			printf("info XML File is \"%s\"\n",usr_flag->info_file);
+			return 0;
+		}
+		else
+		{
+			printf("UI Not Implemented!!!\n");
+		}
 	}
-	printf("Not Implemented!!!\n");
-	return 0;
+	//free the list and the arrays
+	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
+	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
+		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+	free(str.Cal_points_data_lists);
+	return retval;
 }
 
 int str_dec(char **arg, char *input_buff, const char *delim)
