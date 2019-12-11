@@ -133,6 +133,9 @@ typedef struct pSDAQ_sync_debug_data{
 
 #pragma pack(pop)//Disable packing
 
+//Decoder for the status byte field from "CAN Device_ID/Status" message
+const char * status_byte_dec(unsigned char status_byte,unsigned char field);
+
 				/*Master -> SDAQ Functions*/
 /*All the functions return 0 in success and 1 on failure */
 //Request start of measure from the SDAQ device. For all dev_addr=0
