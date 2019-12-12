@@ -24,7 +24,8 @@ extern pthread_mutex_t *SDAQs_mem_access;
 
 enum pSDAQ_flags_mask{
 	disable = 0,
-	cal_dates_send = 1
+	cal_dates_send,
+	info_send
 };
 
 //struct definition of memory space of a pseudo_SDAQ

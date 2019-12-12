@@ -419,6 +419,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 					for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 						p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
 				}
+				if(arg.pSDAQ_mem->pSDAQ_flags & 1<<info_send)
+					p_DeviceInfo(socket_num, arg.pSDAQ_mem->address, arg.pSDAQ_mem->number_of_channels);
 			pthread_mutex_unlock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 			// get time and calc different
 			clock_gettime(CLOCK_MONOTONIC_RAW, &tend);
