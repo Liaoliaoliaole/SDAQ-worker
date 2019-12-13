@@ -532,12 +532,15 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						else if(!strcmp(argv[2],"all"))
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								if(!strcmp(argv[3],"noise"))
-									pSDAQs_mem[sn_dec-start_sn].noise = -1;
-								else if(!strcmp(argv[3],"nonoise"))
+
+								if(!strcmp(argv[3],"nonoise"))
 									pSDAQs_mem[sn_dec-start_sn].noise = 0;
+								else if(!strcmp(argv[3],"noise"))
+									pSDAQs_mem[sn_dec-start_sn].noise = -1;
 								else if(!strcmp(argv[3],"nosensor"))
 									pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
+								else if(!strcmp(argv[3],"sensor"))
+										pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
 								else if(!strcmp(argv[3],"unit"))
 								{
 									if(argv[4])//Unit code
