@@ -14,7 +14,7 @@ _SDAQ_psim()
 	ifs_names=$(ls "/sys/class/net")
     # The options we'll complete.
 
-	default_opts="-V -h -l"
+	default_opts="-V -h -l -c -s"
 
     # Complete the options
     case "${COMP_CWORD}" in
@@ -25,7 +25,7 @@ _SDAQ_psim()
 			COMPREPLY=( $(compgen -W "Amount_of_pSDAQ ${default_opts}" -- ${cur}) )
             ;;
         3)
-			COMPREPLY=( $(compgen -W "Start_S/N ${default_opts}" -- ${cur}) )
+			COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )
             ;;
         *)
             COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )

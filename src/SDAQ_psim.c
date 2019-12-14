@@ -70,8 +70,8 @@ void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
 int main(int argc, char *argv[])
 {
-	unsigned int start_sn, c;
-	unsigned char num_of_pSDAQ;
+	unsigned int start_sn = 1, c;
+	unsigned char num_of_pSDAQ, init_num_of_channels = 1;
 	struct winsize term_init_size;
 	//variables for threads
 	pthread_t *CAN_socket_RX_Thread_id;
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hvl")) != -1)
+	while ((c = getopt (argc, argv, "hvls:c:")) != -1)
 	{
 		switch (c)
 		{
@@ -98,6 +98,17 @@ int main(int argc, char *argv[])
 			case 'l'://List of CAN-IF
 				CANif_discovery();
 				exit(EXIT_SUCCESS);
+			case 's'://Start S/N
+				start_sn = atoi(optarg);
+				break;
+			case 'c'://Start amount of channels
+				init_num_of_channels = atoi(optarg);
+				if(!init_num_of_channels || init_num_of_channels>16)
+				{
+					printf("Amount of channels argument is invalid\n");
+					exit(EXIT_FAILURE);
+				}
+				break;
 			case '?':
 				//print_usage(argv[0]);
 				exit(EXIT_FAILURE);
@@ -122,9 +133,7 @@ int main(int argc, char *argv[])
 	}
 	//Link signal SIGINT to quit_signal_handler
 	signal(SIGINT, sigint_signal_handler);
-	//Check if user have enter serial number start. If yes use it otherwise from 1
-	start_sn = !argv[optind+2] ? 1 : atoi(argv[optind+2]);
-	start_sn = start_sn ? start_sn : 1;
+
 	//Allocation of memory
 	CAN_socket_RX_Thread_id = malloc(sizeof(CAN_socket_RX_Thread_id)*num_of_pSDAQ); //allocate memory for the threads tags
 	pSDAQs_mem = malloc(sizeof(pSDAQ_memory_space)*num_of_pSDAQ); //allocate memory for the pseudo_SDAQs
@@ -139,7 +148,7 @@ int main(int argc, char *argv[])
 		thread_arg.start_sn = start_sn;
 		memset(&(pSDAQs_mem[i]), 0, sizeof(pSDAQ_memory_space));
 		pSDAQs_mem[i].address = Parking_address;
-		pSDAQs_mem[i].number_of_channels = 16;
+		pSDAQs_mem[i].number_of_channels = init_num_of_channels;
 		thread_arg.pSDAQ_mem = &pSDAQs_mem[i];
 		pthread_create(&CAN_socket_RX_Thread_id[i], NULL, pseudo_SDAQ, &thread_arg);
 	}
@@ -468,12 +477,13 @@ void print_usage(char *prog_name)
 	const char exp[] = {
 	"\tCAN-IF: The name of the CAN-Bus interface\n\n"
 	"\tNum_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62\n\n"
-	"\tS/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)\n\n"
 	"\tOptions:\n"
 	"\t         -h : Print Help\n"
 	"\t         -v : Print Version\n"
 	"\t         -l : Print list of CAN-IFs\n"
+	"\t         -s : -s : S/N of the first pseudo_SDAQ. (Default 1)\n"
+	"\t         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16])\n"
 	};
-	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [S/N_start_Num] [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
+	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
 }

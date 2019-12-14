@@ -84,18 +84,18 @@ Options:
 ```
 ### Usage: SDAQ_psim
 ```
-Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [S/N_start_Num] [Options]
+Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 
 	CAN-IF: The name of the CAN-Bus interface
 
 	Num_of_pSDAQ: The number of the pseudo_SDAQ devices, Range 1..62
 
-	S/N_start_Num: (Optional) The S/N of first pSDAQ. (Default 1)
-
 	Options:
 	         -h : Print Help
 	         -v : Print Version
 	         -l : Print list of CAN-IFs
+	         -s : S/N of the first pseudo_SDAQ. (Default 1)
+	         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16])
 
 			      -----SDAQ_psim Shell-----
  KEYS:
