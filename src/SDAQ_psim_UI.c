@@ -581,6 +581,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
 										pSDAQs_mem[sn_dec-start_sn].number_of_channels = atoi(argv[3]);
 										pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<info_send;//Force resend of the Info message
+										pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_date message
 									pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 									return;
 								}
