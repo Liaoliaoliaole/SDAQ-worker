@@ -15,11 +15,11 @@ The SDAQ_psim is a SDAQ software emulator.
 
 ### Prerequisites
 For compilation of this project the following dependences are required.
-* [GCC](https://gcc.gnu.org/)-The GNU Compiler Collection
+* [GCC](https://gcc.gnu.org/) - The GNU Compilers Collection
 * [GNU Make](https://www.gnu.org/software/make/) - GNU make utility
 * [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
-* [libxml2](http://xmlsoft.org/) -  Library for parsing XML documents
+* [libxml2](http://xmlsoft.org/) - Library for parsing XML documents
 ##### Optionally
 * [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
 
@@ -29,12 +29,12 @@ To compile the programs (tested under GNU/Linux only)
 ```
 $ # Clone the project's source code
 $ git clone https://gitlab.com/fantomsam/sdaq-worker.git
-$ cd sdaq-worker
+$ cd sdaq_worker
 $ # Make the compilation directory tree
 $ make tree
 $ make
 ```
-The binary files located under the ./build directory.
+The executable binary files located under the ./build directory.
 
 ### Installation
 ```
