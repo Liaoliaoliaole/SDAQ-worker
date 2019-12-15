@@ -3,7 +3,7 @@
 ## Preamp
 This repository related to a software control and emulate suite related to SDAQ devices. An SDAQs is a proprietary (developed by iCraft Oy) acquisition devices with predefined physical input (voltage, current, thermocouple, etc) and CANBus interface as output.
 
-The SDAQ_worker project was started with the phylosophy to make some softwares that can control this devices from a computer that is equip with CAN interface (Linux Socket CAN compatible) and runs GNU operating system.
+The SDAQ_worker project was started with the philosophy to make some software that can control this devices from a computer that is equip with CAN interface (Linux Socket CAN compatible) and runs GNU operating system.
 
 ## Executables
 After the compilation two executable files produced:
@@ -13,13 +13,14 @@ After the compilation two executable files produced:
 The SDAQ_worker is the SDAQ manipulation/controlling software.<br>
 The SDAQ_psim is a SDAQ software emulator.
 
-### Prerequisites
-For compilation of this project the following dependences are required.
+### Requirements
+For compilation of this project the following dependencies are required.
 * [GCC](https://gcc.gnu.org/) - The GNU Compilers Collection
 * [GNU Make](https://www.gnu.org/software/make/) - GNU make utility
 * [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
 * [libxml2](http://xmlsoft.org/) - Library for parsing XML documents
+
 ##### Optionally
 * [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
 
@@ -34,7 +35,7 @@ $ # Make the compilation directory tree
 $ make tree
 $ make
 ```
-The executable binary files located under the ./build directory.
+The executable binaries located under the **./build** directory.
 
 ### Installation
 ```
