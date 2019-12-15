@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
 	//Option parsing variables
 	int c;
 	opt_flags usr_opt = {.timestamp_mode=relative,
+						 .CANif_name = NULL,
 						 .timestamp_format=NULL,
 						 .info_file=NULL,
 						 .ext_com=NULL,
@@ -152,8 +153,9 @@ int main(int argc, char *argv[])
 		perror("Error while opening socket");
 		exit(EXIT_FAILURE);
 	}
+	usr_opt.CANif_name = argv[optind];
 	//Link interface name to socket
-	strcpy(ifr.ifr_name, argv[optind]); // get value from CAN-IF arguments
+	strcpy(ifr.ifr_name, usr_opt.CANif_name); // get value from CAN-IF arguments
 	if(ioctl(socket_num, SIOCGIFINDEX, &ifr))
 	{
 		perror("CAN-IF");

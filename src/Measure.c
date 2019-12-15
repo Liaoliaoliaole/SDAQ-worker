@@ -46,6 +46,7 @@ struct thread_arguments_passer
 	unsigned char lock_kb_flag;
 	int socket_num;
 	unsigned char dev_addr;
+	char *CANif_name;
 	WINDOW *meas_win,*status_win,*info_win,*raw_meas_win;
 };
 
@@ -72,6 +73,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 
 	thread_arg.dev_addr = dev_addr;
 	thread_arg.socket_num = socket_num;
+	thread_arg.CANif_name = usr_flag->CANif_name;
 	thread_arg.lock_kb_flag = 0;
 	if(usr_flag->resize)
 		printf("\e[8;%d;%dt",term_min_height,term_min_width);//resize terminal window to the application's needs
@@ -171,7 +173,7 @@ void w_init(struct thread_arguments_passer *arg)
 	scrollok(arg->raw_meas_win, TRUE);
 	mvprintw(0,0,"%d %d",term_row,term_col);//ncurses stdscr size -- does not show in the screen, move after clean
 	clear();
-	mvprintw(0,term_col/2-10,"Device Address: %d",arg->dev_addr);
+	mvprintw(0,term_col/2-14,"Device Address: %d (%s)", arg->dev_addr, arg->CANif_name);
 	mvprintw(term_min_height-2,term_col/2-w_stat_info_width,"Function Buttons:");
 	if(arg->lock_kb_flag)
 		printw(" Locked");

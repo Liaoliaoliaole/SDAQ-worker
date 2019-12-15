@@ -24,6 +24,7 @@ enum time_stamp_mode{
 // struct that contains the user's options
 typedef struct option_flags{
 	unsigned char timestamp_mode;
+	char *CANif_name;
 	char *timestamp_format;
 	char *info_file;
 	char *ext_com;
