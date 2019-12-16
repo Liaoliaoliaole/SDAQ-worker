@@ -685,9 +685,9 @@ const char shell_help_str[]={
 	"\tset (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)\n"
 	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
 	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
-	"\tset (S/N) (ch# || all) date (now || YYYY/MM/DD) = Write Calibration Date \n"
-	"\tset (S/N) (ch# || all) points # = Write Amount of Calibration points \n"
-	"\tset (S/N) (ch# || all) period # = Write Calibration period \n"
+	"\tset (S/N) (ch# || all) date (now || YYYY/MM/DD) = Write Calibration Date\n"
+	"\tset (S/N) (ch# || all) points # = Write Amount of Calibration points\n"
+	"\tset (S/N) (ch# || all) period # = Write Calibration period\n"
 	"\tset (S/N) (ch# || all) unit # = Write unit code\n"
 };
 

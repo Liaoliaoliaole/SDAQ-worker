@@ -119,6 +119,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
 	set (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date
 	set (S/N) (ch# || all) points # = Load Amount of Calibration points
+	set (S/N) (ch# || all) period # = Write Calibration period
 	set (S/N) (ch# || all) unit # = Load unit code
 ```
 
