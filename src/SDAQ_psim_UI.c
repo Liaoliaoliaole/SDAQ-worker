@@ -533,7 +533,6 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						else if(!strcmp(argv[2],"all"))
 						{
 							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-
 								if(!strcmp(argv[3],"nonoise"))
 									pSDAQs_mem[sn_dec-start_sn].noise = 0;
 								else if(!strcmp(argv[3],"noise"))
@@ -558,6 +557,73 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 											printw("\n Argument of unit code is out of range");
 									}
 								}
+								else if(!strcmp(argv[3],"date"))
+								{
+									if(argv[4])//Calibration date
+									{
+										if(!strcmp(argv[4],"now"))//if argument is "now"
+										{
+											time_t now = time(NULL);
+											memcpy(&cal_date, gmtime(&now), sizeof(struct tm));
+											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+											{
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year = cal_date.tm_year - 100; //100 = 2000-1900
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month = cal_date.tm_mon + 1; //+1 to get 12
+												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day = cal_date.tm_mday;
+												strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+												printw("\nSet Cal date for ch%02d @ %s", i+1, str_buff);
+											}
+											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+										}
+										else
+										{
+											if(!exp_date_dec_validator(&cal_date,argv[4]))
+											{
+												for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+												{
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year = cal_date.tm_year - 100; //100 = 2000-1900
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month = cal_date.tm_mon + 1; //+1 to get 12
+													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day = cal_date.tm_mday;
+													strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+													printw("\nSet Cal date for ch%02d @ %s", i+1, str_buff);
+												}
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
+											else
+												printw("\n Argument of Date is invalid");
+										}
+									}
+								}
+								else if(!strcmp(argv[3],"period"))
+								{
+									if(argv[4])// Calibration period
+									{
+										sprintf(str_buff,"%i",atoi(argv[4]));//verification
+										if(strstr(str_buff,argv[4]) && atoi(argv[4]) < 255)
+										{
+											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].period = atoi(argv[4]);
+											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+										}
+										else
+											printw("\n Argument for Calibration Period is out of range");
+									}
+								}
+								else if(!strcmp(argv[3],"points"))
+								{
+									if(argv[4])//amount of points
+									{
+										sprintf(str_buff,"%i",atoi(argv[4]));//verification
+										if(strstr(str_buff,argv[4]) && atoi(argv[4])>= 0 && atoi(argv[4])<=16)
+										{
+											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points = atoi(argv[4]);
+											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+										}
+										else
+											printw("\n Argument for amount of points is out of range");
+									}
+								}
 								else
 								{	//check if the argument is number
 									sprintf(str_buff,"%f",atof(argv[3]));
@@ -567,8 +633,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
 											pSDAQs_mem[sn_dec-start_sn].out_val[i] = atof(argv[3]);
 									}
-									else
+									else if(!argv[4])
 										printw("\nError: out_value argument is not a number");
+									else
+										printw("\n  ????");
 								}
 							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 							return;
@@ -612,13 +680,13 @@ const char shell_help_str[]={
 	"\tstatus (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing\n"
 	"\tget (S/N) = Get the current outputs state\n"
 	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
+	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"
+	"\tset (S/N) amount = Set the amount of channels. Range 1..16\n"
 	"\tset (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)\n"
 	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
 	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
-	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"
-	"\tset (S/N) amount = Set the amount of channels. Range 1..16\n"
-	"\tset (S/N) (ch#) date (now || YYYY/MM/DD) = Load Calibration Date \n"
-	"\tset (S/N) (ch#) points # = Load Amount of Calibration points \n"
+	"\tset (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date \n"
+	"\tset (S/N) (ch# || all) points # = Load Amount of Calibration points \n"
 	"\tset (S/N) (ch# || all) unit # = Load unit code\n"
 };
 

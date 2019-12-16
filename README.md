@@ -108,20 +108,17 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 	Ctrl + L  = Clear screen
 	Ctrl + I  = print used CAN-if
 	Ctrl + Q  = Quit
-
  COMMANDS:
 	status (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing
-
 	get (S/N) = Get the current outputs state
-
 	set (S/N) on/off = Set a pseudo-SDAQ on or off line
+	set (S/N) address (# || parking) = Set pSDAQ's address
+	set (S/N) amount = Set the amount of channels. Range 1..16
 	set (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)
 	set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
 	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
-	set (S/N) address (# || parking) = Set pSDAQ's address
-	set (S/N) amount = Set the amount of channels. Range 1..16
-	set (S/N) (ch#) date (now || YYYY/MM) = Load Exp_date
-	set (S/N) (ch#) points # = Load Amount of Calibration points
+	set (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date
+	set (S/N) (ch# || all) points # = Load Amount of Calibration points
 	set (S/N) (ch# || all) unit # = Load unit code
 ```
 
