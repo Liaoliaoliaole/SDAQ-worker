@@ -284,7 +284,8 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned char sn_dec, channel_dec;
+	unsigned char  channel_dec;
+	unsigned int sn_dec;
 	char *channel_str, str_buff[30];
 	struct tm cal_date;
 	if(argv[0])
