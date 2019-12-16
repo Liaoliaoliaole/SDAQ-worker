@@ -507,14 +507,14 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 												printw("\n Argument of unit code is out of range");
 										}
 									}
-									else if(!strcmp(argv[3],"noise"))
-										pSDAQs_mem[sn_dec-start_sn].noise |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"nonoise"))
 										pSDAQs_mem[sn_dec-start_sn].noise &= ~(1<<(channel_dec-1));
-									else if(!strcmp(argv[3],"sensor"))
-										pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+									else if(!strcmp(argv[3],"noise"))
+										pSDAQs_mem[sn_dec-start_sn].noise |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"nosensor"))
 										pSDAQs_mem[sn_dec-start_sn].nosensor |= 1<<(channel_dec-1);
+									else if(!strcmp(argv[3],"sensor"))
+										pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
 									else
 									{	//check if the argument is number
 										sprintf(str_buff,"%f",atof(argv[3]));
