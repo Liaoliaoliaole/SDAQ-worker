@@ -20,15 +20,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 extern const char *unit_str[];
 extern const char *dev_type_str[];
 extern const char *dev_status_str[][8];
+extern const char *channel_status_str[];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;
-// enumerator for Status byte
+// enumerator for Device Status byte
 enum status_byte{
 	State = 0,
 	In_sync = 1,
 	Error = 2,
 	Mode = 7
+};
+
+// enumerator for Device Status byte
+enum channel_status_byte{
+	No_sensor = 0,
+	Out_of_range = 1
 };
 
 // enumerator for Calibration Point Data type byte
@@ -135,6 +142,8 @@ typedef struct pSDAQ_sync_debug_data{
 
 //Decoder for the status byte field from "CAN Device_ID/Status" message
 const char * status_byte_dec(unsigned char status_byte,unsigned char field);
+//Decoder for the status byte field from "Measure" message
+const char * Channel_status_byte_dec(unsigned char status_byte);
 
 				/*Master -> SDAQ Functions*/
 /*All the functions return 0 in success and 1 on failure */

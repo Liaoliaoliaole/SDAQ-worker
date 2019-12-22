@@ -362,12 +362,13 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
 						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
 						{
-							printw("\n\tCH%02d: Out_val = %.3f %s%s%s"
+							printw("\n\tCH%02d: Out_val = %.3f %s%s%s%s"
 									  ,i+1
 									  ,pSDAQs_mem[sn_dec-start_sn].out_val[i]
 									  ,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]
 									  ,pSDAQs_mem[sn_dec-start_sn].noise & (1<<i) ? ", With Noise":""
-									  ,pSDAQs_mem[sn_dec-start_sn].nosensor & (1<<i) ? ", No sensor":"");
+									  ,pSDAQs_mem[sn_dec-start_sn].nosensor & (1<<i) ? ", No sensor":""
+									  ,pSDAQs_mem[sn_dec-start_sn].out_of_range & (1<<i) ? ", Out of Range":"");
 						}
 					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 					return;
@@ -515,6 +516,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										pSDAQs_mem[sn_dec-start_sn].nosensor |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"sensor"))
 										pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+									else if(!strcmp(argv[3],"out"))
+										pSDAQs_mem[sn_dec-start_sn].out_of_range |= 1<<(channel_dec-1);
+									else if(!strcmp(argv[3],"in"))
+										pSDAQs_mem[sn_dec-start_sn].out_of_range &= ~(1<<(channel_dec-1));
 									else
 									{	//check if the argument is number
 										sprintf(str_buff,"%f",atof(argv[3]));
@@ -541,6 +546,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
 								else if(!strcmp(argv[3],"sensor"))
 										pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
+								else if(!strcmp(argv[3],"out"))
+										pSDAQs_mem[sn_dec-start_sn].out_of_range = -1;
+								else if(!strcmp(argv[3],"in"))
+										pSDAQs_mem[sn_dec-start_sn].out_of_range = 0;
 								else if(!strcmp(argv[3],"unit"))
 								{
 									if(argv[4])//Unit code
@@ -684,6 +693,7 @@ const char shell_help_str[]={
 	"\tset (S/N) amount = Set the amount of channels. Range 1..16\n"
 	"\tset (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)\n"
 	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
+	"\tset (S/N) (ch# || all) (out || in) = [Re]Set \"out of range\" flag(s)\n"
 	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
 	"\tset (S/N) (ch# || all) date (now || YYYY/MM/DD) = Write Calibration Date\n"
 	"\tset (S/N) (ch# || all) points # = Write Amount of Calibration points\n"

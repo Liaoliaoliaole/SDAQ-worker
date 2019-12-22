@@ -230,8 +230,10 @@ void * CAN_socket_RX(void *varg_pt)
 								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d = %9.3f %s%3s  "
 													,id_dec->channel_num,meas_dec->meas,unit_str[meas_dec->unit]
 													,meas_dec->unit<Unit_code_base_region_size?"(B)":"");
+							else if(meas_dec->status&(1<<No_sensor))
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor    ",id_dec->channel_num);
 							else
-								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    No sensor     ",id_dec->channel_num);
+								mvwprintw(arg->meas_win,id_dec->channel_num-1+3,4,"CH%02d =    Out of range     ",id_dec->channel_num);
 							wrefresh(arg->meas_win);
 							break;
 						case Device_status:

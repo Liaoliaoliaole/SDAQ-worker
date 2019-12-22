@@ -396,7 +396,8 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 						{
 							noise = arg.pSDAQ_mem->noise & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
-							p_measure(socket_num, arg.pSDAQ_mem->address, i+1, ((arg.pSDAQ_mem->nosensor)>>i)&1, arg.pSDAQ_mem->ch_cal_date[i].cal_units,
+							p_measure(socket_num, arg.pSDAQ_mem->address, i+1, (((arg.pSDAQ_mem->nosensor)>>i)&1) | ((((arg.pSDAQ_mem->out_of_range)>>i)&1)<<1),
+																				 arg.pSDAQ_mem->ch_cal_date[i].cal_units,
 																				 arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 							if(raw_meas_cnt >= 10)
 								p_measure_raw(socket_num, arg.pSDAQ_mem->address, i+1, (arg.pSDAQ_mem->nosensor>>i)&1,
