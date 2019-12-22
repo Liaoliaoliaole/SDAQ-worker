@@ -86,7 +86,7 @@ const char *dev_status_str[][8]={
 {"Stand-By","No","No","","","","","Normal"},
 {"Measuring","Yes","Yes","","","","","Booting"}};
 
-//Decoder for the status byte field from "CAN Device_ID/Status" message
+//Decoder for the status byte field from "Device_ID/Status" message
 const char * status_byte_dec(unsigned char status_byte,unsigned char field)
 {
 	switch (field)

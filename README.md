@@ -116,6 +116,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 	set (S/N) amount = Set the amount of channels. Range 1..16
 	set (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)
 	set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
+	set (S/N) (ch# || all) (out || in) = [Re]Set "out of range" flag(s)
 	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
 	set (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date
 	set (S/N) (ch# || all) points # = Load Amount of Calibration points
