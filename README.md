@@ -99,29 +99,29 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 	         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16])
 
 			      -----SDAQ_psim Shell-----
- KEYS:
-	KEY_UP    = Buffer up
-	KEY_DOWN  = Buffer Down
-	KEY_LEFT  = Cursor move left by 1
-	KEY_RIGTH = Cursor move Right by 1
-	Ctrl + C  = Clear current buffer
-	Ctrl + L  = Clear screen
-	Ctrl + I  = print used CAN-if
-	Ctrl + Q  = Quit
+
+ KEYS:  KEY_UP    = Buffer up
+		KEY_DOWN  = Buffer Down
+		KEY_LEFT  = Cursor move left by 1
+		KEY_RIGTH = Cursor move Right by 1
+		Ctrl + C  = Clear current buffer
+		Ctrl + L  = Clear screen
+		Ctrl + I  = print used CAN-if
+		Ctrl + Q  = Quit
  COMMANDS:
-	status (S/N) = Print a list with status of the pSDAQ, or all if S/N is missing
-	get (S/N) = Get the current outputs state
-	set (S/N) on/off = Set a pseudo-SDAQ on or off line
-	set (S/N) address (# || parking) = Set pSDAQ's address
-	set (S/N) amount = Set the amount of channels. Range 1..16
-	set (S/N) (ch# || all) [no]noise = [Re]Set pseudo-random noise on channel(s)
-	set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
-	set (S/N) (ch# || all) (out || in) = [Re]Set "out of range" flag(s)
-	set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
-	set (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date
-	set (S/N) (ch# || all) points # = Load Amount of Calibration points
-	set (S/N) (ch# || all) period # = Write Calibration period
-	set (S/N) (ch# || all) unit # = Load unit code
+		status (S/N) = Print status of S/N or all pSDAQs without S/N
+		get (S/N) = Get the current outputs state
+		set (S/N) on/off = Set a pseudo-SDAQ on or off line
+		set (S/N) address (# || parking) = Set pSDAQ's address
+		set (S/N) amount = Set the amount of channels. Range 1..16
+		set (S/N) (ch# || all) [no]noise = [Re]Set random noise on channel(s)
+		set (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)
+		set (S/N) (ch# || all) (out || in) = [Re]Set "out of range" flag(s)
+		set (S/N) (ch# || all) Real_val = Write value to Channel(s) output
+		set (S/N) (ch# || all) date (now || YYYY/MM/DD) = Load Calibration Date
+		set (S/N) (ch# || all) points # = Load Amount of Calibration points
+		set (S/N) (ch# || all) period # = Write Calibration period
+		set (S/N) (ch# || all) unit # = Load unit code
 ```
 
 ## Examples
