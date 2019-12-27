@@ -109,7 +109,7 @@ const char * status_byte_dec(unsigned char status_byte,unsigned char field)
 int Sync(int socket_fd, unsigned short time_seed)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for synchronization measure message
@@ -127,7 +127,7 @@ int Sync(int socket_fd, unsigned short time_seed)
 int Start(int socket_fd,unsigned char dev_address)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for start measure message
@@ -144,7 +144,7 @@ int Start(int socket_fd,unsigned char dev_address)
 int Stop(int socket_fd,unsigned char dev_address)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for stop measure message
@@ -161,7 +161,7 @@ int Stop(int socket_fd,unsigned char dev_address)
 int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_address)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for change of device address message
@@ -181,7 +181,7 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for device info request command
@@ -198,7 +198,7 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Query_Calibration_Data message
@@ -217,7 +217,7 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for "Configure Additional data" command
@@ -237,7 +237,7 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	struct tm *date = date_ptr;
 	sdaq_calibration_date *sdaq_cal_date_enc = (sdaq_calibration_date*) frame_tx.data;
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
@@ -264,7 +264,7 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char point_num, unsigned char type)
 {
 	sdaq_can_id *sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	sdaq_calibration_points_data *sdaq_cal_point_data_enc = (sdaq_calibration_points_data*) frame_tx.data;
 	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
@@ -292,7 +292,7 @@ int p_debug_data(int socket_fd, unsigned char dev_address, unsigned short ref_ti
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_sync_debug_data *p_sdaq_sync_debug_data;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	memset(frame_tx.data, 0, sizeof(frame_tx.data));
@@ -316,7 +316,7 @@ int p_DeviceID_and_status(int socket_fd,unsigned char dev_address, unsigned int 
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_status *p_sdaq_status;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
@@ -340,7 +340,7 @@ int p_DeviceInfo(int socket_fd, unsigned char dev_address, unsigned char amount_
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_info *p_sdaq_info;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
@@ -367,7 +367,7 @@ int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, u
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_meas *p_sdaq_meas;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
@@ -393,7 +393,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 {
 	sdaq_can_id *p_sdaq_id_ptr;
 	sdaq_meas *p_sdaq_meas;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
@@ -418,7 +418,7 @@ int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channe
 int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_date *ch_cal_date)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
@@ -439,7 +439,7 @@ int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char c
 int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_points_data *ch_cal_point_data)
 {
 	sdaq_can_id *p_sdaq_id_ptr;
-	struct can_frame frame_tx;
+	struct can_frame frame_tx = {0};
 	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Device_status message
