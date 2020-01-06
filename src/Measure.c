@@ -142,6 +142,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			running = -1;
 	}
 	pthread_join(CAN_socket_RX_Thread_id, NULL);// wait "CAN_socket_RX_Thread_id" thread to finish
+	pthread_detach(CAN_socket_RX_Thread_id);
 	endwin();
 	if(usr_flag->resize)
 		printf("\e[8;%d;%dt",term_init_size.ws_row,term_init_size.ws_col);//restore the terminal size
