@@ -141,7 +141,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		else
 			running = -1;
 	}
-	pthread_cancel(CAN_socket_RX_Thread_id);// cancel "CAN_socket_RX_Thread_id" thread
+	pthread_join(CAN_socket_RX_Thread_id, NULL);// wait "CAN_socket_RX_Thread_id" thread to finish
 	endwin();
 	if(usr_flag->resize)
 		printf("\e[8;%d;%dt",term_init_size.ws_row,term_init_size.ws_col);//restore the terminal size
@@ -202,7 +202,7 @@ void * CAN_socket_RX(void *varg_pt)
 	sdaq_meas *meas_dec = (sdaq_meas *)frame_rx.data;
 	sdaq_info *info_dec = (sdaq_info *)frame_rx.data;
 	sdaq_sync_debug_data *ts_dec = (sdaq_sync_debug_data *)frame_rx.data;
-	while(1)
+	while(running)
 	{
 		RX_bytes=read(arg->socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))

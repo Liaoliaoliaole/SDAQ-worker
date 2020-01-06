@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 						 .timeout = 2 //second
 						};
 	//Variables for Socket CAN
-	struct timeval tv;
-	struct ifreq ifr;
-	struct sockaddr_can addr;
-	struct can_filter RX_filter;
+	struct timeval tv = {0};
+	struct ifreq ifr = {0};
+	struct sockaddr_can addr = {0};
+	struct can_filter RX_filter = {0};
 	sdaq_can_id *can_filter_enc;
 	int socket_num;
 	//Variables for SDAQ_dev
