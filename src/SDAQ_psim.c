@@ -161,8 +161,10 @@ int main(int argc, char *argv[])
 		user_interface(thread_arg.can_if_name, start_sn, num_of_pSDAQ, pSDAQs_mem);
 
 	for(int i=0;i<num_of_pSDAQ;i++)
+	{
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
-
+		pthread_detach(CAN_socket_RX_Thread_id[i]);//deallocate pseudo_SDAQ thread memory 
+	}
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
 	free(SDAQs_mem_access);
