@@ -141,7 +141,7 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		else
 			running = -1;
 	}
-	pthread_join(CAN_socket_RX_Thread_id, NULL);// wait "CAN_socket_RX_Thread_id" thread to finish
+	pthread_cancel(CAN_socket_RX_Thread_id);// stop "CAN_socket_RX_Thread_id" thread
 	pthread_detach(CAN_socket_RX_Thread_id);
 	endwin();
 	if(usr_flag->resize)
