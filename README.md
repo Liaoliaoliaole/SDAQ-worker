@@ -24,7 +24,6 @@ For compilation of this project the following dependencies are required.
 ##### Optionally
 * [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
 
-
 ### Compilation
 To compile the programs (tested under GNU/Linux only)
 ```
