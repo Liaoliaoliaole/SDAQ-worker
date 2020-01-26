@@ -70,7 +70,8 @@ void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
 int main(int argc, char *argv[])
 {
-	unsigned int start_sn = 1, c;
+	int c;
+	unsigned int start_sn = 1;
 	unsigned char num_of_pSDAQ, init_num_of_channels = 1;
 	struct winsize term_init_size;
 	//variables for threads
@@ -163,7 +164,7 @@ int main(int argc, char *argv[])
 	for(int i=0;i<num_of_pSDAQ;i++)
 	{
 		pthread_join(CAN_socket_RX_Thread_id[i], NULL);// wait pseudo_SDAQ thread to end
-		pthread_detach(CAN_socket_RX_Thread_id[i]);//deallocate pseudo_SDAQ thread memory 
+		pthread_detach(CAN_socket_RX_Thread_id[i]);//deallocate pseudo_SDAQ thread memory
 	}
 	free(CAN_socket_RX_Thread_id);
 	free(pSDAQs_mem);
@@ -179,9 +180,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 	//Variables for Socket CAN
 	struct can_frame frame_rx;
 	int RX_bytes;
-	struct ifreq ifr;
-	struct sockaddr_can addr;
-	struct can_filter RX_filter;
+	struct ifreq ifr = {0};
+	struct sockaddr_can addr = {0};
+	struct can_filter RX_filter = {0};
 	sdaq_can_id *can_filter_enc;
 	int socket_num;
 	//Variables for SDAQ_dev

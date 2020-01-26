@@ -37,9 +37,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_drv.h"
 #include "Modes.h"
 
-//global variables
-static unsigned char Discover_and_autoconf_TMR_exp=1;
-
 //Local struct for SDAQ device entry
 struct SDAQentry {
     unsigned int serial_number;
@@ -47,11 +44,13 @@ struct SDAQentry {
     unsigned char address;
 };
 
-//local functions
-struct SDAQentry* new_SDAQentry();//allocate memory for a new SDAQentry
+//global variables
+static volatile unsigned char Discover_and_autoconf_TMR_exp=1;
+
+//Local functions
 void free_SDAQentry(gpointer node);//used with g_slist_free_full to free the data of each node
 void printf_SDAQentry(gpointer SDAQ_entry, gpointer data);
-GSList * find_SDAQs(int socket_num, int scanning_time);//Construct a list with the SDAQs that is on the BUS, Sort by address.
+GSList * find_SDAQs(int socket_num, unsigned int scanning_time);//Construct a list with the SDAQs that is on the BUS, Sort by address.
 GSList * find_SDAQs_inParking(GSList * head);//Construct a list with the SDAQs that be in parking, Sort by Serial number
 GSList * find_SDAQs_Conflicts(GSList * head);//Construct a list of lists with SDAQs that have the same address
 gint SDAQentry_cmp (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_insert_sorted.
@@ -190,13 +189,6 @@ int Autoconfig(int socket_num, opt_flags *usr_flag)
 	return ret_val;
 }
 
-// Allocates space for a new SDAQ entrance
-struct SDAQentry* new_SDAQentry()
-{
-    struct SDAQentry *new_SDAQ = (struct SDAQentry *) g_slice_alloc(sizeof(struct SDAQentry));
-    return new_SDAQ;
-}
-
 // frees the allocated space for struct SDAQentry and its data
 void free_SDAQentry(gpointer SDAQentry_node)
 {
@@ -206,9 +198,9 @@ void free_SDAQentry(gpointer SDAQentry_node)
 // print function for SDAQentry node
 void printf_SDAQentry(gpointer SDAQentry, gpointer arg_pass)
 {
-	char address[12];
+	char address[5];
 	if(((struct SDAQentry *) SDAQentry)->address!=Parking_address)
-		sprintf(address,"%d",((struct SDAQentry *) SDAQentry)->address);
+		sprintf(address,"%hhu",((struct SDAQentry *) SDAQentry)->address);
 	else
 		sprintf(address,"Park");
 	if(SDAQentry)
@@ -232,11 +224,11 @@ void Discover_and_autoconf_timer_handler (int signum)
 	return;
 }
 /*return a list with all the SDAQs on bus, sort by address*/
-GSList * find_SDAQs(int socket_num, int scanning_time)
+GSList * find_SDAQs(int socket_num, unsigned int scanning_time)
 {
-	//internal List with SDAQs
-	GSList *ret_list=NULL;
-
+	//Internal List with found SDAQs
+	GSList *ret_list = NULL;
+	struct SDAQentry *new_SDAQ_data;
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes;
@@ -266,15 +258,16 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 			{
 				//target = CMP_Serial_Numbers; // set SDAQentry_find and SDAQentry_cmp to sort by serial number
 				// check if node with same Serial number exist in the list. if no, do store.
-				if(g_slist_find_custom(ret_list,(gconstpointer)&(status_dec->dev_sn),SDAQentry_find_serial_number)==NULL)
+				if(!g_slist_find_custom(ret_list,&(status_dec->dev_sn),SDAQentry_find_serial_number))
 				{
-					struct SDAQentry *new_sdaq = new_SDAQentry();
-					if (new_sdaq)
-					{	// set SDAQ info data
-						new_sdaq->serial_number = status_dec->dev_sn;
-						new_sdaq->address = id_dec->device_addr;
-						new_sdaq->dev_type = dev_type_str[status_dec->dev_type];
-						ret_list = g_slist_insert_sorted(ret_list, new_sdaq, SDAQentry_cmp);
+					// Allocates space for a new SDAQ entrance
+					if((new_SDAQ_data = g_slice_alloc0(sizeof(struct SDAQentry))))
+					{
+						// set SDAQ info data
+						new_SDAQ_data->serial_number = status_dec->dev_sn;
+						new_SDAQ_data->address = id_dec->device_addr;
+						new_SDAQ_data->dev_type = dev_type_str[status_dec->dev_type];
+						ret_list = g_slist_insert_sorted(ret_list, new_SDAQ_data, SDAQentry_cmp);
 					}
 					else
 					{
@@ -285,7 +278,7 @@ GSList * find_SDAQs(int socket_num, int scanning_time)
 			}
 		}
 	}
-	return (GSList *) ret_list;
+	return ret_list;
 }
 /*return a list with all the SDAQs nodes (from head) that have Parking address, sort by Serial number*/
 GSList* find_SDAQs_inParking(GSList * head)
@@ -309,13 +302,13 @@ GSList* find_SDAQs_inParking(GSList * head)
 		else
 			break;  //Break the for loop if end of list is reached.
 	}
-	return (GSList *) ret_list;
+	return ret_list;
 }
 /*return a list with all the SDAQs nodes (from head) that have same address (aka conflict)*/
 GSList * find_SDAQs_Conflicts(GSList * head)
 {
 	GSList *ret_list=NULL; // function's return pointer
-	volatile GSList *look_ptr, *start_ptr = head; //start_ptr pointer pointing the first node on list.
+	GSList *look_ptr, *start_ptr = head; //start_ptr pointer pointing the first node on list.
 	unsigned char cur_address=0;
 	if(g_slist_length(head)>1)
 	{
@@ -349,7 +342,7 @@ GSList * find_SDAQs_Conflicts(GSList * head)
 							   ||  ((((struct SDAQentry *)(start_ptr->data))->address)==Parking_address)));
 		}
 	}
-	return (GSList *) ret_list;
+	return ret_list;
 }
 
 /*

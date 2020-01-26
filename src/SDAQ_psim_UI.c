@@ -52,7 +52,9 @@ void shell_help();
 
 void print_hist_buffs(gpointer data,gpointer user_data)
 {
-	static int i = 0;
+	static unsigned int i = 0;
+	if(user_data)
+		i = *(unsigned int *)user_data;
 	history_buffer_entry *node_data = data;
 	printf("buffer %d -> %s\n",i++,node_data->usr_in_buff);
 }
@@ -68,10 +70,10 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 {
 	unsigned int end_index=0, cur_pos=0, key, argc, last_curx, history_buffs_index=0;
 	char *argv[max_amount_of_user_arg] = {NULL};
-	GQueue hist_buffs = G_QUEUE_INIT;
-	g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
+	GQueue *hist_buffs = g_queue_new();
+	g_queue_push_head(hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
 	gpointer nth_node = NULL;
-	char *usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
+	char *usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(hist_buffs))->usr_in_buff;
 	char temp_usr_in_buff[user_inp_buf_size];
 
 	initscr(); // start the ncurses mode
@@ -116,7 +118,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 				move(0,last_curx);
 				break;
 			case KEY_UP:
-				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index+1)))
+				if((nth_node = g_queue_peek_nth(hist_buffs,history_buffs_index+1)))
 				{
 					if(!history_buffs_index)
 						memcpy(temp_usr_in_buff, usr_in_buff, sizeof(char)*user_inp_buf_size);
@@ -131,7 +133,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 				}
 				break;
 			case KEY_DOWN:
-				if((nth_node = g_queue_peek_nth(&hist_buffs,history_buffs_index-1)))
+				if((nth_node = g_queue_peek_nth(hist_buffs,history_buffs_index-1)))
 				{
 					memset(usr_in_buff, '\0', sizeof(char)*user_inp_buf_size);
 					strcpy(usr_in_buff, ((history_buffer_entry *)nth_node)->usr_in_buff);
@@ -166,7 +168,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 			case KEY_BACKSPACE :
 				if(cur_pos)
 				{
-					for(int i=cur_pos-1;i<=end_index;i++)
+					for(unsigned int i=cur_pos-1;i<=end_index;i++)
 						usr_in_buff[i] = usr_in_buff[i+1];
 					move(getcury(stdscr),getcurx(stdscr)-1);//move cursor one left
 					clrtoeol(); //clear from buffer to the end of line
@@ -180,7 +182,7 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 			case KEY_DC ://Delete key
 				if(cur_pos<end_index)
 				{
-					for(int i=cur_pos;i<=end_index;i++)
+					for(unsigned int i=cur_pos;i<=end_index;i++)
 						usr_in_buff[i] = usr_in_buff[i+1];
 					end_index--;
 					clrtoeol();
@@ -208,10 +210,10 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 				cur_pos = 0;
 				if(*usr_in_buff)//make new entry in the history queue only if the current usr_in_buff is not empty
 				{
-					g_queue_push_head(&hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
-					usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(&hist_buffs))->usr_in_buff;
-					if(g_queue_get_length(&hist_buffs)>history_buffs_length)
-						history_buff_free_node(g_queue_pop_tail(&hist_buffs));
+					g_queue_push_head(hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
+					usr_in_buff = ((history_buffer_entry *)g_queue_peek_head(hist_buffs))->usr_in_buff;
+					if(g_queue_get_length(hist_buffs)>history_buffs_length)
+						history_buff_free_node(g_queue_pop_tail(hist_buffs));
 				}
 				history_buffs_index = 0;
 				break;
@@ -241,8 +243,8 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 		}
 	}
 	endwin();
-	//g_queue_foreach(&hist_buffs, print_hist_buffs, NULL);
-	g_queue_free_full(&hist_buffs,history_buff_free_node);//free the allocated space of the history buffers
+	//g_queue_foreach(hist_buffs, print_hist_buffs, NULL);
+	g_queue_free_full(hist_buffs,history_buff_free_node);//free the allocated space of the history buffers
 	return;
 }
 

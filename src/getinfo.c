@@ -225,7 +225,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 // Allocates space for a new SDAQ entrance
 date_list_data_of_node* new_SDAQ_date_node()
 {
-    date_list_data_of_node *new_date_node_data = (date_list_data_of_node *) g_slice_alloc0(sizeof(date_list_data_of_node));
+    date_list_data_of_node *new_date_node_data = g_slice_alloc0(sizeof(date_list_data_of_node));
     if(!new_date_node_data)
 	{
 		fprintf(stderr,"Memory Error\n");
@@ -309,7 +309,7 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	struct GSlist **point_data_lists = (struct GSlist **) arg_pass;
 	char buff[60];
 	struct tm ptm = {0};
-	date_list_data_of_node *node_dec = (date_list_data_of_node *)Date_node;
+	date_list_data_of_node *node_dec = Date_node;
 
 	ptm.tm_year = node_dec->year + 100; //100 = 2000-1900
 	ptm.tm_mon = node_dec->month - 1;

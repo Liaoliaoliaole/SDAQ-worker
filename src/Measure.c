@@ -118,8 +118,8 @@ int Measure(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 					case 'q':
 					case  3 : running=0; break; //SIGINT or Ctrl+C
 					case 'R': raw_flag^=1; Req_Raw_meas(socket_num,dev_addr,raw_flag); break;
-					case 'B': box_flag^=1;//toggle borders and force clean
 					case 'C':
+					case 'B': box_flag^=1;//toggle borders and force clean
 					case '3': QueryDeviceInfo(socket_num,dev_addr); last_row=last_col=0; break;
 					case 'L': thread_arg.lock_kb_flag = 1; last_row=last_col=0; break;
 				}
