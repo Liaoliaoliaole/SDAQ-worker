@@ -45,13 +45,17 @@ enum contens_type{
 //custom function that convert an type (contens_type) to a node with name name_mode
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
 
+int XML_info_file_read_and_validate(char *file_path, void *cur_conf, void *new_conf)
+{
+	return 0;
+}
 
 int XML_info_file_write(char *file_path, void *arg)
 {
 	SDAQ_info_cal_data *info_ptr = arg;
 	xmlDocPtr xml_doc = NULL;
     xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
-	unsigned char buff[15],*point_name;
+	unsigned char buff[15], *point_name, exp_format_flag=0;
     //Creates a new document, a node and set it as a root node
     xml_doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
@@ -101,8 +105,14 @@ int XML_info_file_write(char *file_path, void *arg)
 			}
 		}
 	}
+	//Check for formating flag
+	if(file_path[0]=='-')
+	{
+		exp_format_flag = 1;
+		file_path = file_path[1]? file_path+1 : file_path;
+	}
     //write the xml_doc to stdout or to file
-    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", file_path[0]=='-'?0:1);
+    xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", exp_format_flag);
 	//free allocated memory
 	xmlFreeDoc(xml_doc);
 	xmlCleanupParser();

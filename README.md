@@ -76,7 +76,7 @@ Options:
            -r : resize terminal. Used with mode 'measure'
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IFs.
-           -f : Write/Read SDAQ info. Used with modes 'getinfo' 'setinfo'
+           -f : Write/Read SDAQ info to/from file. (Add '-' on path start for formatting output)
            -e : External command. Used with modes 'setinfo'
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.

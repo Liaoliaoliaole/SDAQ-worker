@@ -286,7 +286,7 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned char channel_dec;
+	unsigned char channel_dec = 0;
 	unsigned int sn_dec;
 	char *channel_str, str_buff[30];
 	struct tm cal_date;
@@ -294,7 +294,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 	{
 		if(!strcmp(argv[0],"status"))
 		{
-			if(!argv[1])
+			if(argc == 1 && !argv[1])// status for all pseudoSDAQs
 			{
 				for(int i=0; i<num_of_pSDAQ; i++)
 				{
@@ -304,7 +304,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 							printw(" %2d,",pSDAQs_mem[i].address);
 						else
 							printw("  P,");
-						printw(" %-2d channels,",pSDAQs_mem[i].number_of_channels);
+						printw(" %-2d Channel(s),",pSDAQs_mem[i].number_of_channels);
 						printw(" %9s,",pSDAQs_mem[i].status&0x01?"Measuring":"Stand-By");
 						printw(" %2sSync,",pSDAQs_mem[i].status&(1<<In_sync)?"in":"no");
 						printw(" %s",!pSDAQs_mem[i].pSDAQ_flags&(1<<disable)?"OnLine":"OffLine");
@@ -312,7 +312,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				}
 				return;
 			}
-			else
+			else if(argc == 2 && argv[1]) //status for specified pseudoSDAQ
 			{
 				sn_dec = atoi(argv[1]);
 				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
@@ -322,8 +322,9 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						if(pSDAQs_mem[sn_dec - start_sn].address < Parking_address)
 							printw("  %2d,",pSDAQs_mem[sn_dec - start_sn].address);
 						else
-							printw("Park,");
-						printw(" %2d channels,",pSDAQs_mem[sn_dec - start_sn].number_of_channels);
+							printw(" Park,");
+						printw(" %d channel",pSDAQs_mem[sn_dec - start_sn].number_of_channels);
+						printw("%s,",pSDAQs_mem[sn_dec - start_sn].number_of_channels>1?"s":"");
 						printw(" %s,",pSDAQs_mem[sn_dec - start_sn].status&0x01?"Measuring":"Stand-By");
 						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
 						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
@@ -340,6 +341,44 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points
 									,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units]
 									,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units<Unit_code_base_region_size?"(BASE)":"");
+						}
+					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+					return;
+				}
+			}
+			else if(argc == 3 && argv[1] && argv[2])// Status for pseudoSDAQ's Channel
+			{
+				sn_dec = atoi(argv[1]);
+				if(strstr(argv[2],"CH") || strstr(argv[2],"ch"))
+					channel_dec = atoi(argv[2]+2);
+				if((sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1) &&
+				   (channel_dec > 0 && channel_dec <= pSDAQs_mem[sn_dec - start_sn].number_of_channels))
+				{
+					pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+						memset(&cal_date, 0, sizeof(struct tm));
+						cal_date.tm_year = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].year + 100; //100 = 2000-1900
+						cal_date.tm_mon = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].month - 1;
+						cal_date.tm_mday =  pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].day;
+						strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+						printw("\n   CH%02d: Calibrated @ %s, period %3hhu month, Calibrated with %2d point, unit -> %s%s"
+								,channel_dec
+								,str_buff
+								,pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].period
+								,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].amount_of_points
+								,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units]
+								,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units<Unit_code_base_region_size?"(BASE)":"");
+
+						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].amount_of_points;i++)
+						{
+							if(!i)
+								printw("\n\t   Point #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |");
+							printw("\n\t\t%2d  ",i);
+							for(int j=0; j<6; j++)
+							{
+								printw("| %8.3g  ",pSDAQs_mem[sn_dec - start_sn].data_cal_values[channel_dec-1][i][j]);
+								if(j==5)
+									printw("|");
+							}
 						}
 					pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 					return;
@@ -689,6 +728,7 @@ const char shell_help_str[]={
 	"\tCtrl + Q  = Quit\n"
 	" COMMANDS:\n"
 	"\tstatus (S/N) = Print status of S/N or all pSDAQs without S/N\n"
+	"\tstatus S/N CH = Print calibration points status of S/N\n"
 	"\tget (S/N) = Get the current outputs state\n"
 	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
 	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"

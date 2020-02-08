@@ -14,7 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define VERSION "0.9 beta" /*Release Version of SDAQ_psim*/
+#define VERSION "1.0" /*Release Version of SDAQ_psim*/
 
 #define TIME_REF 100 //loop time ref
 #define Stat_ID_Interval 10000/TIME_REF //for 10 sec with base time TIME_REF

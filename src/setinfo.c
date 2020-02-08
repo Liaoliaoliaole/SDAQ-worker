@@ -36,6 +36,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 int str_dec(char **arg, char *input_buff, const char *delim);
 //function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff);
+//function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
 
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
@@ -43,7 +45,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	unsigned char argc, channel_num, period, NumOfPoints, Point_num, type, unit;
 	float point_val;
 	struct tm date;
-	SDAQ_info_cal_data str={0};
+	SDAQ_info_cal_data cur_conf={0}, new_conf={0};
 	int retval;
 	if(usr_flag->ext_com)
 	{
@@ -78,22 +80,33 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 		printf("External command is Unknown\n");
 		return 0;
 	}
-	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str)))
+	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
 	{
 		if(usr_flag->info_file)
 		{
-			printf("info XML File is \"%s\"\n",usr_flag->info_file);
+			//printf("info XML File is \"%s\"\n",usr_flag->info_file);
+			if(!XML_info_file_read_and_validate(usr_flag->info_file, &cur_conf, &new_conf))
+			{
+				printf("Okay\n");
+				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &new_conf);
+				//Free the list and the arrays of the new_conf
+				g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
+				for(int i=0; i<new_conf.SDAQ_info.num_of_ch; i++)
+					g_slist_free_full((GSList *)(new_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+				free(new_conf.Cal_points_data_lists);
+			}
+
 		}
 		else
 		{
 			printf("UI Not Implemented!!!\n");
 		}
 	}
-	//free the list and the arrays
-	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
-	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
-		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
-	free(str.Cal_points_data_lists);
+	//Free the list and the arrays of the cur_conf
+	g_slist_free_full((GSList *)(cur_conf.Calibration_date_list), free_SDAQ_Date_node);
+	for(int i=0; i<cur_conf.SDAQ_info.num_of_ch; i++)
+		g_slist_free_full((GSList *)(cur_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+	free(cur_conf.Cal_points_data_lists);
 	return retval;
 }
 
@@ -109,7 +122,6 @@ int str_dec(char **arg, char *input_buff, const char *delim)
 	return i;
 }
 
-
 //function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff)
 {
@@ -123,5 +135,11 @@ int date_to_tm(struct tm *output_date, char *input_buff)
 		return 0;
 	}
 	return -1;
+}
+
+//function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str)
+{
+	return EXIT_FAILURE;
 }
 
