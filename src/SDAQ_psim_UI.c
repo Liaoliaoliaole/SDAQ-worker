@@ -370,7 +370,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 								,unit_str[pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units]
 								,pSDAQs_mem[sn_dec-start_sn].ch_cal_date[channel_dec-1].cal_units<Unit_code_base_region_size?"(BASE)":"");
 
-						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].ch_cal_date[channel_dec-1].amount_of_points;i++)
+						for(int i=0;i<16;i++)
 						{
 							if(!i)
 								printw("\n\t   Point #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |");
