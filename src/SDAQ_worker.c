@@ -47,7 +47,7 @@ void print_usage(char *prog_name);//print the usage manual
 int main(int argc, char *argv[])
 {
 	//Option parsing variables
-	int c;
+	int c, retval=1;
 	opt_flags usr_opt = {.timestamp_mode=relative,
 						 .CANif_name = NULL,
 						 .timestamp_format=NULL,
@@ -193,9 +193,9 @@ int main(int argc, char *argv[])
 	/*Scan Mode argument*/
 	//Modes with device address requirement
 	if(!strcmp(argv[optind+1],"discover"))
-		Discover(socket_num, &usr_opt);
+		retval = Discover(socket_num, &usr_opt);
 	else if(!strcmp(argv[optind+1],"autoconfig"))
-		Autoconfig(socket_num, &usr_opt);
+		retval = Autoconfig(socket_num, &usr_opt);
 	else //modes with device address requirement
 	{
 		//Sanity check of the device address arguments
@@ -236,21 +236,21 @@ int main(int argc, char *argv[])
 				printf("Serial number is invalid\n");
 				exit(EXIT_FAILURE);
 			}
-			Change_address(socket_num,serial_number, dev_addr, &usr_opt);
+			retval = Change_address(socket_num,serial_number, dev_addr, &usr_opt);
 		}
 		else if(!strcmp(argv[optind+1],"getinfo"))
-			getinfo(socket_num, dev_addr, &usr_opt);
+			retval = getinfo(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"setinfo"))
-			setinfo(socket_num, dev_addr, &usr_opt);
+			retval = setinfo(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"measure"))
-			Measure(socket_num, dev_addr, &usr_opt);
+			retval = Measure(socket_num, dev_addr, &usr_opt);
 		else if(!strcmp(argv[optind+1],"logging"))
-			Logging(socket_num, dev_addr, &usr_opt);
+			retval = Logging(socket_num, dev_addr, &usr_opt);
 		else
 			printf("Unknown mode argument\n");
 	}
 	close(socket_num);
-	return EXIT_SUCCESS;
+	return retval;
 }
 
 int Change_address(int socket_num, unsigned int serial_number, unsigned char new_address, opt_flags *usr_flag)
@@ -338,7 +338,7 @@ void print_usage(char *prog_name)
 		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IFs.\n"
-		"           -f : Write/Read SDAQ info to/from file. (Add '-' on path start for formatting output)\n"
+		"           -f : Write/Read SDAQ info to/from file. (Add '-' on path's start for formatted output)\n"
 		"           -e : External command. Used with modes 'setinfo'\n"
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"

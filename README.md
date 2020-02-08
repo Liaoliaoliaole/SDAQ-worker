@@ -76,7 +76,7 @@ Options:
            -r : resize terminal. Used with mode 'measure'
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IFs.
-           -f : Write/Read SDAQ info to/from file. (Add '-' on path start for formatting output)
+           -f : Write/Read SDAQ info to/from file. (Add '-' on path's start for formatted output)
            -e : External command. Used with modes 'setinfo'
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.
@@ -122,6 +122,8 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 		set (S/N) (ch# || all) points # = Load Amount of Calibration points
 		set (S/N) (ch# || all) period # = Write Calibration period
 		set (S/N) (ch# || all) unit # = Load unit code
+		set (S/N) ch# p(oint)# name Real_val = Set Channel's point value
+        	name := Meas, Ref, Offset, Gain, C2, C3
 ```
 
 ## Examples

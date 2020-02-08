@@ -277,7 +277,7 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 		switch(node_dec->type)
 		{
 			case meas:
-				printf(" | %2d | %8.3g  | ",node_dec->points_num, node_dec->data_of_point);
+				printf(" | %2d | %8.3g  | ",node_dec->points_num+1, node_dec->data_of_point);
 				break;
 			case ref:
 				printf(" %8.3g | ",node_dec->data_of_point);
@@ -317,7 +317,7 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	strftime(buff,sizeof(buff),"%Y/%m/%d",&ptm);
 	if(node_dec->amount_of_points)
 	{
-		printf("   CH%02d: Calibrated @ %s valid for %03d Months, Cal_Points = %2d\n",node_dec->ch_num,
+		printf("   CH%02d: Calibrated @ %s valid for %3d Months, Cal_Points = %2d\n",node_dec->ch_num,
 											  buff,
 											  node_dec->period,
 											  node_dec->amount_of_points);

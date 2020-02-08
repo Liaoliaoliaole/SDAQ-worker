@@ -46,8 +46,8 @@ unsigned char SDAQ_psim_run=1;
 int user_inp_dec(char **argv, char *usr_in_buff);
 //function for execution of user's command input
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem);
-//SDAQ_psim shell help
-void shell_help();
+//SDAQ_psim shell help, return 0 in success or 1 on failure
+int shell_help();
 
 
 void print_hist_buffs(gpointer data,gpointer user_data)
@@ -68,7 +68,7 @@ void history_buff_free_node(gpointer node)
 //Implementation of the user's Interface function
 void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned int end_index=0, cur_pos=0, key, argc, last_curx, history_buffs_index=0;
+	unsigned int end_index=0, cur_pos=0, key, argc, last_curx, history_buffs_index=0, retval;
 	char *argv[max_amount_of_user_arg] = {NULL};
 	GQueue *hist_buffs = g_queue_new();
 	g_queue_push_head(hist_buffs, g_slice_alloc0(sizeof(history_buffer_entry)));
@@ -111,11 +111,13 @@ void user_interface(char *CAN_if, unsigned int start_sn, unsigned char num_of_pS
 				break;
 			case '?' : //user request for help
 				last_curx = getcurx(stdscr);
-				shell_help();
+				retval = shell_help();
 				refresh();
 				clear();
+				if(retval)
+					printw("Terminal size too small to print help!!!\n");
 				printw("][ %s",usr_in_buff);
-				move(0,last_curx);
+				move(retval,last_curx);
 				break;
 			case KEY_UP:
 				if((nth_node = g_queue_peek_nth(hist_buffs,history_buffs_index+1)))
@@ -286,7 +288,7 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned char channel_dec = 0;
+	unsigned char channel_dec = 0, point_dec, offset=1;
 	unsigned int sn_dec;
 	char *channel_str, str_buff[30];
 	struct tm cal_date;
@@ -372,7 +374,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						{
 							if(!i)
 								printw("\n\t   Point #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |");
-							printw("\n\t\t%2d  ",i);
+							printw("\n\t\t%2d  ",i+1);
 							for(int j=0; j<6; j++)
 							{
 								printw("| %8.3g  ",pSDAQs_mem[sn_dec - start_sn].data_cal_values[channel_dec-1][i][j]);
@@ -531,7 +533,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 											}
 											else
-												printw("\n Argument for amount of points is out of range");
+												printw("\n Argument for amount of points is out of range (0..16)");
 										}
 									}
 									else if(!strcmp(argv[3],"unit"))
@@ -561,16 +563,54 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										pSDAQs_mem[sn_dec-start_sn].out_of_range |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"in"))
 										pSDAQs_mem[sn_dec-start_sn].out_of_range &= ~(1<<(channel_dec-1));
-									else
-									{	//check if the argument is number
-										sprintf(str_buff,"%f",atof(argv[3]));
-										if(strstr(str_buff,argv[3]))
+									else if(strstr(argv[3],"p") && argc == 6)//Set Point value
+									{
+										//check if value argument is number
+										sprintf(str_buff,"%f",atof(argv[5]));
+										if(strstr(str_buff,argv[5]))
 										{
-											pSDAQs_mem[sn_dec-start_sn].out_val[channel_dec-1] = atof(argv[3]);
-											pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+											if(strstr(argv[3],"point"))
+												offset = strlen("point");
+											point_dec = atoi(argv[3]+offset);
+											if(point_dec>0 && point_dec<=16)
+											{
+												if(!strcmp(argv[4], "Meas") || !strcmp(argv[4], "meas"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][0] = atof(argv[5]);
+												else if(!strcmp(argv[4], "Ref") || !strcmp(argv[4], "ref"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][1] = atof(argv[5]);
+												else if(!strcmp(argv[4], "Offset") || !strcmp(argv[4], "offset"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][2] = atof(argv[5]);
+												else if(!strcmp(argv[4], "Gain") || !strcmp(argv[4], "gain"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][3] = atof(argv[5]);
+												else if(!strcmp(argv[4], "C2") || !strcmp(argv[4], "c2"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][4] = atof(argv[5]);
+												else if(!strcmp(argv[4], "C3") || !strcmp(argv[4], "c3"))
+													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][5] = atof(argv[5]);
+												else
+													printw("\nUnknown point's value name");
+											}
+											else
+												printw("\nPoint's Number is out of range (1..16)");
 										}
 										else
-											printw("\nError: out_value argument is not a number");
+											printw("\nError: value argument is not a number");
+									}
+									else
+									{
+										if(argc == 4)
+										{
+											//check if the argument is number
+											sprintf(str_buff,"%f",atof(argv[3]));
+											if(strstr(str_buff,argv[3]))
+											{
+												pSDAQs_mem[sn_dec-start_sn].out_val[channel_dec-1] = atof(argv[3]);
+												pSDAQs_mem[sn_dec-start_sn].nosensor &= ~(1<<(channel_dec-1));
+											}
+											else
+												printw("\nError: out_value argument is not a number");
+										}
+										else
+											printw("\n????");
 									}
 								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
 								return;
@@ -741,45 +781,52 @@ const char shell_help_str[]={
 	"\tset (S/N) (ch# || all) points # = Write Amount of Calibration points\n"
 	"\tset (S/N) (ch# || all) period # = Write Calibration period\n"
 	"\tset (S/N) (ch# || all) unit # = Write unit code\n"
+	"\tset (S/N) ch# p(oint)# name Real_val = Set Channel's point value\n"
+	"\t\tname := Meas, Ref, Offset, Gain, C2, C3\n"
 };
 
 //SDAQ_psim shell help
-void shell_help()
+int shell_help()
 {
-	const int height = 28;
+	const int height = 30;
 	const int width = 90;
 	int starty = (LINES - height) / 2;	/* Calculating for a center placement */
 	int startx = (COLS - width) / 2;	/* of the window		*/
 	int key, scroll_lines=0;
-	WINDOW *help_win = newwin(height, width, starty, startx);
-	keypad(help_win, TRUE);
-	curs_set(0);//hide cursor
-	scrollok(help_win, TRUE);
-	mvwprintw(help_win, 1, 1, "%s", shell_help_str);
-	mvwprintw(help_win, height-2, 1, " Press Ctrl+C to exit help");
-	box(help_win, 0 , 0);
-	wrefresh(help_win);
-	do{
-		key = getch();
-		switch(key)
-		{
-			case KEY_UP:
-				scroll_lines++;
-				//wscrl(help_win, 1);
-				wrefresh(help_win);
-				break;
-			case KEY_DOWN:
-				scroll_lines--;
-				//wscrl(help_win, -1);
-				wrefresh(help_win);
-				break;
-		}
-	}while(key!=3);
-	wborder(help_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
-	wclear(help_win);
-	wrefresh(help_win);
-	delwin(help_win);
-	curs_set(1);//hide cursor
+	if(LINES>=height && COLS>=width)
+	{
+		WINDOW *help_win = newwin(height, width, starty, startx);
+		keypad(help_win, TRUE);
+		curs_set(0);//hide cursor
+		scrollok(help_win, TRUE);
+		mvwprintw(help_win, 1, 1, "%s", shell_help_str);
+		mvwprintw(help_win, height-2, 1, " Press Ctrl+C to exit help");
+		box(help_win, 0 , 0);
+		wrefresh(help_win);
+		do{
+			key = getch();
+			switch(key)
+			{
+				case KEY_UP:
+					scroll_lines++;
+					//wscrl(help_win, 1);
+					wrefresh(help_win);
+					break;
+				case KEY_DOWN:
+					scroll_lines--;
+					//wscrl(help_win, -1);
+					wrefresh(help_win);
+					break;
+			}
+		}while(key!=3);
+		wborder(help_win, ' ', ' ', ' ',' ',' ',' ',' ',' ');
+		wclear(help_win);
+		wrefresh(help_win);
+		delwin(help_win);
+		curs_set(1);//hide cursor
+		return 0;
+	}
+	return 1;
 }
 
 
