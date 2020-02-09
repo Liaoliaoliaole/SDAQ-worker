@@ -123,7 +123,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 		set (S/N) (ch# || all) period # = Write Calibration period
 		set (S/N) (ch# || all) unit # = Load unit code
 		set (S/N) ch# p(oint)# name Real_val = Set Channel's point value
-        	name := Meas, Ref, Offset, Gain, C2, C3
+        		name := Meas, Ref, Offset, Gain, C2, C3
 ```
 
 ## Examples
