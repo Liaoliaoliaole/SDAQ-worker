@@ -19,7 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_drv.h"
 #include "Modes.h"
 	/*----- local functions  -----*/
+//function that request and receive calibration data from SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
 int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
+//function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
 //Declaration of function for Calibration_date_list
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node

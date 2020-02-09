@@ -36,8 +36,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 int str_dec(char **arg, char *input_buff, const char *delim);
 //function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff);
-//function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
-int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str);
 
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
