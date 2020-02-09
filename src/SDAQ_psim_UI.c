@@ -563,28 +563,28 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										pSDAQs_mem[sn_dec-start_sn].out_of_range |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"in"))
 										pSDAQs_mem[sn_dec-start_sn].out_of_range &= ~(1<<(channel_dec-1));
-									else if(strstr(argv[3],"p") && argc == 6)//Set Point value
+									else if((strstr(argv[3],"p") || strstr(argv[3],"P")) && argc == 6)//Set Point value
 									{
 										//check if value argument is number
 										sprintf(str_buff,"%f",atof(argv[5]));
 										if(strstr(str_buff,argv[5]))
 										{
-											if(strstr(argv[3],"point"))
+											if(strstr(argv[3],"point")||strstr(argv[3],"Point"))
 												offset = strlen("point");
 											point_dec = atoi(argv[3]+offset);
 											if(point_dec>0 && point_dec<=16)
 											{
-												if(!strcmp(argv[4], "Meas") || !strcmp(argv[4], "meas"))
+												if(strstr(argv[4], "Meas") || strstr(argv[4], "meas"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][0] = atof(argv[5]);
-												else if(!strcmp(argv[4], "Ref") || !strcmp(argv[4], "ref"))
+												else if(strstr(argv[4], "Ref") || strstr(argv[4], "ref"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][1] = atof(argv[5]);
-												else if(!strcmp(argv[4], "Offset") || !strcmp(argv[4], "offset"))
+												else if(strstr(argv[4], "Offset") || strstr(argv[4], "offset"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][2] = atof(argv[5]);
-												else if(!strcmp(argv[4], "Gain") || !strcmp(argv[4], "gain"))
+												else if(strstr(argv[4], "Gain") || strstr(argv[4], "gain"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][3] = atof(argv[5]);
-												else if(!strcmp(argv[4], "C2") || !strcmp(argv[4], "c2"))
+												else if(strstr(argv[4], "C2") || strstr(argv[4], "c2"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][4] = atof(argv[5]);
-												else if(!strcmp(argv[4], "C3") || !strcmp(argv[4], "c3"))
+												else if(strstr(argv[4], "C3") || strstr(argv[4], "c3"))
 													pSDAQs_mem[sn_dec-start_sn].data_cal_values[channel_dec-1][point_dec-1][5] = atof(argv[5]);
 												else
 													printw("\nUnknown point's value name");
