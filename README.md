@@ -109,7 +109,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 		Ctrl + Q  = Quit
  COMMANDS:
 		status (S/N) = Print status of S/N or all pSDAQs without S/N
-		status S/N CH = Print calibration points status of S/N
+		status S/N CH# = Print calibration points status of CH# at pSDAQ with S/N
 		get (S/N) = Get the current outputs state
 		set (S/N) on/off = Set a pseudo-SDAQ on or off line
 		set (S/N) address (# || parking) = Set pSDAQ's address

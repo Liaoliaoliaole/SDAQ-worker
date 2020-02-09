@@ -768,7 +768,7 @@ const char shell_help_str[]={
 	"\tCtrl + Q  = Quit\n"
 	" COMMANDS:\n"
 	"\tstatus (S/N) = Print status of S/N or all pSDAQs without S/N\n"
-	"\tstatus S/N CH = Print calibration points status of S/N\n"
+	"\tstatus S/N CH# = Print calibration points status of CH# at pSDAQ with S/N\n"
 	"\tget (S/N) = Get the current outputs state\n"
 	"\tset (S/N) on/off = Set a pseudo-SDAQ on or off line\n"
 	"\tset (S/N) address (# || parking) = Set pSDAQ's address\n"
