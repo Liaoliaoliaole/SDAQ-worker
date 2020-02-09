@@ -85,7 +85,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			//printf("info XML File is \"%s\"\n",usr_flag->info_file);
 			if(!XML_info_file_read_and_validate(usr_flag->info_file, &cur_conf, &new_conf))
 			{
-				printf("Okay\n");
+				//printf("Okay\n");
 				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &new_conf);
 				//Free the list and the arrays of the new_conf
 				g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
