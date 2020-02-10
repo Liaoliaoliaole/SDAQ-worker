@@ -352,11 +352,11 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
 									&& id_dec->channel_num)
 									{
-										if(point_dec->points_num<16)
+										if(point_dec->points_num<16 && point_dec->type && point_dec->type<=6)//sanitization according the whitepaper.
 										{
 											arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1]
 																		  [point_dec->points_num]
-																		  [point_dec->type] = point_dec->data_of_point;
+																		  [point_dec->type-1] = point_dec->data_of_point;
 										}
 									}
 									break;
