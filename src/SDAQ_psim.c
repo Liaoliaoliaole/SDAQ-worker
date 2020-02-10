@@ -418,7 +418,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 			pthread_mutex_lock(&SDAQs_mem_access[arg.serial_number-arg.start_sn]);
 				if(!arg.pSDAQ_mem->status_send_cnt) //in every status_send_cnt zero a status message transmitted
 				{
-					if(!sync_status_cnt) //in every status_send_cnt zero a the sync flag is reset
+					if(!sync_status_cnt) //in every status_send_cnt zero the sync flag is reset
 					 	arg.pSDAQ_mem->status &= ~(1<<In_sync);
 					else
 						sync_status_cnt--;
