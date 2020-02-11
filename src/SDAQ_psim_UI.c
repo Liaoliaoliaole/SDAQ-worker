@@ -301,7 +301,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				for(int i=0; i<num_of_pSDAQ; i++)
 				{
 					pthread_mutex_lock(&SDAQs_mem_access[i]);
-						printw("\n   SDAQ %010d: Addr =",i+start_sn);
+						printw("\n   pSDAQ %010d: Addr =",i+start_sn);
 						if(pSDAQs_mem[i].address < Parking_address)
 							printw(" %2d,",pSDAQs_mem[i].address);
 						else
@@ -320,13 +320,13 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				if(sn_dec >= start_sn && sn_dec <= start_sn + num_of_pSDAQ-1)
 				{
 					pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-						printw("\n   SDAQ %010d: Addr=",sn_dec);
+						printw("\n   pSDAQ %010d: Address=",sn_dec);
 						if(pSDAQs_mem[sn_dec - start_sn].address < Parking_address)
-							printw("  %2d,",pSDAQs_mem[sn_dec - start_sn].address);
+							printw("  %d,",pSDAQs_mem[sn_dec - start_sn].address);
 						else
-							printw(" Park,");
-						printw(" %d channel",pSDAQs_mem[sn_dec - start_sn].number_of_channels);
-						printw("%s,",pSDAQs_mem[sn_dec - start_sn].number_of_channels>1?"s":"");
+							printw(" onPark,");
+						printw(" %d Channel%s,", pSDAQs_mem[sn_dec - start_sn].number_of_channels,
+												 pSDAQs_mem[sn_dec - start_sn].number_of_channels>1?"s":"");
 						printw(" %s,",pSDAQs_mem[sn_dec - start_sn].status&0x01?"Measuring":"Stand-By");
 						printw(" %sSync",pSDAQs_mem[sn_dec - start_sn].status&(1<<In_sync)?"in":"no");
 						for(int i=0;i<pSDAQs_mem[sn_dec - start_sn].number_of_channels;i++)
@@ -336,7 +336,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 							cal_date.tm_mon = pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month - 1;
 							cal_date.tm_mday =  pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day;
 							strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
-							printw("\n\tCH%02d: Calibrated @ %s, period %3hhu month, Calibrated with %2d point, unit -> %s%s"
+							printw("\n\tCH%02d: Calibrated @ %s, period %03hhu month, Calibrated with %02d point, unit -> %s%s"
 									,i+1
 									,str_buff
 									,pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].period
