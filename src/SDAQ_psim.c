@@ -376,7 +376,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 											}
 											else
 												in_sync_cnt++;
-											pseudo_SDAQ_timestamp -= dev_ref_time_diff_cal(pseudo_SDAQ_timestamp,ref_timestamp);
+											pseudo_SDAQ_timestamp += dev_ref_time_diff_cal(pseudo_SDAQ_timestamp,ref_timestamp);
 										}
 										else
 										{
