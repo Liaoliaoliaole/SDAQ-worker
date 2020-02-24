@@ -823,7 +823,7 @@ int shell_help()
 		wclear(help_win);
 		wrefresh(help_win);
 		delwin(help_win);
-		curs_set(1);//hide cursor
+		curs_set(1);//Show cursor
 		return 0;
 	}
 	return 1;
