@@ -491,3 +491,4 @@ void print_usage(char *prog_name)
 	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
 }
+
