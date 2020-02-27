@@ -46,7 +46,7 @@ const char *unit_str[256]={
 "m/s2","g",//Acceleration
 "Ohm","kOhm","MOhm",//Resistance
 "Nm","kNm","MNm",//Torque
-"kg","gram","Tonn",//Mass
+"kg","g","Tonn",//Mass
 "deg","rad",//Angle
 "Hz","kHz","MHz","rpm",//Frequency
 "rad/s2","deg/s2",//Angular Acceleration
