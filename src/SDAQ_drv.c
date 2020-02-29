@@ -60,7 +60,7 @@ const char *unit_str[256]={
 "l","m3"//Volume
 };
 
-const char *dev_type_str[]={
+const char *dev_type_str[20]={
 	"Pseudo_SDAQ",
 	"SDAQ-TC-1",
 	"SDAQ-TC-16",
