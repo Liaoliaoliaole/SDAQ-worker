@@ -15,6 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#define SDAQ_MAX_AMOUNT_OF_CHANNELS 64
+
 #define PROTOCOL_ID 0x35
 
 extern const char *unit_str[];
