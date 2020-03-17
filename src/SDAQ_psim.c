@@ -325,9 +325,9 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									   id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels &&
 									   id_dec->channel_num)
 									{
-										for(int j=0;j<16;j++)
+										for(int j=0;j<MAX_AMOUNT_OF_POINTS;j++)
 										{
-											for(int k=0; k<6; k++)
+											for(int k=0; k<MAX_DATA_ON_POINT; k++)
 											{
 												point_enc.data_of_point = arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1][j][k];
 												point_enc.type = k+1;
@@ -352,7 +352,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
 									&& id_dec->channel_num)
 									{
-										if(point_dec->points_num<16 && point_dec->type && point_dec->type<=6)//sanitization according to whitepaper.
+										if(point_dec->points_num<MAX_AMOUNT_OF_POINTS && point_dec->type && point_dec->type<=MAX_DATA_ON_POINT)//sanitization according to whitepaper.
 										{
 											arg.pSDAQ_mem->data_cal_values[id_dec->channel_num-1]
 																		  [point_dec->points_num]

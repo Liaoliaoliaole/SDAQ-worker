@@ -16,6 +16,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #define SDAQ_MAX_AMOUNT_OF_CHANNELS 16 //can be up to 63, from whitepaper
+#define MAX_AMOUNT_OF_POINTS 16
+#define MAX_DATA_ON_POINT 6 //6 is the data in each point (ref, read, offset, gain and coefficients)
 
 #define PROTOCOL_ID 0x35
 

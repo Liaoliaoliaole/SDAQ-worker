@@ -40,6 +40,6 @@ typedef struct pSDAQ_memory_space_struct{
 	unsigned char number_of_channels;
 	float out_val[SDAQ_MAX_AMOUNT_OF_CHANNELS];
 	sdaq_calibration_date ch_cal_date[SDAQ_MAX_AMOUNT_OF_CHANNELS];
-	float data_cal_values[SDAQ_MAX_AMOUNT_OF_CHANNELS][SDAQ_MAX_AMOUNT_OF_CHANNELS][6];//6 is the data in each point (ref, read, offset, gain and coefficients)
+	float data_cal_values[SDAQ_MAX_AMOUNT_OF_CHANNELS][MAX_AMOUNT_OF_POINTS][MAX_DATA_ON_POINT];
 }pSDAQ_memory_space;
 
