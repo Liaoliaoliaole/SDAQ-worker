@@ -38,8 +38,8 @@ typedef struct pSDAQ_memory_space_struct{
 	unsigned int status_send_cnt;//counter, that when is 0 a device ID/ status message transmitted
 	unsigned char address;
 	unsigned char number_of_channels;
-	float out_val[16];
-	sdaq_calibration_date ch_cal_date[16];
-	float data_cal_values[16][16][6];
+	float out_val[SDAQ_MAX_AMOUNT_OF_CHANNELS];
+	sdaq_calibration_date ch_cal_date[SDAQ_MAX_AMOUNT_OF_CHANNELS];
+	float data_cal_values[SDAQ_MAX_AMOUNT_OF_CHANNELS][SDAQ_MAX_AMOUNT_OF_CHANNELS][6];//6 is the data in each point (ref, read, offset, gain and coefficients)
 }pSDAQ_memory_space;
 
