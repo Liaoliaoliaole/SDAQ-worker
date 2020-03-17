@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'c'://Start amount of channels
 				init_num_of_channels = atoi(optarg);
-				if(!init_num_of_channels || init_num_of_channels>16)
+				if(!init_num_of_channels || init_num_of_channels>SDAQ_MAX_AMOUNT_OF_CHANNELS)
 				{
 					printf("Amount of channels argument is invalid\n");
 					exit(EXIT_FAILURE);
@@ -343,7 +343,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 									&& id_dec->channel_num<=arg.pSDAQ_mem->number_of_channels
 									&& id_dec->channel_num)
 									{
-										if(cal_date_dec->amount_of_points<=16)
+										if(cal_date_dec->amount_of_points<=SDAQ_MAX_AMOUNT_OF_CHANNELS)
 											memcpy(&(arg.pSDAQ_mem->ch_cal_date[id_dec->channel_num-1]), cal_date_dec, sizeof(sdaq_calibration_date));
 									}
 									break;
