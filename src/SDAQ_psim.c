@@ -486,7 +486,7 @@ void print_usage(char *prog_name)
 	"\t         -v : Print Version\n"
 	"\t         -l : Print list of CAN-IFs\n"
 	"\t         -s : S/N of the first pseudo_SDAQ. (Default 1)\n"
-	"\t         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16])\n"
+	"\t         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16..63])\n"
 	};
 	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
