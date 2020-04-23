@@ -277,24 +277,24 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 		switch(node_dec->type)
 		{
 			case meas:
-				printf(" | %2d | %8.3g  | ",node_dec->points_num+1, node_dec->data_of_point);
+				printf(" | %2d | %9.3g  | ",node_dec->points_num+1, node_dec->data_of_point);
 				break;
 			case ref:
-				printf(" %8.3g | ",node_dec->data_of_point);
+				printf(" %9.3g | ",node_dec->data_of_point);
 				break;
 			case offset:
-				printf(" %8.3g | ",node_dec->data_of_point);
+				printf(" %9.3g | ",node_dec->data_of_point);
 				break;
 			case gain:
-				printf(" %8.3g | ",node_dec->data_of_point);
+				printf(" %9.3g | ",node_dec->data_of_point);
 				break;
 			case C2:
-				printf(" %8.3g | ",node_dec->data_of_point);
+				printf(" %9.3g | ",node_dec->data_of_point);
 				break;
 			case C3:
-				printf(" %8.3g |\n",node_dec->data_of_point);
+				printf(" %9.3g |\n",node_dec->data_of_point);
 				if(node_dec->points_num<amount_of_points-1)
-					printf(" |----|-----------|-----------|-----------|-----------|-----------|-----------|\n");
+					printf(" |----|------------|------------|------------|------------|------------|------------|\n");
 				break;
 			//default :
 		}
