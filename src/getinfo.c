@@ -322,7 +322,7 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 											  node_dec->period,
 											  node_dec->amount_of_points);
 		printf(" /----------------------------------------------------------------------------------\\\n"
-			   " | #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |\n"
+			   " | #  |   Measure  |  Reference |    Offset  |    Gain    |      C2    |      C3    |\n"
 		       " |----|------------|------------|------------|------------|------------|------------|\n");
 		g_slist_foreach((GSList *)(point_data_lists[node_dec->ch_num-1]),printf_SDAQ_cal_point_node,&(node_dec->amount_of_points));
 		printf(" \\----------------------------------------------------------------------------------/\n");
