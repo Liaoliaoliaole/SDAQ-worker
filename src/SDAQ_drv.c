@@ -72,7 +72,7 @@ const char *dev_type_str[20]={
 const char *channel_status_str[]={
 	"No Sensor",
 	"Out of Range",
-	"2V Range"
+	"Over Range"
 };
 
 //Decoder for the status byte field from "Measure" message
@@ -82,7 +82,7 @@ const char * Channel_status_byte_dec(unsigned char status_byte)
 			return channel_status_str[0];
 		if(status_byte & (1<<Out_of_range))
 			return channel_status_str[1];
-		if(status_byte & (1<<Range_2V))
+		if(status_byte & (1<<Over_range))
 			return channel_status_str[2];
 		return "Unclassified bit";
 }

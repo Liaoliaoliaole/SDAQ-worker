@@ -40,7 +40,7 @@ enum status_byte{
 enum channel_status_byte{
 	No_sensor = 0,
 	Out_of_range = 1,
-	Range_2V = 2
+	Over_range = 2
 };
 
 // enumerator for Calibration Point Data type byte
