@@ -55,7 +55,7 @@ int XML_info_file_write(char *file_path, void *arg)
 	SDAQ_info_cal_data *info_ptr = arg;
 	xmlDocPtr xml_doc = NULL;
     xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
-	unsigned char buff[15], *point_name, exp_format_flag=0;
+	unsigned char buff[20], *point_name, exp_format_flag=0;
     //Creates a new document, a node and set it as a root node
     xml_doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
