@@ -105,8 +105,8 @@ int XML_info_file_write(char *file_path, void *arg)
 			}
 		}
 	}
-	//Check for formating flag
-	if(file_path[0]=='-')
+	//Check for formatting flag
+	if(file_path[0]=='-' && file_path[1])
 	{
 		exp_format_flag = 1;
 		file_path = file_path[1]? file_path+1 : file_path;
@@ -125,7 +125,7 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 {
 	unsigned char buff[60],*buff_ptr=buff;
 	date_list_data_of_node * node_dec = contents_ptr;
-	struct tm ptm;
+	struct tm ptm={0};
 	xmlNodePtr node;
 	switch(type)
 	{

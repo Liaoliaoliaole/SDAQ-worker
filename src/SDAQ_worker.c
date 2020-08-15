@@ -96,7 +96,13 @@ int main(int argc, char *argv[])
 				usr_opt.silent = 1;
 				break;
 			case 'f'://file
-				usr_opt.info_file = optarg;
+				if(strstr(optarg,".xml") && strcmp(optarg,".xml"))
+					usr_opt.info_file = optarg;
+				else
+				{
+					fprintf(stderr,"-f argument: Not a .xml File!!!\n");
+					exit(EXIT_FAILURE);
+				}
 				break;
 			case 'e'://external command on argument
 				usr_opt.ext_com = optarg;
@@ -338,7 +344,7 @@ void print_usage(char *prog_name)
 		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IFs.\n"
-		"           -f : Write/Read SDAQ info to/from file. (Add '-' on path's start for formatted output)\n"
+		"           -f : Write/Read SDAQ info to/from XML file. (Add '-' on path's start for formatted output)\n"
 		"           -e : External command. Used with modes 'setinfo'\n"
 		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
