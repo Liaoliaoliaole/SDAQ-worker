@@ -618,57 +618,45 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						}
 						else if(!strcmp(argv[2],"all"))
 						{
-							pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
-								if(!strcmp(argv[3],"nonoise"))
-									pSDAQs_mem[sn_dec-start_sn].noise = 0;
-								else if(!strcmp(argv[3],"noise"))
-									pSDAQs_mem[sn_dec-start_sn].noise = -1;
-								else if(!strcmp(argv[3],"nosensor"))
-									pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
-								else if(!strcmp(argv[3],"sensor"))
-										pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
-								else if(!strcmp(argv[3],"out"))
-										pSDAQs_mem[sn_dec-start_sn].out_of_range = -1;
-								else if(!strcmp(argv[3],"in"))
-										pSDAQs_mem[sn_dec-start_sn].out_of_range = 0;
-								else if(!strcmp(argv[3],"unit"))
-								{
-									if(argv[4])//Unit code
+							if(argv[3])
+							{	
+								pthread_mutex_lock(&SDAQs_mem_access[sn_dec - start_sn]);
+									if(!strcmp(argv[3],"nonoise"))
+										pSDAQs_mem[sn_dec-start_sn].noise = 0;
+									else if(!strcmp(argv[3],"noise"))
+										pSDAQs_mem[sn_dec-start_sn].noise = -1;
+									else if(!strcmp(argv[3],"nosensor"))
+										pSDAQs_mem[sn_dec-start_sn].nosensor = -1;
+									else if(!strcmp(argv[3],"sensor"))
+											pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
+									else if(!strcmp(argv[3],"out"))
+											pSDAQs_mem[sn_dec-start_sn].out_of_range = -1;
+									else if(!strcmp(argv[3],"in"))
+											pSDAQs_mem[sn_dec-start_sn].out_of_range = 0;
+									else if(!strcmp(argv[3],"unit"))
 									{
-										unsigned char unit_code = atoi(argv[4]);
-										sprintf(str_buff,"%i",unit_code);
-										if(strstr(str_buff,argv[4])&&unit_str[unit_code])
+										if(argv[4])//Unit code
 										{
-											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
-												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units = unit_code;
-											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_date message
-										}
-										else
-											printw("\n Argument of unit code is out of range");
-									}
-								}
-								else if(!strcmp(argv[3],"date"))
-								{
-									if(argv[4])//Calibration date
-									{
-										if(!strcmp(argv[4],"now"))//if argument is "now"
-										{
-											time_t now = time(NULL);
-											memcpy(&cal_date, gmtime(&now), sizeof(struct tm));
-											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+											unsigned char unit_code = atoi(argv[4]);
+											sprintf(str_buff,"%i",unit_code);
+											if(strstr(str_buff,argv[4])&&unit_str[unit_code])
 											{
-												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year = cal_date.tm_year - 100; //100 = 2000-1900
-												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month = cal_date.tm_mon + 1; //+1 to get 12
-												pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day = cal_date.tm_mday;
-												strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
-												printw("\nSet Cal date for ch%02d @ %s", i+1, str_buff);
+												for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].cal_units = unit_code;
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_date message
 											}
-											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											else
+												printw("\n Argument of unit code is out of range");
 										}
-										else
+									}
+									else if(!strcmp(argv[3],"date"))
+									{
+										if(argv[4])//Calibration date
 										{
-											if(!exp_date_dec_validator(&cal_date,argv[4]))
+											if(!strcmp(argv[4],"now"))//if argument is "now"
 											{
+												time_t now = time(NULL);
+												memcpy(&cal_date, gmtime(&now), sizeof(struct tm));
 												for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
 												{
 													pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year = cal_date.tm_year - 100; //100 = 2000-1900
@@ -680,56 +668,71 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
 											}
 											else
-												printw("\n Argument of Date is invalid");
+											{
+												if(!exp_date_dec_validator(&cal_date,argv[4]))
+												{
+													for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+													{
+														pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].year = cal_date.tm_year - 100; //100 = 2000-1900
+														pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].month = cal_date.tm_mon + 1; //+1 to get 12
+														pSDAQs_mem[sn_dec - start_sn].ch_cal_date[i].day = cal_date.tm_mday;
+														strftime (str_buff, sizeof(str_buff),"%Y/%m/%d",&cal_date);
+														printw("\nSet Cal date for ch%02d @ %s", i+1, str_buff);
+													}
+													pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+												}
+												else
+													printw("\n Argument of Date is invalid");
+											}
 										}
 									}
-								}
-								else if(!strcmp(argv[3],"period"))
-								{
-									if(argv[4])// Calibration period
+									else if(!strcmp(argv[3],"period"))
 									{
-										sprintf(str_buff,"%i",atoi(argv[4]));//verification
-										if(strstr(str_buff,argv[4]) && atoi(argv[4]) < 255)
+										if(argv[4])// Calibration period
 										{
-											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
-												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].period = atoi(argv[4]);
-											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											sprintf(str_buff,"%i",atoi(argv[4]));//verification
+											if(strstr(str_buff,argv[4]) && atoi(argv[4]) < 255)
+											{
+												for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].period = atoi(argv[4]);
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
+											else
+												printw("\n Argument for Calibration Period is out of range");
 										}
-										else
-											printw("\n Argument for Calibration Period is out of range");
 									}
-								}
-								else if(!strcmp(argv[3],"points"))
-								{
-									if(argv[4])//amount of points
+									else if(!strcmp(argv[3],"points"))
 									{
-										sprintf(str_buff,"%i",atoi(argv[4]));//verification
-										if(strstr(str_buff,argv[4]) && atoi(argv[4])>= 0 && atoi(argv[4])<=16)
+										if(argv[4])//amount of points
 										{
-											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
-												pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points = atoi(argv[4]);
-											pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											sprintf(str_buff,"%i",atoi(argv[4]));//verification
+											if(strstr(str_buff,argv[4]) && atoi(argv[4])>= 0 && atoi(argv[4])<=16)
+											{
+												for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+													pSDAQs_mem[sn_dec-start_sn].ch_cal_date[i].amount_of_points = atoi(argv[4]);
+												pSDAQs_mem[sn_dec-start_sn].pSDAQ_flags |= 1<<cal_dates_send;//Force resend of the cal_dates
+											}
+											else
+												printw("\n Argument for amount of points is out of range");
 										}
-										else
-											printw("\n Argument for amount of points is out of range");
 									}
-								}
-								else
-								{	//check if the argument is number
-									sprintf(str_buff,"%f",atof(argv[3]));
-									if(strstr(str_buff,argv[3]))
-									{
-										pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
-										for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
-											pSDAQs_mem[sn_dec-start_sn].out_val[i] = atof(argv[3]);
-									}
-									else if(!argv[4])
-										printw("\nError: out_value argument is not a number");
 									else
-										printw("\n  ????");
-								}
-							pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
-							return;
+									{	//check if the argument is number
+										sprintf(str_buff,"%f",atof(argv[3]));
+										if(strstr(str_buff,argv[3]))
+										{
+											pSDAQs_mem[sn_dec-start_sn].nosensor = 0;
+											for(int i=0;i<pSDAQs_mem[sn_dec-start_sn].number_of_channels;i++)
+												pSDAQs_mem[sn_dec-start_sn].out_val[i] = atof(argv[3]);
+										}
+										else if(!argv[4])
+											printw("\nError: out_value argument is not a number");
+										else
+											printw("\n  ????");
+									}
+								pthread_mutex_unlock(&SDAQs_mem_access[sn_dec - start_sn]);
+								return;
+							}
 						}
 						else if(!strcmp(argv[2],"amount"))// amount of channels
 						{
