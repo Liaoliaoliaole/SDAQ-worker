@@ -288,13 +288,34 @@ int exp_date_dec_validator(struct tm *exp_date_dec, char *buff)
 
 void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned char num_of_pSDAQ, pSDAQ_memory_space *pSDAQs_mem)
 {
-	unsigned char channel_dec = 0, point_dec, offset=1;
+	unsigned char channel_dec = 0, point_dec, offset=1, unit_range_lo=0, unit_range_hi=0;
 	unsigned int sn_dec;
 	char *channel_str, str_buff[30];
+	const char *unit_str_ptr;
 	struct tm cal_date;
 	if(argv[0])
 	{
-		if(!strcmp(argv[0],"status"))
+		if(!strcmp(argv[0],"code"))
+		{
+			if(argc == 2 && argv[1])// status if range is given
+			{			
+				sscanf(argv[1], "%hhd-%hhd",&unit_range_lo,&unit_range_hi);
+				if(unit_range_lo!=unit_range_hi)
+				{
+					if(!unit_range_hi)
+						unit_range_hi=unit_range_lo;
+					for(int i=unit_range_lo; i<=unit_range_hi; i++)
+					{
+						unit_str_ptr = !unit_str[i]||!unit_str[i][0]?"Reserved ":unit_str[i];
+						printw("\n   Unit_code: %i -> %s",i, unit_str_ptr);
+						if(i<20)
+							printw("(base)");
+					}
+					return;
+				}
+			}
+		}
+		else if(!strcmp(argv[0],"status"))
 		{
 			if(argc == 1 && !argv[1])// status for all pseudoSDAQs
 			{
@@ -387,7 +408,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 				}
 			}
 		}
-		if(!strcmp(argv[0],"get"))
+		else if(!strcmp(argv[0],"get"))
 		{
 			if(argv[1])
 			{
@@ -770,6 +791,7 @@ const char shell_help_str[]={
 	"\tCtrl + I  = print used CAN-if\n"
 	"\tCtrl + Q  = Quit\n"
 	" COMMANDS:\n"
+	"\tcode #(-#) = print the unit string of the code (or range of codes)\n"
 	"\tstatus (S/N) = Print status of S/N or all pSDAQs without S/N\n"
 	"\tstatus S/N CH# = Print calibration points status of CH# at pSDAQ with S/N\n"
 	"\tget (S/N) = Get the current outputs state\n"

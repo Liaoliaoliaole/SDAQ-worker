@@ -108,6 +108,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 		Ctrl + I  = print used CAN-if
 		Ctrl + Q  = Quit
  COMMANDS:
+		code #(-#) = print the unit string of the code (or range of codes)
 		status (S/N) = Print status of S/N or all pSDAQs without S/N
 		status S/N CH# = Print calibration points status of CH# at pSDAQ with S/N
 		get (S/N) = Get the current outputs state
