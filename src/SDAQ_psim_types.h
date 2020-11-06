@@ -33,6 +33,7 @@ typedef struct pSDAQ_memory_space_struct{
 	unsigned short noise;
 	unsigned short nosensor;
 	unsigned short out_of_range;
+	unsigned short over_range;
 	unsigned char status;// status byte of the pseudo_SDAQ
 	unsigned char pSDAQ_flags;// flags of the pSDAQ_flags
 	unsigned int status_send_cnt;//counter, that when is 0 a device ID/ status message transmitted

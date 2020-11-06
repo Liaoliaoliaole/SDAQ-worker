@@ -584,6 +584,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 										pSDAQs_mem[sn_dec-start_sn].out_of_range |= 1<<(channel_dec-1);
 									else if(!strcmp(argv[3],"in"))
 										pSDAQs_mem[sn_dec-start_sn].out_of_range &= ~(1<<(channel_dec-1));
+									else if(!strcmp(argv[3],"over"))
+										pSDAQs_mem[sn_dec-start_sn].over_range |= 1<<(channel_dec-1);
+									else if(!strcmp(argv[3],"under"))
+										pSDAQs_mem[sn_dec-start_sn].over_range &= ~(1<<(channel_dec-1));
 									else if((strstr(argv[3],"p") || strstr(argv[3],"P")) && argc == 6)//Set Point value
 									{
 										//check if value argument is number
@@ -654,6 +658,10 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 											pSDAQs_mem[sn_dec-start_sn].out_of_range = -1;
 									else if(!strcmp(argv[3],"in"))
 											pSDAQs_mem[sn_dec-start_sn].out_of_range = 0;
+									else if(!strcmp(argv[3],"over"))
+											pSDAQs_mem[sn_dec-start_sn].over_range = -1;
+									else if(!strcmp(argv[3],"under"))
+											pSDAQs_mem[sn_dec-start_sn].over_range = 0;
 									else if(!strcmp(argv[3],"unit"))
 									{
 										if(argv[4])//Unit code
@@ -801,6 +809,7 @@ const char shell_help_str[]={
 	"\tset (S/N) (ch# || all) [no]noise = [Re]Set random noise on channel(s)\n"
 	"\tset (S/N) (ch# || all) [no]sensor = [Re]Set No sensor flag(s)\n"
 	"\tset (S/N) (ch# || all) (out || in) = [Re]Set \"out of range\" flag(s)\n"
+	"\tset (S/N) (ch# || all) (over || under) = [Re]Set \"Over-Range\" flag(s)\n"
 	"\tset (S/N) (ch# || all) Real_val = Write value to Channel(s) output\n"
 	"\tset (S/N) (ch# || all) date (now || YYYY/MM/DD) = Write Calibration Date\n"
 	"\tset (S/N) (ch# || all) points # = Write Amount of Calibration points\n"
@@ -813,7 +822,7 @@ const char shell_help_str[]={
 //SDAQ_psim shell help
 int shell_help()
 {
-	const int height = 30;
+	const int height = 32;
 	const int width = 90;
 	int starty = (LINES - height) / 2;	/* Calculating for a center placement */
 	int startx = (COLS - width) / 2;	/* of the window		*/

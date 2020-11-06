@@ -156,8 +156,8 @@ int main(int argc, char *argv[])
 	//Run user's interface (ncurses)
 	ioctl(STDOUT_FILENO, TIOCGWINSZ, &term_init_size);// get current size of terminal window
 	//Check if the terminal have the minimum size for the application
-	if(term_init_size.ws_col<100 || term_init_size.ws_row<32)
-		printf("Terminal need to be at least 100X32 Characters to run shell\n The SDAQ_psim forced to run Headless\n");
+	if(term_init_size.ws_col<100 || term_init_size.ws_row<35)
+		printf("Terminal need to be at least 100X35 Characters to run shell\n The SDAQ_psim forced to run Headless\n");
 	else
 		user_interface(thread_arg.can_if_name, start_sn, num_of_pSDAQ, pSDAQs_mem);
 
@@ -399,7 +399,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 						for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
 						{
 							noise = arg.pSDAQ_mem->noise & (1<<i) ? ((rand()%20)-10)/1000.0 : 0;
-							p_measure(socket_num, arg.pSDAQ_mem->address, i+1, (((arg.pSDAQ_mem->nosensor)>>i)&1) | ((((arg.pSDAQ_mem->out_of_range)>>i)&1)<<1),
+							p_measure(socket_num, arg.pSDAQ_mem->address, i+1, (((arg.pSDAQ_mem->nosensor)>>i)&1)|((((arg.pSDAQ_mem->out_of_range)>>i)&1)<<1)|((((arg.pSDAQ_mem->over_range)>>i)&1)<<2),
 																				 arg.pSDAQ_mem->ch_cal_date[i].cal_units,
 																				 arg.pSDAQ_mem->out_val[i]+noise, pseudo_SDAQ_timestamp);
 							if(raw_meas_cnt >= 10)
