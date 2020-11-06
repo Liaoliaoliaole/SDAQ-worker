@@ -62,11 +62,11 @@ const char *unit_str[256]={
 
 const char *dev_type_str[20]={
 	"Pseudo_SDAQ",
-	"SDAQ-TC-1",
-	"SDAQ-TC-16",
-	"SDAQ-RTD-1",
-	"SDAQ-mA-1",
-	"SDAQ-Volt-1"
+	"SDAQ-TC1",
+	"SDAQ-TC16",
+	"SDAQ-RTD",
+	"SDAQ-I",
+	"SDAQ-V"
 };
 
 const char *channel_status_str[]={
