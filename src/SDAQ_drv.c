@@ -66,7 +66,7 @@ const char *dev_type_str[20]={
 	"SDAQ-TC16",
 	"SDAQ-RTD",
 	"SDAQ-I",
-	"SDAQ-V"
+	"SDAQ-U"
 };
 
 const char *channel_status_str[]={
