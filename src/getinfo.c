@@ -208,10 +208,27 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 			}
 			else
 			{
-				printf("No device found\n");
+				printf("Failure at reception of Calibration Point Data for Channel %d\n",i+1);
 				return EXIT_FAILURE;
 			}
 		}
+		//Get the extra Calibration_Date message
+		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
+		if(RX_bytes==sizeof(frame_rx))
+		{
+			if(id_dec->device_addr != dev_addr || id_dec->payload_type != Calibration_Date)
+			{
+				printf("Received an unordered message\n");
+				return EXIT_FAILURE;
+			}
+			//TODO: Add check with recorded data.
+		}
+		else
+		{
+			printf("Failure at reception of Calibration Date for Channel %d\n",i+1);
+			return EXIT_FAILURE;
+		}
+
 	}
 	return EXIT_SUCCESS;
 }
