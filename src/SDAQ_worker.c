@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
 						 .ext_com=NULL,
 						 .verify=0,
 						 .silent=0,
+						 .formatted_output=0,
 						 .resize=0,
 						 .timeout = 2 //second
 						};
@@ -76,7 +77,7 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvrslt:S:T:f:e:")) != -1)
+	while ((c = getopt (argc, argv, "hVvrlt:S:T:f:e:s::")) != -1)
 	{
 		switch (c)
 		{
@@ -94,6 +95,8 @@ int main(int argc, char *argv[])
 				break;
 			case 's'://silent
 				usr_opt.silent = 1;
+				if(optarg && optarg[0]=='-')
+					usr_opt.formatted_output=1;
 				break;
 			case 'f'://file
 				if(strstr(optarg,".xml") && strcmp(optarg,".xml"))

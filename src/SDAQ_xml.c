@@ -111,6 +111,11 @@ int XML_info_file_write(char *file_path, void *arg)
 		exp_format_flag = 1;
 		file_path = file_path[1]? file_path+1 : file_path;
 	}
+	else if(file_path[0]=='+' && !file_path[1])
+	{
+		exp_format_flag = 1;
+		file_path = "-";
+	}
     //write the xml_doc to stdout or to file
     xmlSaveFormatFileEnc(file_path, xml_doc, "UTF-8", exp_format_flag);
 	//free allocated memory

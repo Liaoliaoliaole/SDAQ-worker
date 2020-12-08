@@ -77,7 +77,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			printf("\nPrint completed\n");
 		}
 		else
-			XML_info_file_write("-", &str);
+			usr_flag->formatted_output?XML_info_file_write("+", &str):XML_info_file_write("-", &str);
 	}
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
