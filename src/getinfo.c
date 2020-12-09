@@ -83,6 +83,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	}
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
+	str.Calibration_date_list=NULL;
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
 	{
 		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
@@ -114,15 +115,15 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 	//Timers related Variables
 	struct itimerval timer;//Scan Timeout
 
-	//link signal SIGALRM to timer's handler
-	signal(SIGALRM, info_timer_handler);
-
 	//initialize timer expired time
 	info_TMR_exp = 1;
 	memset (&timer, 0, sizeof(timer));
 	timer.it_value.tv_sec = scanning_time;
 	timer.it_value.tv_usec = 0;
 	setitimer (ITIMER_REAL, &timer, NULL);
+
+	//link signal SIGALRM to timer's handler
+	signal(SIGALRM, info_timer_handler);
 
 	//Request SDAQ's info. Wait to received Status/SN, Dev_Info, and calibration date for each channel
 	QueryDeviceInfo(socket_num, dev_addr);
@@ -198,7 +199,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 		setitimer (ITIMER_REAL, &timer, NULL);
 		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message 
+		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
@@ -216,7 +217,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						case Calibration_Date:
 							new_date_node = g_slist_nth_data((GSList *)str->Calibration_date_list, i);
 							if(new_date_node->ch_num != id_dec->channel_num || new_date_node->amount_of_points != date_dec->amount_of_points ||
-							   new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day || 
+							   new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day ||
 							   new_date_node->period != date_dec->period)
 							{
 								printf("Verification of Calibration_Date Date message for Channel %d failed!!!\n", i+1);
@@ -230,8 +231,11 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 			}
 			else
 			{
-				g_slist_free_full((GSList *)(str->Cal_points_data_lists[i]), free_SDAQ_Date_node);
-				str->Cal_points_data_lists[i] = NULL;
+				if(str->Cal_points_data_lists[i])
+				{
+					g_slist_free_full((GSList *)(str->Cal_points_data_lists[i]), free_SDAQ_Date_node);
+					str->Cal_points_data_lists[i] = NULL;
+				}
 				i--;
 				if(!retry_cnt--)
 				{
@@ -288,7 +292,6 @@ gint SDAQ_date_node_find (gconstpointer a, gconstpointer b)
 {
 	return ((date_list_data_of_node *)a)->amount_of_points > 0 ?  0 : 1;
 }
-
 
 //assist function prints the Data of the points. arg_pass is a pointer to an integer with the amount_of_points that will be print out.
 void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
