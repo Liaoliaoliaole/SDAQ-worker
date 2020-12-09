@@ -202,16 +202,16 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel)
 {
-	sdaq_can_id *p_sdaq_id_ptr;
+	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	p_sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(p_sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
 	//construct identifier for Query_Calibration_Data message
-	p_sdaq_id_ptr->flags = 4;//set the EFF
-	p_sdaq_id_ptr->protocol_id = PROTOCOL_ID;
-	p_sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
-	p_sdaq_id_ptr->device_addr = dev_address;
-	p_sdaq_id_ptr->channel_num = channel;
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
+	sdaq_id_ptr->device_addr = dev_address;
+	sdaq_id_ptr->channel_num = channel;
 	frame_tx.can_dlc = 0;//No Payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;

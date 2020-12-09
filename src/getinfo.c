@@ -14,6 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#define RETRY_CNT_INIT 10 //Amount of retries for failed Calibration Point Data
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -82,7 +84,10 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
+	{
 		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+		str.Cal_points_data_lists[i]=NULL;
+	}
 	free(str.Cal_points_data_lists);
 	return retval;
 }
@@ -99,7 +104,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 	union RX_info_calibration_date_flags_short rfb = {.as_flags.id_status_msg_flag=1,.as_flags.info_msg_flag=1};
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
-	int RX_bytes;
+	int RX_bytes, retry_cnt = RETRY_CNT_INIT;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
 	sdaq_status *status_dec = (sdaq_status *)frame_rx.data;
 	sdaq_info   *info_dec   = (sdaq_info *)frame_rx.data;
@@ -185,59 +190,58 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 	//Request SDAQ's info. Wait to received Calibration data points. Recall for each channel
 	for(int i=0,cnt; i<str->SDAQ_info.num_of_ch; i++)
 	{
-		//initialize timer expired time
+		//initialize timer expired time to 250 msec
 		info_TMR_exp = 1;
 		memset (&timer, 0, sizeof(timer));
-		timer.it_value.tv_sec = scanning_time;
-		timer.it_value.tv_usec = 0;
+		timer.it_value.tv_sec = 0;
+		timer.it_value.tv_usec = 250000;
 		setitimer (ITIMER_REAL, &timer, NULL);
 		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3)
+		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message 
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
-				if(id_dec->device_addr == dev_addr && id_dec->payload_type == Calibration_Point_Data)
+				if(id_dec->device_addr == dev_addr)
 				{
-					new_point_node = new_SDAQ_cal_point_node();
-					memcpy(new_point_node, frame_rx.data, sizeof(sdaq_calibration_points_data));
-					(str->Cal_points_data_lists)[i] = (struct GSlist *)g_slist_append((GSList *)(str->Cal_points_data_lists)[i], new_point_node);
-					cnt++;
+					switch(id_dec->payload_type)
+					{
+						case Calibration_Point_Data:
+							new_point_node = new_SDAQ_cal_point_node();
+							memcpy(new_point_node, frame_rx.data, sizeof(sdaq_calibration_points_data));
+							str->Cal_points_data_lists[i] = (struct GSlist *)g_slist_append((GSList *)(str->Cal_points_data_lists[i]), new_point_node);
+							cnt++;
+							break;
+						case Calibration_Date:
+							new_date_node = g_slist_nth_data((GSList *)str->Calibration_date_list, i);
+							if(new_date_node->ch_num != id_dec->channel_num || new_date_node->amount_of_points != date_dec->amount_of_points ||
+							   new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day || 
+							   new_date_node->period != date_dec->period)
+							{
+								printf("Verification of Calibration_Date Date message for Channel %d failed!!!\n", i+1);
+								return EXIT_FAILURE;
+							}
+							else
+								cnt++;
+							break;
+					}
 				}
 			}
 			else
 			{
-				printf("Failure at reception of Calibration Point Data for Channel %d\n", i+1);
-				return EXIT_FAILURE;
+				g_slist_free_full((GSList *)(str->Cal_points_data_lists[i]), free_SDAQ_Date_node);
+				str->Cal_points_data_lists[i] = NULL;
+				i--;
+				if(!retry_cnt--)
+				{
+					printf("Get of CalibrationData Failed, too many reties (>%d)!!!\n", RETRY_CNT_INIT);
+					return EXIT_FAILURE;
+				}
 			}
 		}
-		//Get the extra Calibration_Date message
-		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
-		if(RX_bytes==sizeof(frame_rx))
-		{
-			if(id_dec->device_addr != dev_addr || id_dec->payload_type != Calibration_Date)
-			{
-				printf("Received an unordered message\n");
-				return EXIT_FAILURE;
-			}
-			new_date_node = g_slist_nth_data((GSList *)str->Calibration_date_list, i);
-			if(new_date_node->ch_num != id_dec->channel_num || new_date_node->year != date_dec->year ||
-			   new_date_node->month != date_dec->month || new_date_node->day != date_dec->day ||
-			   new_date_node->period != date_dec->period || new_date_node->amount_of_points != date_dec->amount_of_points)
-			{
-				printf("Validation of Calibration_Date Date message for Channel %d failed!!!\n", i+1);
-				return EXIT_FAILURE;
-			}
-		}
-		else
-		{
-			printf("Failure at reception of Calibration Date for Channel %d\n", i+1);
-			return EXIT_FAILURE;
-		}
-
 	}
-	return EXIT_SUCCESS;
+	return info_TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /*---- Implementation of function for Calibration_date_list ----*/
