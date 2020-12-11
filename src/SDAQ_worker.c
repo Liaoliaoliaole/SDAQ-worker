@@ -1,6 +1,6 @@
 /*
 Program: SDAQ_worker. A controlling software for SDAQ-CAN Devices.
-Copyright (C) 12019-12020  Sam harry Tzavaras
+Copyright (C) 12019-12021  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -319,7 +319,7 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 void print_usage(char *prog_name)
 {
 	const char preamp[] = {
-	"\tProgram: SDAQ_worker  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
+	"\tProgram: SDAQ_worker  Copyright (C) 12019-12021  Sam Harry Tzavaras\n"
     "\tThis program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
     "\tThis is free software, and you are welcome to redistribute it\n"
     "\tunder certain conditions; for details see LICENSE.\n"

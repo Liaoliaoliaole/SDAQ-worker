@@ -1,6 +1,6 @@
 /*
 Program: SDAQ_psim. A virtual device simulator for SDAQ-CAN Devices.
-Copyright (C) 12019-12020  Sam harry Tzavaras
+Copyright (C) 12019-12021  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -473,7 +473,7 @@ short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time)
 void print_usage(char *prog_name)
 {
 	const char preamp[] = {
-	"Program: SDAQ_psim  Copyright (C) 12019-12020  Sam Harry Tzavaras\n"
+	"Program: SDAQ_psim  Copyright (C) 12019-12021  Sam Harry Tzavaras\n"
     "This program comes with ABSOLUTELY NO WARRANTY; for details see LICENSE.\n"
     "This is free software, and you are welcome to redistribute it\n"
     "under certain conditions; for details see LICENSE.\n"

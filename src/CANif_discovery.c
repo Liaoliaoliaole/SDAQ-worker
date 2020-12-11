@@ -1,6 +1,6 @@
 /*
 File: CAN-if_discovery. Implementation of Discovery function for CAN socket interfaces.
-Copyright (C) 12019-12020  Sam harry Tzavaras
+Copyright (C) 12019-12021  Sam harry Tzavaras
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
