@@ -45,8 +45,11 @@ enum contens_type{
 //custom function that convert an type (contens_type) to a node with name name_mode
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
 
-int XML_info_file_read_and_validate(char *file_path, void *cur_conf, void *new_conf)
+int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 {
+	if(!file_path||!new_conf)
+		return EXIT_FAILURE;
+	
 	return 0;
 }
 

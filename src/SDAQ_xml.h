@@ -19,9 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /*function used in getinfo.c: convert the arg (aka SDAQ_info_cal_data*) to xml.
   if file_path is valid save, otherwise it's print it to stdout*/
 int XML_info_file_write(char *file_path, void *arg);
-/*function used in setinfo.c: check filepath for a valid xml,
-  convert it to SDAQ_info_cal_data, compare it with cur_conf and
-  if it's valid provide it to new_conf.
+
+/*function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data.
   return: 0 at success and 1 on failure.
  */
-int XML_info_file_read_and_validate(char *file_path, void *cur_conf, void *new_conf);
+int XML_info_file_read_and_validate(char *file_path, void *new_conf);

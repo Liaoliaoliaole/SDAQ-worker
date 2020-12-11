@@ -32,10 +32,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "SDAQ_xml.h"
 
 //Local Functions
-//function for decode external command
+//Function for decode external command
 int str_dec(char **arg, char *input_buff, const char *delim);
-//function for construction of struct tm with calibration date of SDAQ
+//Function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff);
+//Function that correlate two SDAQ_info_cal_data (new and current config). Return EXIT_SUCCESS, if new related with the old; otherwise EXIT_FAILURE.
+int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf);
 
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
@@ -60,7 +62,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 					NumOfPoints = atoi(argv[4]);
 					unit = atoi(argv[5]);
 					WriteCalibrationDate(socket_num, dev_addr, channel_num, &date, period, NumOfPoints, unit);
-					return 0;
+					return EXIT_SUCCESS;
 				}
 			}
 			else if(!strcmp(argv[0], "WriteCalibrationPoint") && argc == 5)
@@ -71,21 +73,25 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 					Point_num = atoi(argv[3]);
 					type = atoi(argv[4]);
 					WriteCalibrationPoint(socket_num, dev_addr, channel_num, point_val, Point_num, type);
-					return 0;
+					return EXIT_SUCCESS;
 				}
 			}
 		}
 		printf("External command is Unknown\n");
-		return 0;
+		return EXIT_FAILURE;
+	}
+	if(usr_flag->info_file)
+	{
+		if(XML_info_file_read_and_validate(usr_flag->info_file, &new_conf))
+			return EXIT_FAILURE;
 	}
 	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
 	{
 		if(usr_flag->info_file)
 		{
 			//printf("info XML File is \"%s\"\n",usr_flag->info_file);
-			if(!XML_info_file_read_and_validate(usr_flag->info_file, &cur_conf, &new_conf))
+			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf))
 			{
-				//printf("Okay\n");
 				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &new_conf);
 				//Free the list and the arrays of the new_conf
 				g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
@@ -133,6 +139,11 @@ int date_to_tm(struct tm *output_date, char *input_buff)
 		return 0;
 	}
 	return -1;
+}
+
+int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf)
+{
+	return EXIT_FAILURE;
 }
 
 //function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
