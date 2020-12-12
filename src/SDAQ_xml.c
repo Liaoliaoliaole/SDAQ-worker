@@ -45,12 +45,19 @@ enum contens_type{
 //custom function that convert an type (contens_type) to a node with name name_mode
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
 
+/*
+ * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data.
+ * Return: 0 at success and 1 on failure.
+ */
 int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 {
+	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
+
+
 	if(!file_path||!new_conf)
 		return EXIT_FAILURE;
-	
-	return 0;
+
+	return EXIT_SUCCESS;
 }
 
 int XML_info_file_write(char *file_path, void *arg)
