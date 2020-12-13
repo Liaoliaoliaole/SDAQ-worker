@@ -42,30 +42,15 @@ enum contens_type{
 	t_string
 };
 
-//custom function that convert an type (contens_type) to a node with name name_mode
+//Custom function that convert an type (contens_type) to a node with name name_mode
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
-
-/*
- * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data.
- * Return: 0 at success and 1 on failure.
- */
-int XML_info_file_read_and_validate(char *file_path, void *new_conf)
-{
-	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
-
-
-	if(!file_path||!new_conf)
-		return EXIT_FAILURE;
-
-	return EXIT_SUCCESS;
-}
 
 int XML_info_file_write(char *file_path, void *arg)
 {
 	SDAQ_info_cal_data *info_ptr = arg;
 	xmlDocPtr xml_doc = NULL;
     xmlNodePtr root_node = NULL, w_node = NULL,  w_node1 = NULL, w_node2 = NULL;
-	unsigned char buff[20], *point_name, exp_format_flag=0;
+	unsigned char buff[20], *point_name, exp_format_flag=0, cal_unit;
     //Creates a new document, a node and set it as a root node
     xml_doc = xmlNewDoc(BAD_CAST "1.0");
     root_node = xmlNewNode(NULL, BAD_CAST "SDAQ");
@@ -93,6 +78,9 @@ int XML_info_file_write(char *file_path, void *arg)
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->period, t_integer_ubyte);
 		xml_SDAQ_data(w_node, BAD_CAST "Used_Points",
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
+		cal_unit = ((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->cal_unit;
+		sprintf((char*)buff, "%s%s", unit_str[cal_unit], cal_unit<Unit_code_base_region_size?"(Base)":"");
+		xml_SDAQ_data(w_node, BAD_CAST "Unit", buff, t_string);
 		//add points for channel
 		w_node1 = xmlNewChild(w_node, NULL, BAD_CAST "Points", NULL);
 		for(int j=0; j < info_ptr->SDAQ_info.max_cal_point; j++)
@@ -170,4 +158,18 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 	}
 	node = xmlNewChild(root_node, NULL, node_name, buff_ptr);
 	return node;
+}
+
+/*
+ * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data.
+ * Return: 0 at success and 1 on failure.
+ */
+int XML_info_file_read_and_validate(char *file_path, void *new_conf)
+{
+	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
+
+	if(!file_path||!new_conf)
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
 }

@@ -165,6 +165,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						new_date_node->day = date_dec->day;
 						new_date_node->period = date_dec->period;
 						new_date_node->amount_of_points = date_dec->amount_of_points;
+						new_date_node->cal_unit = date_dec->cal_units;
 						str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
 						rfb.as_flags.amount_of_waiting_channel--;
 						break;
@@ -343,10 +344,12 @@ void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 	strftime(buff,sizeof(buff),"%Y/%m/%d",&ptm);
 	if(node_dec->amount_of_points)
 	{
-		printf("   CH%02d: Calibrated @ %s valid for %3d Months, Cal_Points = %2d\n",node_dec->ch_num,
-											  buff,
-											  node_dec->period,
-											  node_dec->amount_of_points);
+		printf("   CH%02d: Calibrated @ %s valid for %3d Months, Cal_Points = %2d, Unit = %s%s\n", node_dec->ch_num,
+																								   buff,
+																								   node_dec->period,
+																							  	   node_dec->amount_of_points,
+																							  	   unit_str[node_dec->cal_unit],
+																							  	   node_dec->cal_unit<Unit_code_base_region_size?"(Base)":"");
 		printf(" /----------------------------------------------------------------------------------\\\n"
 			   " | #  |   Measure  |  Reference |    Offset  |    Gain    |      C2    |      C3    |\n"
 		       " |----|------------|------------|------------|------------|------------|------------|\n");

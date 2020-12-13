@@ -65,6 +65,7 @@ typedef struct calibration_date{
 	unsigned char day;//1 to 31
 	unsigned char period;//Calibration interval in months
 	unsigned char amount_of_points;
+	unsigned char cal_unit;
 }date_list_data_of_node;
 
 /*All the functions return EXIT_SUCCESS at success and EXIT_FAILURE on failure*/
