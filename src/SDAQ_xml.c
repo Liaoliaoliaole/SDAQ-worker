@@ -161,7 +161,7 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 }
 
 /*
- * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data.
+ * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data (new_conf).
  * Return: 0 at success and 1 on failure.
  */
 int XML_info_file_read_and_validate(char *file_path, void *new_conf)
