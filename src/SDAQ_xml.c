@@ -166,10 +166,45 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
  */
 int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 {
+	gunichar wc;
+	GString *gstring_from_stdin;
+	char *filename = file_path;
 	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
-
+	xmlDocPtr doc = NULL;
+	
 	if(!file_path||!new_conf)
 		return EXIT_FAILURE;
-
+    //--- parse the file or the data from STDIN ---//
+    if(file_path[0]=='-')//Check if the data comes from STDIN
+	{
+		filename = "STDIN";
+		if(!(gstring_from_stdin = g_string_new(NULL)))
+		{
+			fprintf(stderr, "Memory Error!!!\n");
+			exit(EXIT_FAILURE);
+		}
+		while((wc = getchar()) != EOF)
+			gstring_from_stdin = g_string_append_unichar(gstring_from_stdin, wc);
+		doc = xmlReadMemory(gstring_from_stdin->str, gstring_from_stdin->len, "", NULL, XML_PARSE_NOBLANKS);
+		g_string_free(gstring_from_stdin, TRUE);
+	}
+	else
+		doc = xmlReadFile(filename, NULL, XML_PARSE_NOBLANKS);
+	if(!doc)
+    {
+        fprintf(stderr, "Failed to parse %s\n", filename);
+		xmlCleanupParser();
+		xmlMemoryDump();
+        return EXIT_FAILURE;
+    }
+	
+	
+	
+	//free allocated memory
+	xmlFreeDoc(doc);
+	xmlCleanupParser();
+    // this is to debug memory for regression tests
+    xmlMemoryDump();
+	
 	return EXIT_SUCCESS;
 }
