@@ -75,21 +75,24 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			else
 				printf("\tAll channels have 0 amount of points\n");
 			if(usr_flag->info_file)
-				XML_info_file_write(usr_flag->info_file, &str);
+				XML_info_file_write(usr_flag->info_file, &str, usr_flag->formatted_output);
 			printf("\nPrint completed\n");
 		}
 		else
-			usr_flag->formatted_output?XML_info_file_write("+", &str):XML_info_file_write("-", &str);
+			XML_info_file_write("-", &str, usr_flag->formatted_output);
 	}
 	//free the list and the arrays
 	g_slist_free_full((GSList *)(str.Calibration_date_list), free_SDAQ_Date_node);
 	str.Calibration_date_list=NULL;
-	for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
+	if(str.Cal_points_data_lists)
 	{
-		g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
-		str.Cal_points_data_lists[i]=NULL;
+		for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
+		{
+			g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+			str.Cal_points_data_lists[i]=NULL;
+		}
+		free(str.Cal_points_data_lists);
 	}
-	free(str.Cal_points_data_lists);
 	return retval;
 }
 

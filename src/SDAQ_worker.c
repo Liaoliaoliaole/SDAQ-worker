@@ -77,7 +77,7 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hVvrlt:S:T:f:e:s::")) != -1)
+	while ((c = getopt (argc, argv, "hVvrlspt:S:T:f:e:")) != -1)
 	{
 		switch (c)
 		{
@@ -95,18 +95,18 @@ int main(int argc, char *argv[])
 				break;
 			case 's'://silent
 				usr_opt.silent = 1;
-				if(optarg && optarg[0]=='-')
-					usr_opt.formatted_output=1;
 				break;
 			case 'f'://file
 				if(strstr(optarg,".xml") && strcmp(optarg,".xml"))
 					usr_opt.info_file = optarg;
 				else
 				{
-					fprintf(stderr,"-f argument: Not a .xml File!!!\n");
+					fprintf(stderr,"-f argument (%s): Not a .xml File!!!\n",optarg);
 					exit(EXIT_FAILURE);
 				}
 				break;
+			case 'p'://pretty (formatted) XML output
+				usr_opt.formatted_output=1;
 			case 'e'://external command on argument
 				usr_opt.ext_com = optarg;
 				break;
@@ -347,9 +347,10 @@ void print_usage(char *prog_name)
 		"           -r : resize terminal. Used with mode 'measure'\n"
 		"           -v : Address Verification. Used with mode 'setaddress'.\n"
 		"           -l : Print a list of the available CAN-IFs.\n"
-		"           -f : Write/Read SDAQ info to/from XML file. (Add '-' on path's start for formatted output)\n"
-		"           -e : External command. Used with modes 'setinfo'\n"
-		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec\n"
+		"           -f : Write/Read SDAQ info to/from XML file.\n"
+		"           -p : Formatted XML output. Used with mode 'getinfo'.\n"
+		"           -e : External command. Used with mode 'setinfo'.\n"
+		"  -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.\n"
 		"  -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.\n"
 		"  -T <format> : Timestamp format, works with -S Date.\n"
 		"\n"

@@ -83,7 +83,16 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	if(usr_flag->info_file)
 	{
 		if(XML_info_file_read_and_validate(usr_flag->info_file, &new_conf))
+		{	//Free the list and the arrays of the new_conf
+			g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
+			if(new_conf.Cal_points_data_lists)
+			{
+				for(int i=0; i<new_conf.SDAQ_info.num_of_ch; i++)
+					g_slist_free_full((GSList *)(new_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+				free(new_conf.Cal_points_data_lists);
+			}
 			return EXIT_FAILURE;
+		}
 	}
 	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
 	{
