@@ -286,7 +286,8 @@ sdaq_calibration_points_data* new_SDAQ_cal_point_node()
 //used with g_slist_free_full to free the data of node
 void free_SDAQ_cal_point_node(gpointer point_node)
 {
-	g_slice_free(sdaq_calibration_points_data, point_node);
+	if(point_node)
+		g_slice_free(sdaq_calibration_points_data, point_node);
 }
 
 /*
