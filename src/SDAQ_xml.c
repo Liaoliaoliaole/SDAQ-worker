@@ -424,7 +424,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 			{
 				short year,month,day;
 				sscanf((char*)content,"%hd/%hd/%hd",&year,&month,&day);
-				if((year>=2000&&year<=2255)&&(month>=1&&month<=12)&&(day>=1&&day<=12))
+				if((year>=2000&&year<=2255)&&(month>=1&&month<=12)&&(day>=1&&day<=31))
 				{
 					l_new_date_note.year = year-2000;
 					l_new_date_note.month = month;
