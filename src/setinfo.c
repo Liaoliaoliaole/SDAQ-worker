@@ -36,8 +36,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 int str_dec(char **arg, char *input_buff, const char *delim);
 //Function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff);
-//Function that correlate two SDAQ_info_cal_data (new and current config). Return EXIT_SUCCESS, if new related with the old; otherwise EXIT_FAILURE.
-int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf);
 
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
@@ -98,17 +96,16 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	{
 		if(usr_flag->info_file)
 		{
-			//printf("info XML File is \"%s\"\n",usr_flag->info_file);
-			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf))
+			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, 0))
+				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, &new_conf);
+			//Free the list and the arrays of the new_conf
+			g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
+			if(new_conf.Cal_points_data_lists)
 			{
-				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &new_conf);
-				//Free the list and the arrays of the new_conf
-				g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
 				for(int i=0; i<new_conf.SDAQ_info.num_of_ch; i++)
 					g_slist_free_full((GSList *)(new_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
 				free(new_conf.Cal_points_data_lists);
 			}
-
 		}
 		else
 		{
@@ -150,14 +147,80 @@ int date_to_tm(struct tm *output_date, char *input_buff)
 	return -1;
 }
 
-int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf)
+int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf, unsigned char depth)
 {
-	return EXIT_FAILURE;
+	int retval;
+
+	if(!cur_conf || !new_conf)
+		return EXIT_FAILURE;
+	if(cur_conf->SDAQ_info.serial_number == new_conf->SDAQ_info.serial_number &&
+	   cur_conf->SDAQ_info.dev_type && new_conf->SDAQ_info.dev_type&&
+	   !strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type) &&
+	   cur_conf->SDAQ_info.firm_rev == new_conf->SDAQ_info.firm_rev &&
+	   cur_conf->SDAQ_info.hw_rev == new_conf->SDAQ_info.hw_rev &&
+	   cur_conf->SDAQ_info.num_of_ch == new_conf->SDAQ_info.num_of_ch &&
+	   cur_conf->SDAQ_info.sample_rate == new_conf->SDAQ_info.sample_rate &&
+	   cur_conf->SDAQ_info.max_cal_point == new_conf->SDAQ_info.max_cal_point)
+	   retval = EXIT_SUCCESS;
+	else
+	{
+		fprintf(stderr, "Error in Correlation: ");
+		if(cur_conf->SDAQ_info.serial_number != new_conf->SDAQ_info.serial_number)
+			fprintf(stderr, "cur_conf->SDAQ_info.serial_number(%d) != new_conf->SDAQ_info.serial_number(%d) !!!\n",cur_conf->SDAQ_info.serial_number, new_conf->SDAQ_info.serial_number);
+		if(!cur_conf->SDAQ_info.dev_type)
+			fprintf(stderr, "cur_conf->SDAQ_info.dev_type is Unknown!!!\n");
+		if(!new_conf->SDAQ_info.dev_type)
+			fprintf(stderr, "new_conf->SDAQ_info.dev_type is Unknown!!!\n");
+		if(strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type))
+			fprintf(stderr, "cur_conf->SDAQ_info.dev_type(%s) != new_conf->SDAQ_info.dev_type(%s) !!!\n",cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type);
+
+		if(cur_conf->SDAQ_info.firm_rev != new_conf->SDAQ_info.firm_rev)
+			fprintf(stderr, "cur_conf->SDAQ_info.firm_rev(%d) != new_conf->SDAQ_info.firm_rev(%d) !!!\n",cur_conf->SDAQ_info.firm_rev, new_conf->SDAQ_info.firm_rev);
+		if(cur_conf->SDAQ_info.hw_rev != new_conf->SDAQ_info.hw_rev)
+			fprintf(stderr, "cur_conf->SDAQ_info.hw_rev(%d) != new_conf->SDAQ_info.hw_rev(%d) !!!\n",cur_conf->SDAQ_info.hw_rev, new_conf->SDAQ_info.hw_rev);
+		if(cur_conf->SDAQ_info.num_of_ch != new_conf->SDAQ_info.num_of_ch)
+			fprintf(stderr, "cur_conf->SDAQ_info.num_of_ch(%d) != new_conf->SDAQ_info.num_of_ch(%d) !!!\n",cur_conf->SDAQ_info.num_of_ch, new_conf->SDAQ_info.num_of_ch);
+		if(cur_conf->SDAQ_info.sample_rate != new_conf->SDAQ_info.sample_rate)
+			fprintf(stderr, "cur_conf->SDAQ_info.sample_rate(%d) != new_conf->SDAQ_info.sample_rate(%d) !!!\n",cur_conf->SDAQ_info.sample_rate, new_conf->SDAQ_info.sample_rate);
+		if(cur_conf->SDAQ_info.max_cal_point != new_conf->SDAQ_info.max_cal_point)
+			fprintf(stderr, "cur_conf->SDAQ_info.max_cal_point(%d) != new_conf->SDAQ_info.max_cal_point(%d) !!!\n",cur_conf->SDAQ_info.max_cal_point, new_conf->SDAQ_info.max_cal_point);
+	}
+
+	return retval;
 }
 
-//function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
-int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_config)
+//function that send the data from SDAQ_info_cal_data to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, SDAQ_info_cal_data *new_SDAQ_cal_config)
 {
-	return EXIT_FAILURE;
+	GSList *new_date_node, *new_cal_data_nodes;
+	date_list_data_of_node *date_node_data;
+	sdaq_calibration_points_data *cal_point_node_data;
+	struct tm date={0};
+
+	if(!new_SDAQ_cal_config || !new_SDAQ_cal_config->Calibration_date_list)
+		return EXIT_FAILURE;
+	for(new_date_node = (GSList *)new_SDAQ_cal_config->Calibration_date_list; new_date_node; new_date_node=new_date_node->next)
+	{
+		date_node_data = (date_list_data_of_node *)(new_date_node->data);
+		//Load calibration date to struct tm date
+		date.tm_year = 100 + date_node_data->year;
+		date.tm_mon = date_node_data->month - 1;
+		date.tm_mday = date_node_data->day;
+		//Write CalibrationDate data to SDAQ
+		if(WriteCalibrationDate(socket_num, dev_addr, date_node_data->ch_num, &date, date_node_data->period, date_node_data->amount_of_points, date_node_data->cal_unit))
+			return EXIT_FAILURE;
+		if(date_node_data->amount_of_points)
+		{
+			new_cal_data_nodes = (GSList *)new_SDAQ_cal_config->Cal_points_data_lists[date_node_data->ch_num-1];
+			while(new_cal_data_nodes)
+			{
+				cal_point_node_data = (sdaq_calibration_points_data *)(new_cal_data_nodes->data);
+				if(WriteCalibrationPoint(socket_num, dev_addr, date_node_data->ch_num, cal_point_node_data->data_of_point, cal_point_node_data->points_num, cal_point_node_data->type))
+					return EXIT_FAILURE;
+				new_cal_data_nodes = new_cal_data_nodes->next;
+			}
+		}
+	}
+	return EXIT_SUCCESS;
 }
 

@@ -77,7 +77,7 @@ Options:
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IFs.
            -f : Write/Read SDAQ info to/from file.
-		   -p : Formatted XML output. Used with mode 'getinfo'.
+           -p : Formatted XML output. Used with mode 'getinfo'.
            -e : External command. Used with mode 'setinfo'.
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.
   -S <Mode>   : Timestamp mode. (A)bsolute/(R)elative/(D)ate.

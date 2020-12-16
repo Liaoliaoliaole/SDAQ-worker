@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
 				break;
 			case 'p'://pretty (formatted) XML output
 				usr_opt.formatted_output=1;
+				break;
 			case 'e'://external command on argument
 				usr_opt.ext_com = optarg;
 				break;
