@@ -50,26 +50,27 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	//Local variables, SDAQ information and calibration date and data.
 	SDAQ_info_cal_data str={0};
 	int retval;
+
 	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &str)))
 	{
 		if(!usr_flag->silent)
 		{
-			printf("------ Info of SDAQ with Address %d ------\n\n"
-				   "\tHardware rev: %d\n"
-				   "\tSoftware rev: %d\n"
-				   "\tS/N: %d\n"
-				   "\tType: %s\n"
-				   "\tChannels: %d\n"
-				   "\tSamplerate: %d\n",dev_addr,
-									 str.SDAQ_info.hw_rev,
-									 str.SDAQ_info.firm_rev,
-									 str.SDAQ_info.serial_number,
-									 str.SDAQ_info.dev_type,
-									 str.SDAQ_info.num_of_ch,
-									 str.SDAQ_info.sample_rate);
+			printf("\t------ Info of SDAQ with Address %d ------\n\n"
+				   "\t\tHardware rev: %d\n"
+				   "\t\tSoftware rev: %d\n"
+				   "\t\tS/N: %d\n"
+				   "\t\tType: %s\n"
+				   "\t\tChannels: %d\n"
+				   "\t\tSamplerate: %d\n",dev_addr,
+									 	str.SDAQ_info.hw_rev,
+									 	str.SDAQ_info.firm_rev,
+									 	str.SDAQ_info.serial_number,
+									 	str.SDAQ_info.dev_type,
+										str.SDAQ_info.num_of_ch,
+									 	str.SDAQ_info.sample_rate);
 			if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
 			{
-				printf("\n----- Expiration Date & Point's Data -----\n");
+				printf("\n\t----- Expiration Date & Point's Data -----\n");
 				g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
 			}
 			else
@@ -105,7 +106,7 @@ void info_timer_handler (int signum)
 int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str)
 {
 	//Union with flags and a counter with the amount of channels. Each flag zero on reception. amount_of_waiting_channel decreases in reception.
-	union RX_info_calibration_date_flags_short rfb = {.as_flags.id_status_msg_flag=1,.as_flags.info_msg_flag=1};
+	union RX_info_calibration_date_flags_short rfb = {.as_flags.id_status_msg_flag=1, .as_flags.info_msg_flag=1};
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes, retry_cnt = RETRY_CNT_INIT;
@@ -160,17 +161,20 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						}
 						break;
 					case Calibration_Date:
-						new_date_node = new_SDAQ_date_node();
-						//Load data from decoded "frame_rx" buffer to node
-						new_date_node->ch_num = id_dec->channel_num;
-						new_date_node->year = date_dec->year;
-						new_date_node->month = date_dec->month;
-						new_date_node->day = date_dec->day;
-						new_date_node->period = date_dec->period;
-						new_date_node->amount_of_points = date_dec->amount_of_points;
-						new_date_node->cal_unit = date_dec->cal_units;
-						str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
-						rfb.as_flags.amount_of_waiting_channel--;
+						if(rfb.as_flags.amount_of_waiting_channel)
+						{
+							new_date_node = new_SDAQ_date_node();
+							//Load data from decoded "frame_rx" buffer to node
+							new_date_node->ch_num = id_dec->channel_num;
+							new_date_node->year = date_dec->year;
+							new_date_node->month = date_dec->month;
+							new_date_node->day = date_dec->day;
+							new_date_node->period = date_dec->period;
+							new_date_node->amount_of_points = date_dec->amount_of_points;
+							new_date_node->cal_unit = date_dec->cal_units;
+							str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
+							rfb.as_flags.amount_of_waiting_channel--;
+						}
 						break;
 				}
 			}
