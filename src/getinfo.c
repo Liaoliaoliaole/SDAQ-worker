@@ -267,7 +267,8 @@ date_list_data_of_node* new_SDAQ_date_node()
 // frees the allocated space for struct SDAQentry and its data
 void free_SDAQ_Date_node(gpointer Date_node)
 {
-    g_slice_free(date_list_data_of_node, Date_node);
+    if(Date_node)
+		g_slice_free(date_list_data_of_node, Date_node);
 }
 
 /*---- Declaration of function for Cal_points_data_lists ----*/
