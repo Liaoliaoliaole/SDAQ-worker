@@ -272,7 +272,10 @@ date_list_data_of_node* new_SDAQ_date_node()
 void free_SDAQ_Date_node(gpointer Date_node)
 {
     if(Date_node)
+	{
 		g_slice_free(date_list_data_of_node, Date_node);
+		Date_node = NULL;
+	}
 }
 
 /*---- Declaration of function for Cal_points_data_lists ----*/
@@ -291,7 +294,10 @@ sdaq_calibration_points_data* new_SDAQ_cal_point_node()
 void free_SDAQ_cal_point_node(gpointer point_node)
 {
 	if(point_node)
+	{
 		g_slice_free(sdaq_calibration_points_data, point_node);
+		point_node = NULL;
+	}
 }
 
 /*

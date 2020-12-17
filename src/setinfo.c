@@ -14,6 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,14 +82,8 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	if(usr_flag->info_file)
 	{
 		if(XML_info_file_read_and_validate(usr_flag->info_file, &new_conf))
-		{	//Free the list and the arrays of the new_conf
-			g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
-			if(new_conf.Cal_points_data_lists)
-			{
-				for(int i=0; i<new_conf.SDAQ_info.num_of_ch; i++)
-					g_slist_free_full((GSList *)(new_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
-				free(new_conf.Cal_points_data_lists);
-			}
+		{	
+			free_SDAQ_info_cal_data(&new_conf);
 			return EXIT_FAILURE;
 		}
 	}
@@ -96,27 +91,29 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	{
 		if(usr_flag->info_file)
 		{
-			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, 0))
-				retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, &new_conf);
-			//Free the list and the arrays of the new_conf
-			g_slist_free_full((GSList *)(new_conf.Calibration_date_list), free_SDAQ_Date_node);
-			if(new_conf.Cal_points_data_lists)
+			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, INFO))
 			{
-				for(int i=0; i<new_conf.SDAQ_info.num_of_ch; i++)
-					g_slist_free_full((GSList *)(new_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
-				free(new_conf.Cal_points_data_lists);
+				if(!(retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, &new_conf)))
+				{
+					if(usr_flag->verify)
+					{
+						free_SDAQ_info_cal_data(&cur_conf);//Free the list and the arrays of the cur_conf
+						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
+						{
+							if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
+								printf("Verification completed successfully\n");
+						}
+					}
+				}
 			}
+			free_SDAQ_info_cal_data(&new_conf);//Free the list and the arrays of the new_conf
 		}
 		else
 		{
 			printf("UI Not Implemented!!!\n");
 		}
 	}
-	//Free the list and the arrays of the cur_conf
-	g_slist_free_full((GSList *)(cur_conf.Calibration_date_list), free_SDAQ_Date_node);
-	for(int i=0; i<cur_conf.SDAQ_info.num_of_ch; i++)
-		g_slist_free_full((GSList *)(cur_conf.Cal_points_data_lists[i]), free_SDAQ_Date_node);
-	free(cur_conf.Cal_points_data_lists);
+	free_SDAQ_info_cal_data(&cur_conf);//Free the list and the arrays of the cur_conf
 	return retval;
 }
 
@@ -147,45 +144,56 @@ int date_to_tm(struct tm *output_date, char *input_buff)
 	return -1;
 }
 
-int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf, unsigned char depth)
+int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf, unsigned char options)
 {
-	int retval;
+	int retval = EXIT_FAILURE;
 
 	if(!cur_conf || !new_conf)
 		return EXIT_FAILURE;
-	if(cur_conf->SDAQ_info.serial_number == new_conf->SDAQ_info.serial_number &&
-	   cur_conf->SDAQ_info.dev_type && new_conf->SDAQ_info.dev_type&&
-	   !strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type) &&
-	   cur_conf->SDAQ_info.firm_rev == new_conf->SDAQ_info.firm_rev &&
-	   cur_conf->SDAQ_info.hw_rev == new_conf->SDAQ_info.hw_rev &&
-	   cur_conf->SDAQ_info.num_of_ch == new_conf->SDAQ_info.num_of_ch &&
-	   cur_conf->SDAQ_info.sample_rate == new_conf->SDAQ_info.sample_rate &&
-	   cur_conf->SDAQ_info.max_cal_point == new_conf->SDAQ_info.max_cal_point)
-	   retval = EXIT_SUCCESS;
-	else
+	assert((options & (INFO|DATE|POINTS)));
+	if(options & INFO)
 	{
-		fprintf(stderr, "Error in Correlation: ");
-		if(cur_conf->SDAQ_info.serial_number != new_conf->SDAQ_info.serial_number)
-			fprintf(stderr, "cur_conf->SDAQ_info.serial_number(%d) != new_conf->SDAQ_info.serial_number(%d) !!!\n",cur_conf->SDAQ_info.serial_number, new_conf->SDAQ_info.serial_number);
-		if(!cur_conf->SDAQ_info.dev_type)
-			fprintf(stderr, "cur_conf->SDAQ_info.dev_type is Unknown!!!\n");
-		if(!new_conf->SDAQ_info.dev_type)
-			fprintf(stderr, "new_conf->SDAQ_info.dev_type is Unknown!!!\n");
-		if(strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type))
-			fprintf(stderr, "cur_conf->SDAQ_info.dev_type(%s) != new_conf->SDAQ_info.dev_type(%s) !!!\n",cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type);
+		if(cur_conf->SDAQ_info.serial_number == new_conf->SDAQ_info.serial_number &&
+		   cur_conf->SDAQ_info.dev_type && new_conf->SDAQ_info.dev_type&&
+		   !strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type) &&
+		   cur_conf->SDAQ_info.firm_rev == new_conf->SDAQ_info.firm_rev &&
+		   cur_conf->SDAQ_info.hw_rev == new_conf->SDAQ_info.hw_rev &&
+		   cur_conf->SDAQ_info.num_of_ch == new_conf->SDAQ_info.num_of_ch &&
+		   cur_conf->SDAQ_info.sample_rate == new_conf->SDAQ_info.sample_rate &&
+		   cur_conf->SDAQ_info.max_cal_point == new_conf->SDAQ_info.max_cal_point)
+		   retval = EXIT_SUCCESS;
+		else
+		{
+			fprintf(stderr, "Error in Correlation: ");
+			if(cur_conf->SDAQ_info.serial_number != new_conf->SDAQ_info.serial_number)
+				fprintf(stderr, "cur_conf->SDAQ_info.serial_number(%d) != new_conf->SDAQ_info.serial_number(%d) !!!\n",cur_conf->SDAQ_info.serial_number, new_conf->SDAQ_info.serial_number);
+			if(!cur_conf->SDAQ_info.dev_type)
+				fprintf(stderr, "cur_conf->SDAQ_info.dev_type is Unknown!!!\n");
+			if(!new_conf->SDAQ_info.dev_type)
+				fprintf(stderr, "new_conf->SDAQ_info.dev_type is Unknown!!!\n");
+			if(strcmp(cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type))
+				fprintf(stderr, "cur_conf->SDAQ_info.dev_type(%s) != new_conf->SDAQ_info.dev_type(%s) !!!\n",cur_conf->SDAQ_info.dev_type, new_conf->SDAQ_info.dev_type);
 
-		if(cur_conf->SDAQ_info.firm_rev != new_conf->SDAQ_info.firm_rev)
-			fprintf(stderr, "cur_conf->SDAQ_info.firm_rev(%d) != new_conf->SDAQ_info.firm_rev(%d) !!!\n",cur_conf->SDAQ_info.firm_rev, new_conf->SDAQ_info.firm_rev);
-		if(cur_conf->SDAQ_info.hw_rev != new_conf->SDAQ_info.hw_rev)
-			fprintf(stderr, "cur_conf->SDAQ_info.hw_rev(%d) != new_conf->SDAQ_info.hw_rev(%d) !!!\n",cur_conf->SDAQ_info.hw_rev, new_conf->SDAQ_info.hw_rev);
-		if(cur_conf->SDAQ_info.num_of_ch != new_conf->SDAQ_info.num_of_ch)
-			fprintf(stderr, "cur_conf->SDAQ_info.num_of_ch(%d) != new_conf->SDAQ_info.num_of_ch(%d) !!!\n",cur_conf->SDAQ_info.num_of_ch, new_conf->SDAQ_info.num_of_ch);
-		if(cur_conf->SDAQ_info.sample_rate != new_conf->SDAQ_info.sample_rate)
-			fprintf(stderr, "cur_conf->SDAQ_info.sample_rate(%d) != new_conf->SDAQ_info.sample_rate(%d) !!!\n",cur_conf->SDAQ_info.sample_rate, new_conf->SDAQ_info.sample_rate);
-		if(cur_conf->SDAQ_info.max_cal_point != new_conf->SDAQ_info.max_cal_point)
-			fprintf(stderr, "cur_conf->SDAQ_info.max_cal_point(%d) != new_conf->SDAQ_info.max_cal_point(%d) !!!\n",cur_conf->SDAQ_info.max_cal_point, new_conf->SDAQ_info.max_cal_point);
+			if(cur_conf->SDAQ_info.firm_rev != new_conf->SDAQ_info.firm_rev)
+				fprintf(stderr, "cur_conf->SDAQ_info.firm_rev(%d) != new_conf->SDAQ_info.firm_rev(%d) !!!\n",cur_conf->SDAQ_info.firm_rev, new_conf->SDAQ_info.firm_rev);
+			if(cur_conf->SDAQ_info.hw_rev != new_conf->SDAQ_info.hw_rev)
+				fprintf(stderr, "cur_conf->SDAQ_info.hw_rev(%d) != new_conf->SDAQ_info.hw_rev(%d) !!!\n",cur_conf->SDAQ_info.hw_rev, new_conf->SDAQ_info.hw_rev);
+			if(cur_conf->SDAQ_info.num_of_ch != new_conf->SDAQ_info.num_of_ch)
+				fprintf(stderr, "cur_conf->SDAQ_info.num_of_ch(%d) != new_conf->SDAQ_info.num_of_ch(%d) !!!\n",cur_conf->SDAQ_info.num_of_ch, new_conf->SDAQ_info.num_of_ch);
+			if(cur_conf->SDAQ_info.sample_rate != new_conf->SDAQ_info.sample_rate)
+				fprintf(stderr, "cur_conf->SDAQ_info.sample_rate(%d) != new_conf->SDAQ_info.sample_rate(%d) !!!\n",cur_conf->SDAQ_info.sample_rate, new_conf->SDAQ_info.sample_rate);
+			if(cur_conf->SDAQ_info.max_cal_point != new_conf->SDAQ_info.max_cal_point)
+				fprintf(stderr, "cur_conf->SDAQ_info.max_cal_point(%d) != new_conf->SDAQ_info.max_cal_point(%d) !!!\n",cur_conf->SDAQ_info.max_cal_point, new_conf->SDAQ_info.max_cal_point);
+		}
 	}
-
+	if(options & DATE)
+	{
+		//printf("dates check\n");
+	}
+	if(options & POINTS)
+	{
+		//printf("points check\n");
+	}
 	return retval;
 }
 
@@ -224,3 +232,16 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 	return EXIT_SUCCESS;
 }
 
+void free_SDAQ_info_cal_data(SDAQ_info_cal_data *conf)
+{
+	//Free the list and the arrays of the conf
+	g_slist_free_full((GSList *)(conf->Calibration_date_list), free_SDAQ_Date_node);
+	conf->Calibration_date_list = NULL;
+	for(int i=0; i<conf->SDAQ_info.num_of_ch; i++)
+	{
+		g_slist_free_full((GSList *)(conf->Cal_points_data_lists[i]), free_SDAQ_Date_node);
+		conf->Cal_points_data_lists[i] = NULL;
+	}
+	free(conf->Cal_points_data_lists);
+	conf->Cal_points_data_lists=NULL;
+}
