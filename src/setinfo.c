@@ -184,6 +184,7 @@ int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_
 				fprintf(stderr, "cur_conf->SDAQ_info.sample_rate(%d) != new_conf->SDAQ_info.sample_rate(%d) !!!\n",cur_conf->SDAQ_info.sample_rate, new_conf->SDAQ_info.sample_rate);
 			if(cur_conf->SDAQ_info.max_cal_point != new_conf->SDAQ_info.max_cal_point)
 				fprintf(stderr, "cur_conf->SDAQ_info.max_cal_point(%d) != new_conf->SDAQ_info.max_cal_point(%d) !!!\n",cur_conf->SDAQ_info.max_cal_point, new_conf->SDAQ_info.max_cal_point);
+			retval = EXIT_FAILURE;
 		}
 	}
 	if(options & DATE)
