@@ -81,28 +81,57 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	}
 	if(usr_flag->info_file)
 	{
+		if(!usr_flag->silent)
+		{
+			printf("XML file read and validation: ");
+			fflush(stdout);
+		}
 		if(XML_info_file_read_and_validate(usr_flag->info_file, &new_conf))
 		{
 			free_SDAQ_info_cal_data(&new_conf);
 			return EXIT_FAILURE;
+		}
+		if(!usr_flag->silent)
+		{
+			printf(" Success\nGet Calibration info from SDAQ: ");
+			fflush(stdout);
 		}
 	}
 	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
 	{
 		if(usr_flag->info_file)
 		{
+			if(!usr_flag->silent)
+			{
+				printf("Success\nCorrelation SDAQ<>new_config: ");
+				fflush(stdout);
+			}
 			if(!corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, INFO))
 			{
+				if(!usr_flag->silent)
+				{
+					printf("Success\nSend new_config to SDAQ: ");
+					fflush(stdout);
+				}
 				if(!(retval = set_SDAQ_info_and_calibration_data(socket_num, dev_addr, &new_conf)))
 				{
+					if(!usr_flag->silent)
+						printf("Success\n");
 					if(usr_flag->verify)
 					{
+						if(!usr_flag->silent)
+						{
+							printf("Verification: ");
+							fflush(stdout);
+						}
 						free_SDAQ_info_cal_data(&cur_conf);//Free the list and the arrays of the cur_conf
 						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
 						{
 							if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
+							{
 								if(!usr_flag->silent)
-									printf("Verification completed successfully\n");
+									printf("\tSuccess\n");
+							}
 						}
 					}
 				}
@@ -213,8 +242,8 @@ int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_
 				if(cur_date_data->year != new_date_data->year || cur_date_data->month != new_date_data->month || cur_date_data->day != new_date_data->day)
 				{
 					fprintf(stderr, "Calibration Date of CH%d(%d/%d/%d) is different from the configuration (%d/%d/%d)!!!\n", new_date_data->ch_num,
-																															 cur_date_data->year,cur_date_data->month,cur_date_data->day,
-																															 cur_date_data->year,cur_date_data->month,cur_date_data->day);
+																															  cur_date_data->year+2000,cur_date_data->month,cur_date_data->day,
+																															  new_date_data->year+2000,new_date_data->month,new_date_data->day);
 					return EXIT_FAILURE;
 				}
 				if(cur_date_data->period != new_date_data->period)
@@ -260,19 +289,24 @@ int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_
 				continue;
 			if(!(cur_cal_point_list = (GSList *)cur_conf->Cal_points_data_lists[ch]))
 			{
-				fprintf(stderr, "cur_conf->Cal_points_data_lists[%d] is undefined !!!\n",ch);
+				fprintf(stderr, "cur_conf->Cal_points_data_lists[%d] is undefined !!!\n",ch+1);
 				return EXIT_FAILURE;
 			}
 			while(new_cal_point_list && cur_cal_point_list)
 			{
-				
+
 				cur_point_data = (sdaq_calibration_points_data *)(cur_cal_point_list->data);
 				new_point_data = (sdaq_calibration_points_data *)(new_cal_point_list->data);
-				if(cur_point_data->data_of_point != new_point_data->data_of_point || 
+				if(cur_point_data->data_of_point != new_point_data->data_of_point ||
 				   cur_point_data->type != new_point_data->type ||
 				   cur_point_data->points_num != new_point_data->points_num)
 				{
-					fprintf(stderr, "cur_conf->Cal_points_data_lists[%d].Point_%d is different from the configuration !!!\n",ch, cur_point_data->points_num);
+					fprintf(stderr, "Error @ CH%d Point_%d: ",ch+1, new_point_data->points_num);
+					if(cur_point_data->data_of_point != new_point_data->data_of_point)
+						fprintf(stderr, "cur_point_Val=%f != new_point_val= %f", cur_point_data->data_of_point, new_point_data->data_of_point);
+					if(cur_point_data->type != new_point_data->type)
+						fprintf(stderr, "cur_point_type=%s != new_point_type= %s", type_of_point_str[cur_point_data->type], type_of_point_str[new_point_data->type]);
+					fprintf(stderr, "\n");
 					return EXIT_FAILURE;
 				}
 				new_cal_point_list = new_cal_point_list->next;
@@ -280,7 +314,7 @@ int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_
 			}
 			if(new_cal_point_list && !cur_cal_point_list)
 			{
-				fprintf(stderr, "sizeof(cur_conf->Cal_points_data_lists[%d]) < sizeof(new_conf->Cal_points_data_lists[%d])!!!\n",ch, ch);
+				fprintf(stderr, "sizeof(cur_conf->Cal_points_data_lists[%d]) < sizeof(new_conf->Cal_points_data_lists[%d])!!!\n",ch+1, ch+1);
 				return EXIT_FAILURE;
 			}
 		}
@@ -309,7 +343,11 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 		date.tm_mday = date_node_data->day;
 		//Write CalibrationDate data to SDAQ
 		if(WriteCalibrationDate(socket_num, dev_addr, date_node_data->ch_num, &date, date_node_data->period, date_node_data->amount_of_points, date_node_data->cal_unit))
+		{
+			fprintf(stderr, "Failure at WriteCalibrationDate() for CH%d\n",date_node_data->ch_num);
 			return EXIT_FAILURE;
+		}
+		usleep(1000);
 		if(date_node_data->amount_of_points)
 		{
 			new_cal_data_nodes = (GSList *)new_SDAQ_cal_config->Cal_points_data_lists[date_node_data->ch_num-1];
@@ -317,7 +355,11 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 			{
 				cal_point_node_data = (sdaq_calibration_points_data *)(new_cal_data_nodes->data);
 				if(WriteCalibrationPoint(socket_num, dev_addr, date_node_data->ch_num, cal_point_node_data->data_of_point, cal_point_node_data->points_num, cal_point_node_data->type))
+				{
+					fprintf(stderr, "Failure at WriteCalibrationPoint() for CH%d at point %d\n",date_node_data->ch_num, cal_point_node_data->points_num);
 					return EXIT_FAILURE;
+				}
+				usleep(1000);
 				new_cal_data_nodes = new_cal_data_nodes->next;
 			}
 		}
