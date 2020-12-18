@@ -35,7 +35,9 @@ int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_
 //Declaration of function for Calibration_date_list
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
-gint SDAQ_date_node_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
+gint SDAQ_date_node_with_nonzero_amount_of_points_find (gconstpointer a, gconstpointer b);// GFunc function used with g_slist_find_custom.
+gint SDAQ_date_node_with_channel_b_find (gconstpointer a, gconstpointer b);// GFunc type function used with g_slist_find_custom.
+
 //Declaration of function for Cal_points_data_lists
 sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists
 void free_SDAQ_cal_point_node(gpointer Point_node);//used with g_slist_free_full to free the data of node

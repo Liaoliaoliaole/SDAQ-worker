@@ -395,7 +395,7 @@ void user_com(unsigned int argc, char **argv, unsigned int start_sn, unsigned ch
 						{
 							if(!i)
 								printw("\n\t   Point #  |  Measure  | Reference |   Offset  |   Gain    |     C2    |     C3    |");
-							printw("\n\t\t%2d  ",i+1);
+							printw("\n\t\t%2d  ",i);
 							for(int j=0; j<6; j++)
 							{
 								printw("| %8.3g  ",pSDAQs_mem[sn_dec - start_sn].data_cal_values[channel_dec-1][i][j]);

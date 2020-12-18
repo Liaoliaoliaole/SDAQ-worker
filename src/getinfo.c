@@ -68,7 +68,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 									 	str.SDAQ_info.dev_type,
 										str.SDAQ_info.num_of_ch,
 									 	str.SDAQ_info.sample_rate);
-			if(g_slist_find_custom((GSList *)(str.Calibration_date_list),NULL,SDAQ_date_node_find))
+			if(g_slist_find_custom((GSList *)(str.Calibration_date_list), NULL, SDAQ_date_node_with_nonzero_amount_of_points_find))
 			{
 				printf("\n\t----- Expiration Date & Point's Data -----\n");
 				g_slist_foreach((GSList *)(str.Calibration_date_list),printf_SDAQ_Date_with_points_node,str.Cal_points_data_lists);
@@ -302,9 +302,9 @@ void free_SDAQ_cal_point_node(gpointer point_node)
 
 /*
 	Comparing function used in g_slist_find_custom.
-	find the first node with non zero value on amount_of_points field
+	Find the first node with non zero value on amount_of_points field. Argument b does not used.
 */
-gint SDAQ_date_node_find (gconstpointer a, gconstpointer b)
+gint SDAQ_date_node_with_nonzero_amount_of_points_find (gconstpointer a, gconstpointer b)
 {
 	return ((date_list_data_of_node *)a)->amount_of_points > 0 ?  0 : 1;
 }
