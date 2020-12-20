@@ -130,7 +130,6 @@ typedef struct SDAQ_calibration_points_data_Decoder{
 	unsigned char points_num;
 }sdaq_calibration_points_data;
 
-
 //The following RX Decoders used on the pseudo_SDAQ Simulator
 /* SDAQ's CAN Set Device Address message decoder */
 typedef struct pSDAQ_Set_new_address{

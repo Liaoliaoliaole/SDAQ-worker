@@ -156,6 +156,25 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 //Populate Calibration_date_list and Cal_points_data_lists sections of new_config. Return EXIT_SUCCESS on success, otherwise EXIT_FAILURE.
 int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDAQs_new_config);
 
+int find_appearances_of_a_XML_node(xmlNode *root_node, const char *Node_name)
+{
+	int cnt=0;
+	xmlNode *cur_node;
+
+	if (root_node->type == XML_ELEMENT_NODE)
+	{
+		for (cur_node = root_node->children; cur_node; cur_node = cur_node->next)
+		{
+			if (cur_node->type == XML_ELEMENT_NODE)
+			{
+				if(!strcmp((char *)(cur_node->name), Node_name))
+					cnt++;
+			}
+		}
+	}
+	return cnt;
+}
+
 /*
  * Function used in setinfo.c: check filepath for a valid xml,and convert it to SDAQ_info_cal_data (new_conf).
  * Return: 0 at success and 1 on failure.
@@ -163,7 +182,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 {
 	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
-	int retval = EXIT_FAILURE;
+	int SDAQ_info_cnt, Calibration_Data_cnt, retval = EXIT_FAILURE;
 	gunichar wc;
 	GString *gstring_from_stdin;
 	char *filename = file_path;
@@ -194,19 +213,31 @@ int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 		SDAQ_root = xmlDocGetRootElement(doc);
 		if(!strcmp((const char*)(SDAQ_root->name), "SDAQ"))
 		{
-			SDAQ_info=get_XML_node_by_name(SDAQ_root, "SDAQ_info");
-			Calibration_Data=get_XML_node_by_name(SDAQ_root, "Calibration_Data");
-			if(SDAQ_info && Calibration_Data)
+			SDAQ_info_cnt=find_appearances_of_a_XML_node(SDAQ_root, "SDAQ_info");
+			Calibration_Data_cnt=find_appearances_of_a_XML_node(SDAQ_root, "Calibration_Data");
+			if(SDAQ_info_cnt==1 && Calibration_Data_cnt==1)
 			{
-				if(!(retval = populate_SDAQ_info(SDAQ_info, SDAQs_new_config)))
-					retval = populate_Calibration_Data(Calibration_Data, SDAQs_new_config);
+				SDAQ_info=get_XML_node_by_name(SDAQ_root, "SDAQ_info");
+				Calibration_Data=get_XML_node_by_name(SDAQ_root, "Calibration_Data");
+				if(SDAQ_info && Calibration_Data)
+				{
+					if(!(retval = populate_SDAQ_info(SDAQ_info, SDAQs_new_config)))
+						retval = populate_Calibration_Data(Calibration_Data, SDAQs_new_config);
+				}
+				else
+				{
+					if(!SDAQ_info)
+						fprintf(stderr, "XML node \"SDAQ_info\" Not found!!!\n");
+					if(!Calibration_Data)
+						fprintf(stderr, "XML node \"Calibration_Data\" Not found!!!\n");
+				}
 			}
 			else
 			{
-				if(!SDAQ_info)
-					fprintf(stderr, "XML node \"SDAQ_info\" Not found!!!\n");
-				if(!Calibration_Data)
-					fprintf(stderr, "XML node \"Calibration_Data\" Not found!!!\n");
+				if(SDAQ_info_cnt>1)
+					fprintf(stderr, "XML node \"SDAQ_info\" found %d times!!!\n", SDAQ_info_cnt);
+				if(Calibration_Data_cnt>1)
+					fprintf(stderr, "XML node \"Calibration_Data\" found %d times!!!\n", Calibration_Data_cnt);
 			}
 		}
 		else
@@ -406,7 +437,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 		sscanf((char *)(XML_channel_root->name),"CH%hhu",&channel);
 		if(!channel || channel>SDAQs_new_config->SDAQ_info.num_of_ch)
 		{
-			if(!channel)	
+			if(!channel)
 				fprintf(stderr, "Name of Calibration_Data->%s is invalid!!!\n",XML_channel_root->name);
 			if(channel>SDAQs_new_config->SDAQ_info.num_of_ch)
 				fprintf(stderr, "Name of Calibration_Data->%s is Out of range (0<CHn<=%d)!!!\n", XML_channel_root->name, SDAQs_new_config->SDAQ_info.num_of_ch);

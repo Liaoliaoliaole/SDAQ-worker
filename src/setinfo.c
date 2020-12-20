@@ -341,15 +341,14 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 		date.tm_year = 100 + date_node_data->year;
 		date.tm_mon = date_node_data->month - 1;
 		date.tm_mday = date_node_data->day;
-		//Write CalibrationDate data to SDAQ
-		if(WriteCalibrationDate(socket_num, dev_addr, date_node_data->ch_num, &date, date_node_data->period, date_node_data->amount_of_points, date_node_data->cal_unit))
-		{
-			fprintf(stderr, "Failure at WriteCalibrationDate() for CH%d\n",date_node_data->ch_num);
-			return EXIT_FAILURE;
-		}
-		usleep(1000);
 		if(date_node_data->amount_of_points)
 		{
+			//Write CalibrationDate data with 0 amount_of_points to enable SDAQ calibration editing.
+			if(WriteCalibrationDate(socket_num, dev_addr, date_node_data->ch_num, &date, date_node_data->period, 0, date_node_data->cal_unit))
+			{
+				fprintf(stderr, "Failure at WriteCalibrationDate() for CH%d\n",date_node_data->ch_num);
+				return EXIT_FAILURE;
+			}
 			new_cal_data_nodes = (GSList *)new_SDAQ_cal_config->Cal_points_data_lists[date_node_data->ch_num-1];
 			while(new_cal_data_nodes)
 			{
@@ -359,9 +358,14 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 					fprintf(stderr, "Failure at WriteCalibrationPoint() for CH%d at point %d\n",date_node_data->ch_num, cal_point_node_data->points_num);
 					return EXIT_FAILURE;
 				}
-				usleep(1000);
 				new_cal_data_nodes = new_cal_data_nodes->next;
 			}
+		}
+		//Write CalibrationDate data to SDAQ
+		if(WriteCalibrationDate(socket_num, dev_addr, date_node_data->ch_num, &date, date_node_data->period, date_node_data->amount_of_points, date_node_data->cal_unit))
+		{
+			fprintf(stderr, "Failure at WriteCalibrationDate() for CH%d\n",date_node_data->ch_num);
+			return EXIT_FAILURE;
 		}
 	}
 	return EXIT_SUCCESS;
