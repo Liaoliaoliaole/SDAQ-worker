@@ -382,8 +382,8 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 
 GSList * Cal_points_data_list_conv_and_append(GSList *Cal_points_for_channel_list, float val_of_point, unsigned char point_type, unsigned char point_num)
 {
-	sdaq_calibration_points_data *new_point_node; //sdaq_calibration_points_data work pointer for GSList;
-
+	sdaq_calibration_points_data *new_point_node; //sdaq_calibration_points_data data for search and work pointer for GSList;
+	
 	if(!(new_point_node = new_SDAQ_cal_point_node()))
 	{
 		fprintf(stderr, "Memory Error!!!\n");
@@ -443,6 +443,8 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 				fprintf(stderr, "Name of Calibration_Data->%s is Out of range (0<CHn<=%d)!!!\n", XML_channel_root->name, SDAQs_new_config->SDAQ_info.num_of_ch);
 			return EXIT_FAILURE;
 		}
+		if(g_slist_find_custom((GSList *)(SDAQs_new_config->Calibration_date_list), &channel, SDAQ_date_node_with_channel_b_find))//Check if channel is already registered.
+			continue;
 		XML_cal_date = get_XML_node_by_name(XML_channel_root, "Calibration_date");
 		XML_period = get_XML_node_by_name(XML_channel_root, "Calibration_Period");
 		XML_used_Points = get_XML_node_by_name(XML_channel_root, "Used_Points");
@@ -524,7 +526,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 				exit(EXIT_FAILURE);
 			}
 			memcpy(new_date_node, &l_new_date_note, sizeof(date_list_data_of_node));
-			SDAQs_new_config->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)SDAQs_new_config->Calibration_date_list, new_date_node);
+			SDAQs_new_config->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)SDAQs_new_config->Calibration_date_list, new_date_node);				
 			//Check if calibration point is set and if yes load them at SDAQs_new_config->Cal_points_data_lists[ch].
 			if(l_new_date_note.amount_of_points)
 			{
@@ -533,7 +535,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 					sprintf(point_name_buff, "Point_%hhu",j);
 					if(!XML_point_data || strcmp((char*)(XML_point_data->name), point_name_buff))
 					{
-						fprintf(stderr, "XML node for calibration point %d for channel %d was not found!!!\n", j, channel);
+						fprintf(stderr, "XML node for calibration point %d for channel %d was not found or it's in wrong order!!!\n", j, channel);
 						return EXIT_FAILURE;
 					}
 					XML_Meas = get_XML_node_by_name(XML_point_data, "Measure");

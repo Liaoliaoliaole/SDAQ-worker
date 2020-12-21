@@ -373,7 +373,7 @@ int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, S
 
 /*
 	Comparing function used in g_slist_find_custom.
-	Compare ch_num from  date_list_data_of_node a with ch_num from b. Return 0 if are the same, 1 otherwise.
+	Compare ch_num from date_list_data_of_node a with ch_num from b. Return 0 if are the same, 1 otherwise.
 */
 gint SDAQ_date_node_with_channel_b_find (gconstpointer a, gconstpointer b)
 {
