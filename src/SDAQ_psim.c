@@ -65,6 +65,7 @@ void sigint_signal_handler(int signum)
 
 //application functions
 void print_usage(char *prog_name);
+void print_units(void);
 short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time);
 void * pseudo_SDAQ(void *varg_pt);//Thread function. Act as an pseudo_SDAQ.
 
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while ((c = getopt (argc, argv, "hvls:c:")) != -1)
+	while ((c = getopt (argc, argv, "hvls:c:u")) != -1)
 	{
 		switch (c)
 		{
@@ -109,6 +110,10 @@ int main(int argc, char *argv[])
 					printf("Amount of channels argument is invalid\n");
 					exit(EXIT_FAILURE);
 				}
+				break;
+			case 'u':
+				print_units();
+				exit(EXIT_SUCCESS);
 				break;
 			case '?':
 				//print_usage(argv[0]);
@@ -473,6 +478,18 @@ short dev_ref_time_diff_cal(unsigned short dev_time, unsigned short ref_time)
 	return ret;
 }
 
+void print_units(void)
+{
+	printf("{\"Base_offset\":%d,\"SDAQ_UNITs\":[", Unit_code_base_region_size);
+	for(int i=Unit_code_base_region_size; unit_str[i];i++)
+	{
+		printf("\"%s\"",unit_str[i]);
+		if(unit_str[i+1])
+			printf(",");
+	}
+	printf("]}\n");
+}
+
 void print_usage(char *prog_name)
 {
 	const char preamp[] = {
@@ -490,6 +507,7 @@ void print_usage(char *prog_name)
 	"\t         -l : Print list of CAN-IFs\n"
 	"\t         -s : S/N of the first pseudo_SDAQ. (Default 1)\n"
 	"\t         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16..63])\n"
+	"\t			-u : Print SDAQ UNITs as JSON table"
 	};
 	printf("%s\nUsage: %s CAN-IF Num_of_pSDAQ [Options]\n\n%s\n%s", preamp, prog_name, exp, shell_help_str);
 	return;
