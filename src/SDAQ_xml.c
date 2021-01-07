@@ -183,7 +183,7 @@ int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 {
 	SDAQ_info_cal_data *SDAQs_new_config = new_conf;
 	int SDAQ_info_cnt, Calibration_Data_cnt, retval = EXIT_FAILURE;
-	gunichar wc;
+	int wc;
 	GString *gstring_from_stdin;
 	char *filename = file_path;
 	xmlDocPtr doc = NULL;
@@ -201,7 +201,7 @@ int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 			exit(EXIT_FAILURE);
 		}
 		while((wc = getchar()) != EOF)
-			gstring_from_stdin = g_string_append_unichar(gstring_from_stdin, wc);
+			gstring_from_stdin = g_string_append_c(gstring_from_stdin, wc);
 		doc = xmlReadMemory(gstring_from_stdin->str, gstring_from_stdin->len, "", NULL, XML_PARSE_NOBLANKS);
 		g_string_free(gstring_from_stdin, TRUE);
 	}
