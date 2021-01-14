@@ -322,7 +322,7 @@ void * pseudo_SDAQ(void *varg_pt)//Thread function. Act as an pseudo_SDAQ.
 								case Query_Dev_info:
 									p_DeviceID_and_status(socket_num, arg.pSDAQ_mem->address, arg.serial_number, arg.pSDAQ_mem->status);
 									p_DeviceInfo(socket_num, arg.pSDAQ_mem->address, arg.pSDAQ_mem->number_of_channels);
-									for(int i=0;i<arg.pSDAQ_mem->number_of_channels;i++)
+									for(int i=0; i<arg.pSDAQ_mem->number_of_channels; i++)
 										p_calibration_date(socket_num, arg.pSDAQ_mem->address, i+1, &(arg.pSDAQ_mem->ch_cal_date[i]));
 									break;
 								case Query_Calibration_Data:
