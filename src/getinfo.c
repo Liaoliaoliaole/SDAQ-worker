@@ -230,27 +230,32 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 							case Calibration_Date:
 								if((new_date_node = g_slist_nth_data((GSList *)str->Calibration_date_list, i)))
 								{
-									if(new_date_node->ch_num != id_dec->channel_num || 
-									   new_date_node->amount_of_points != date_dec->amount_of_points ||
-									   new_date_node->cal_unit != date_dec->cal_units ||
-									   new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day ||
-									   new_date_node->period != date_dec->period)
+									if(new_date_node->ch_num == id_dec->channel_num)
 									{
-										//Reload data from decoded "frame_rx" buffer to node
-										new_date_node->ch_num = id_dec->channel_num;
-										new_date_node->year = date_dec->year;
-										new_date_node->month = date_dec->month;
-										new_date_node->day = date_dec->day;
-										new_date_node->period = date_dec->period;
-										new_date_node->amount_of_points = date_dec->amount_of_points;
-										new_date_node->cal_unit = date_dec->cal_units;
+										//Check diffs and Reload data from decoded "frame_rx" buffer to node
+										if(new_date_node->amount_of_points != date_dec->amount_of_points)
+											new_date_node->amount_of_points = date_dec->amount_of_points;
+										if(new_date_node->cal_unit != date_dec->cal_units)
+											new_date_node->cal_unit = date_dec->cal_units;
+										if(new_date_node->period != date_dec->period)
+											new_date_node->period = date_dec->period;
+										if(new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day)
+										{
+											new_date_node->year = date_dec->year;
+											new_date_node->month = date_dec->month;
+											new_date_node->day = date_dec->day;
+										}
 									}
 									else
-										cnt++;
+									{
+										printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d received in wrong order!!!\n", i+1);
+										return EXIT_FAILURE;
+									}
+									cnt++;
 								}
 								else
 								{
-									printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d does not exist!!!\n", i+1);
+									printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d does not exist in list!!!\n", i+1);
 									return EXIT_FAILURE;
 								}	
 								break;
