@@ -54,7 +54,7 @@ typedef struct SDAQ_information_and_calibration_data{
 		unsigned char max_cal_point;
 	}SDAQ_info;
 	struct GSList *Calibration_date_list; //list with data type date_list_data_of_node
-	struct GSlist **Cal_points_data_lists;//array of lists with data type sdaq_calibration_points_data
+	struct GSList **Cal_points_data_lists;//array of lists with data type sdaq_calibration_points_data
 }SDAQ_info_cal_data;
 
 //struct used as container type for the data of the Calibration_date_list

@@ -109,7 +109,9 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 	union RX_info_calibration_date_flags_short rfb = {.as_flags.id_status_msg_flag=1, .as_flags.info_msg_flag=1};
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
+	unsigned char Channel;
 	int RX_bytes, retry_cnt = RETRY_CNT_INIT;
+	GSList *list_node;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
 	sdaq_status *status_dec = (sdaq_status *)frame_rx.data;
 	sdaq_info   *info_dec   = (sdaq_info *)frame_rx.data;
@@ -165,16 +167,21 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 						case Calibration_Date:
 							if(rfb.as_flags.amount_of_waiting_channel)
 							{
-								new_date_node = new_SDAQ_date_node();
+								Channel = id_dec->channel_num;
+								if(!(list_node = g_slist_find_custom((GSList *)(str->Calibration_date_list), &Channel, SDAQ_date_node_with_channel_b_find)))
+									new_date_node = new_SDAQ_date_node();
+								else
+									new_date_node = (date_list_data_of_node *)list_node->data;
 								//Load data from decoded "frame_rx" buffer to node
-								new_date_node->ch_num = id_dec->channel_num;
+								new_date_node->ch_num = Channel;
 								new_date_node->year = date_dec->year;
 								new_date_node->month = date_dec->month;
 								new_date_node->day = date_dec->day;
 								new_date_node->period = date_dec->period;
 								new_date_node->amount_of_points = date_dec->amount_of_points;
 								new_date_node->cal_unit = date_dec->cal_units;
-								str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
+								if(!list_node)
+									str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
 								rfb.as_flags.amount_of_waiting_channel--;
 							}
 							break;
@@ -192,7 +199,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 			printf("Reception Failed\n");
 			return EXIT_FAILURE;
 		}
-		str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSlist *));
+		str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSList *));
 		if(!str->Cal_points_data_lists)
 		{
 			fprintf(stderr,"Memory Error\n");
@@ -224,7 +231,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 							case Calibration_Point_Data:
 								new_point_node = new_SDAQ_cal_point_node();
 								memcpy(new_point_node, frame_rx.data, sizeof(sdaq_calibration_points_data));
-								str->Cal_points_data_lists[i] = (struct GSlist *)g_slist_append((GSList *)(str->Cal_points_data_lists[i]), new_point_node);
+								str->Cal_points_data_lists[i] = (struct GSList *)g_slist_append((GSList *)(str->Cal_points_data_lists[i]), new_point_node);
 								cnt++;
 								break;
 							case Calibration_Date:
@@ -382,7 +389,7 @@ void printf_SDAQ_cal_point_node(gpointer Point_node, gpointer arg_pass)
 //Called from g_slist_foreach. the pass_arg is the array with with the list of calibration data points
 void printf_SDAQ_Date_with_points_node(gpointer Date_node, gpointer arg_pass)
 {
-	struct GSlist **point_data_lists = (struct GSlist **) arg_pass;
+	GSList **point_data_lists = (GSList **) arg_pass;
 	char buff[60];
 	struct tm ptm = {0};
 	date_list_data_of_node *node_dec = Date_node;

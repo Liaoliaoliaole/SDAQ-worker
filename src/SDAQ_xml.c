@@ -383,7 +383,7 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 GSList * Cal_points_data_list_conv_and_append(GSList *Cal_points_for_channel_list, float val_of_point, unsigned char point_type, unsigned char point_num)
 {
 	sdaq_calibration_points_data *new_point_node; //sdaq_calibration_points_data data for search and work pointer for GSList;
-	
+
 	if(!(new_point_node = new_SDAQ_cal_point_node()))
 	{
 		fprintf(stderr, "Memory Error!!!\n");
@@ -424,7 +424,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 		fprintf(stderr, "SDAQ_info.num_of_ch is ZERO!!!\n");
 		return EXIT_FAILURE;
 	}
-	if(!(SDAQs_new_config->Cal_points_data_lists = calloc(SDAQs_new_config->SDAQ_info.num_of_ch, sizeof(struct GSlist *))))
+	if(!(SDAQs_new_config->Cal_points_data_lists = calloc(SDAQs_new_config->SDAQ_info.num_of_ch, sizeof(struct GSList *))))
 	{
 		fprintf(stderr, "Memory Error!!!\n");
 		exit(EXIT_FAILURE);
@@ -526,7 +526,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 				exit(EXIT_FAILURE);
 			}
 			memcpy(new_date_node, &l_new_date_note, sizeof(date_list_data_of_node));
-			SDAQs_new_config->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)SDAQs_new_config->Calibration_date_list, new_date_node);				
+			SDAQs_new_config->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)SDAQs_new_config->Calibration_date_list, new_date_node);
 			//Check if calibration point is set and if yes load them at SDAQs_new_config->Cal_points_data_lists[ch].
 			if(l_new_date_note.amount_of_points)
 			{
@@ -547,42 +547,42 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 					if(XML_Meas && XML_Ref && XML_Offset && XML_Gain && XML_C2 && XML_C3)
 					{
 						if((content = _xmlNodeGetContent(content, XML_Meas)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), meas, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), meas, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Measure does not have content!!!\n", channel, j);
 							return EXIT_FAILURE;
 						}
 						if((content = _xmlNodeGetContent(content, XML_Ref)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), ref, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), ref, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Reference does not have content!!!\n", channel, j);
 							return EXIT_FAILURE;
 						}
 						if((content = _xmlNodeGetContent(content, XML_Offset)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), offset, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), offset, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Offset does not have content!!!\n", channel, j);
 							return EXIT_FAILURE;
 						}
 						if((content = _xmlNodeGetContent(content, XML_Gain)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), gain, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), gain, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Gain does not have content!!!\n", channel, j);
 							return EXIT_FAILURE;
 						}
 						if((content = _xmlNodeGetContent(content, XML_C2)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C2, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C2, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C2 does not have content!!!\n", channel, j);
 							return EXIT_FAILURE;
 						}
 						if((content = _xmlNodeGetContent(content, XML_C3)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSlist *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C3, j);
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C3, j);
 						else
 						{
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C3 does not have content!!!\n", channel, j);
