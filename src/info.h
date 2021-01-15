@@ -24,9 +24,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define DATE   (1<<1)
 #define POINTS (1<<2)
 
+	/*--- Options for get_SDAQ_info_and_calibration_data()---*/
+#define getINFO   (1<<0)
+#define getPOINTS (1<<2)
+
 	/*----- local functions  -----*/
 //Function that request and receive calibration data from SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
-int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config);
+int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config, unsigned char options);
 //Function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
 int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, SDAQ_info_cal_data *SDAQ_cal_config);
 //Function that correlate two SDAQ_info_cal_data (new and current config). Return EXIT_SUCCESS, if new related with the old; otherwise EXIT_FAILURE.

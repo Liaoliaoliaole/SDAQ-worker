@@ -97,7 +97,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 			fflush(stdout);
 		}
 	}
-	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
+	if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, getINFO)))
 	{
 		if(usr_flag->info_file)
 		{
@@ -125,7 +125,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 							fflush(stdout);
 						}
 						free_SDAQ_info_cal_data(&cur_conf);//Free the list and the arrays of the cur_conf
-						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
+						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, getINFO|getPOINTS)))
 						{
 							if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
 							{
