@@ -251,13 +251,21 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 										printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d received in wrong order!!!\n", i+1);
 										return EXIT_FAILURE;
 									}
-									cnt++;
 								}
 								else
 								{
-									printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d does not exist in list!!!\n", i+1);
-									return EXIT_FAILURE;
-								}	
+									new_date_node = new_SDAQ_date_node();
+									//Load data from decoded "frame_rx" buffer to node
+									new_date_node->ch_num = id_dec->channel_num;
+									new_date_node->year = date_dec->year;
+									new_date_node->month = date_dec->month;
+									new_date_node->day = date_dec->day;
+									new_date_node->period = date_dec->period;
+									new_date_node->amount_of_points = date_dec->amount_of_points;
+									new_date_node->cal_unit = date_dec->cal_units;
+									str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
+								}
+								cnt++;
 								break;
 						}
 					}

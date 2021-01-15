@@ -124,8 +124,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 							printf("Verification: ");
 							fflush(stdout);
 						}
-						free_SDAQ_info_cal_data(&cur_conf);//Free the list and the arrays of the cur_conf
-						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, getINFO|getPOINTS)))
+						if(!(retval = get_SDAQ_info_and_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, getPOINTS)))
 						{
 							if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
 							{
