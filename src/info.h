@@ -24,23 +24,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define DATE   (1<<1)
 #define POINTS (1<<2)
 
-	/*--- Options for get_SDAQ_info_and_calibration_data()---*/
-#define getINFO   (1<<0)
-#define getPOINTS (1<<2)
-
 	/*----- local functions  -----*/
-//Function that request and receive calibration data from SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
-int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config, unsigned char options);
+//Function that request and receive calibration data (info, dates, points) from SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config);
+//Function that request and receive Device info and calibration dates from a SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
+int get_SDAQ_info(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config);
+//Function that request and receive calibration dates and points from a SDAQ with with address: dev_addr. Return: 0 on success or 1 on failure
+int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *SDAQ_cal_config, void **Channels_table, unsigned char amount_of_channels);
+
 //Function that send the data from SDAQ_info_cal_data *str to SDAQ with address: dev_addr. Return: 0 on success or 1 on failure
 int set_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, SDAQ_info_cal_data *SDAQ_cal_config);
+
 //Function that correlate two SDAQ_info_cal_data (new and current config). Return EXIT_SUCCESS, if new related with the old; otherwise EXIT_FAILURE.
 int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf, unsigned char options);
 
 //Declaration of function for Calibration_date_list
 date_list_data_of_node* new_SDAQ_date_node();//allocate memory for a new sdaq_calibration_date
 void free_SDAQ_Date_node(gpointer Date_node);//used with g_slist_free_full to free the data of node
-gint SDAQ_date_node_with_nonzero_amount_of_points_find (gconstpointer a, gconstpointer b);//GFunc function used with g_slist_find_custom.
-gint SDAQ_date_node_with_channel_b_find (gconstpointer a, gconstpointer b);//GFunc type function used with g_slist_find_custom.
+gint SDAQ_point_node_with_type_and_num_find(gconstpointer a, gconstpointer b);//GFunc function used with g_slist_find_custom.
+gint SDAQ_date_node_with_nonzero_amount_of_points_find(gconstpointer a, gconstpointer b);//GFunc function used with g_slist_find_custom.
+gint SDAQ_date_node_with_channel_b_find(gconstpointer a, gconstpointer b);//GFunc type function used with g_slist_find_custom.
 
 //Declaration of function for Cal_points_data_lists
 sdaq_calibration_points_data* new_SDAQ_cal_point_node();//allocate memory for a new sdaq_calibration_points_data part of Cal_points_data_lists

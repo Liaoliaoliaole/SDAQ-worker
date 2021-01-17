@@ -78,7 +78,8 @@ int XML_info_file_write(char *file_path, void *arg, unsigned char exp_format_fla
 		xml_SDAQ_data(w_node, BAD_CAST "Used_Points",
 			&((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->amount_of_points, t_integer_ubyte);
 		cal_unit = ((date_list_data_of_node *)g_slist_nth_data((GSList *)info_ptr->Calibration_date_list,i))->cal_unit;
-		sprintf((char*)buff, "%s%s", unit_str[cal_unit], cal_unit<Unit_code_base_region_size?"(Base)":"");
+		//sprintf((char*)buff, "%s%s", unit_str[cal_unit], cal_unit<Unit_code_base_region_size?"(Base)":"");
+		sprintf((char*)buff, "%s", unit_str[cal_unit]);
 		xml_SDAQ_data(w_node, BAD_CAST "Unit", buff, t_string);
 		//Add points for channel
 		w_node1 = xmlNewChild(w_node, NULL, BAD_CAST "Points", NULL);
