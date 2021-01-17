@@ -124,14 +124,15 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 							printf("Verification: ");
 							fflush(stdout);
 						}
-						if(!(retval = get_SDAQ_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, (void **)new_conf.Cal_points_data_lists, 0)))
-						{
-							if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
+						if(!(retval = get_SDAQ_info(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
+							if(!(retval = get_SDAQ_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, (void **)new_conf.Cal_points_data_lists, 0)))
 							{
-								if(!usr_flag->silent)
-									printf("\tSuccess\n");
+								if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
+								{
+									if(!usr_flag->silent)
+										printf("\tSuccess\n");
+								}
 							}
-						}
 					}
 				}
 			}

@@ -42,7 +42,7 @@ union RX_info_calibration_date_flags_short{
 };
 
 //Global Variables
-volatile unsigned char info_TMR_exp=1;
+volatile unsigned char TMR_exp=1;
 
 	/*------ Implementation of functions------*/
 int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
@@ -99,7 +99,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 
 void info_timer_handler (int signum)
 {
-	info_TMR_exp = 0;
+	TMR_exp = 0;
 	return;
 }
 
@@ -129,7 +129,7 @@ int get_SDAQ_info(int socket_num, unsigned char dev_addr, unsigned int scanning_
 	struct itimerval timer;//Scan Timeout
 
 	//initialize timer expired time
-	info_TMR_exp = 1;
+	TMR_exp = 1;
 	memset (&timer, 0, sizeof(timer));
 	timer.it_value.tv_sec = scanning_time;
 	timer.it_value.tv_usec = 0;
@@ -140,7 +140,7 @@ int get_SDAQ_info(int socket_num, unsigned char dev_addr, unsigned int scanning_
 
 	//Request SDAQ's info. Wait to received Status/SN, Dev_Info, and calibration date for each channel
 	QueryDeviceInfo(socket_num, dev_addr);
-	while(info_TMR_exp && rfb.as_bytes)
+	while(TMR_exp && rfb.as_bytes)
 	{
 		RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
@@ -210,7 +210,7 @@ int get_SDAQ_info(int socket_num, unsigned char dev_addr, unsigned int scanning_
 		fprintf(stderr,"Memory Error\n");
 		exit(EXIT_FAILURE);
 	}
-	return info_TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
+	return TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str, void **Channels_table, unsigned char amount_of_channels)
@@ -233,6 +233,7 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 	//Request SDAQ's info. Wait to received Calibration data points. Recall for each channel
 	for(int i=0,cnt; i<Channels; i++)
 	{
+		TMR_exp = 1;
 		if(Channels_table)
 		{
 			list_node = ((GSList **)Channels_table)[i];
@@ -240,14 +241,13 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 				continue;
 		}
 		//initialize timer expired time to 250 msec
-		info_TMR_exp = 1;
 		memset (&timer, 0, sizeof(timer));
 		timer.it_value.tv_sec = 0;
 		timer.it_value.tv_usec = 250000;
 		setitimer (ITIMER_REAL, &timer, NULL);
 		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(info_TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message
+		while(TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
@@ -326,7 +326,7 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 			}
 		}
 	}
-	return info_TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
+	return TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 gint SDAQ_point_node_with_type_and_num_find(gconstpointer a, gconstpointer b)//GFunc function used with g_slist_find_custom.
