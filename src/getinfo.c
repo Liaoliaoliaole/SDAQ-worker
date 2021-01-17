@@ -107,7 +107,7 @@ int get_SDAQ_info_and_calibration_data(int socket_num, unsigned char dev_addr, u
 {
 	int ret_val;
 	if(!(ret_val = get_SDAQ_info(socket_num, dev_addr, scanning_time, str)))
-		ret_val = get_SDAQ_calibration_data(socket_num, dev_addr, scanning_time, str, NULL, 0);
+		ret_val = get_SDAQ_calibration_data(socket_num, dev_addr, scanning_time, str, NULL);
 	return ret_val;
 }
 
@@ -204,20 +204,22 @@ int get_SDAQ_info(int socket_num, unsigned char dev_addr, unsigned int scanning_
 		printf("Reception Failed\n");
 		return EXIT_FAILURE;
 	}
-	str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSList *));
 	if(!str->Cal_points_data_lists)
 	{
-		fprintf(stderr,"Memory Error\n");
-		exit(EXIT_FAILURE);
+		str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSList *));
+		if(!str->Cal_points_data_lists)
+		{
+			fprintf(stderr,"Memory Error\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 	return TMR_exp ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
-int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str, void **Channels_table, unsigned char amount_of_channels)
+int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned int scanning_time, SDAQ_info_cal_data *str, void **CH_Req)
 {
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
-	unsigned char Channels = amount_of_channels;
 	int RX_bytes, retry_cnt = RETRY_CNT_INIT;
 	GSList *list_node;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
@@ -227,16 +229,26 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 	//Timers related Variables
 	struct itimerval timer;//Scan Timeout
 
-	if(Channels<=0 && str->SDAQ_info.num_of_ch>0)
-		if((Channels = str->SDAQ_info.num_of_ch)<=0)
-			return EXIT_FAILURE;
+	if(str->SDAQ_info.num_of_ch<=0)
+		return EXIT_FAILURE;
+
+	if(!str->Cal_points_data_lists)
+	{
+		str->Cal_points_data_lists = calloc(str->SDAQ_info.num_of_ch, sizeof(struct GSList *));
+		if(!str->Cal_points_data_lists)
+		{
+			fprintf(stderr,"Memory Error\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	//Request SDAQ's info. Wait to received Calibration data points. Recall for each channel
-	for(int i=0,cnt; i<Channels; i++)
+	for(int i=0,cnt; i<str->SDAQ_info.num_of_ch; i++)
 	{
 		TMR_exp = 1;
-		if(Channels_table)
+		if(CH_Req)
 		{
-			list_node = ((GSList **)Channels_table)[i];
+			list_node = ((GSList **)CH_Req)[i];
 			if(!list_node)
 				continue;
 		}

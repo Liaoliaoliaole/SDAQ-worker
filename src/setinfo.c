@@ -32,11 +32,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "info.h"//including -> "SDAQ_drv.h", "Modes.h"
 #include "SDAQ_xml.h"
 
-//Local Functions
+	//--- Local Functions declaration ---//
 //Function for decode external command
 int str_dec(char **arg, char *input_buff, const char *delim);
 //Function for construction of struct tm with calibration date of SDAQ
 int date_to_tm(struct tm *output_date, char *input_buff);
+//Function that return the amount of channels with points
+int cnt_conf_CHs(SDAQ_info_cal_data * conf);
 
 int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 {
@@ -124,8 +126,11 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 							printf("Verification: ");
 							fflush(stdout);
 						}
-						if(!(retval = get_SDAQ_info(socket_num, dev_addr, usr_flag->timeout, &cur_conf)))
-							if(!(retval = get_SDAQ_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, (void **)new_conf.Cal_points_data_lists, 0)))
+						if(!cnt_conf_CHs(&new_conf))
+							retval = get_SDAQ_info(socket_num, dev_addr, usr_flag->timeout, &cur_conf);
+						else
+						{
+							if(!(retval = get_SDAQ_calibration_data(socket_num, dev_addr, usr_flag->timeout, &cur_conf, (void **)new_conf.Cal_points_data_lists)))
 							{
 								if(!(retval = corr_SDAQ_info_and_calibration_data(&cur_conf, &new_conf, DATE|POINTS)))
 								{
@@ -133,6 +138,7 @@ int setinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 										printf("\tSuccess\n");
 								}
 							}
+						}
 					}
 				}
 			}
@@ -172,6 +178,17 @@ int date_to_tm(struct tm *output_date, char *input_buff)
 		return 0;
 	}
 	return -1;
+}
+
+int cnt_conf_CHs(SDAQ_info_cal_data *conf)
+{
+	int i,cnt;
+	if(!conf->Cal_points_data_lists)
+		return 0;
+	for(i=0, cnt=0; i<conf->SDAQ_info.num_of_ch; i++)
+		if(conf->Cal_points_data_lists[i])
+			cnt++;
+	return cnt;
 }
 
 int corr_SDAQ_info_and_calibration_data(SDAQ_info_cal_data *cur_conf, SDAQ_info_cal_data *new_conf, unsigned char options)
