@@ -10,9 +10,10 @@ DEP=$(WORK_dir)/Discover_and_autoconfig.o \
     $(WORK_dir)/SDAQ_drv.o \
     $(WORK_dir)/SDAQ_xml.o \
     $(WORK_dir)/SDAQ_psim_UI.o \
-    $(WORK_dir)/CANif_discovery.o
+    $(WORK_dir)/CANif_discovery.o \
+	$(WORK_dir)/iHEX.o
 
-all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim
+all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim $(BUILD_dir)/SDAQ_prog
 install:install-SDAQ_worker install-SDAQ_psim
 
 $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
@@ -20,8 +21,14 @@ $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 
 $(BUILD_dir)/SDAQ_psim: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_psim.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
+	
+$(BUILD_dir)/SDAQ_prog: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_prog/*.h $(SRC_dir)/SDAQ_prog/SDAQ_prog.c
+	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-#Dependentes for binaries
+#Dependents for binaries
+$(WORK_dir)/SDAQ_drv.o: $(SRC_dir)/SDAQ_drv.c
+	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
+
 $(WORK_dir)/Discover_and_autoconfig.o: $(SRC_dir)/Discover_and_autoconfig.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
@@ -37,16 +44,16 @@ $(WORK_dir)/getinfo.o: $(SRC_dir)/getinfo.c
 $(WORK_dir)/setinfo.o: $(SRC_dir)/setinfo.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
-$(WORK_dir)/SDAQ_drv.o: $(SRC_dir)/SDAQ_drv.c
+$(WORK_dir)/CANif_discovery.o: $(SRC_dir)/CANif_discovery.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 $(WORK_dir)/SDAQ_xml.o: $(SRC_dir)/SDAQ_xml.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
-$(WORK_dir)/SDAQ_psim_UI.o: $(SRC_dir)/SDAQ_psim_UI.c
+$(WORK_dir)/iHEX.o: $(SRC_dir)/SDAQ_prog/iHEX.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
-$(WORK_dir)/CANif_discovery.o: $(SRC_dir)/CANif_discovery.c
+$(WORK_dir)/SDAQ_psim_UI.o: $(SRC_dir)/SDAQ_psim_UI.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
 
 tree:
