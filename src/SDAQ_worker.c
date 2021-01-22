@@ -41,7 +41,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Include CAN-if_discovery
 #include "CANif_discovery.h"
 
-//application functions
+//Application functions
 void print_usage(char *prog_name);//print the usage manual
 
 int main(int argc, char *argv[])
@@ -316,7 +316,6 @@ int Change_address(int socket_num, unsigned int serial_number, unsigned char new
 	return EXIT_SUCCESS;
 }
 
-
 void print_usage(char *prog_name)
 {
 	const char preamp[] = {
@@ -359,5 +358,3 @@ void print_usage(char *prog_name)
 	printf("%s\nUsage: %s CAN-IF MODE [ADDRESS] [SERIAL NUMBER] [LOGGING DIRECTOR] [Options]\n\n%s",preamp, prog_name, manual);
 	return;
 }
-
-

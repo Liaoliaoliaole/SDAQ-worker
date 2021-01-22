@@ -14,165 +14,254 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#include <stdio.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
 #include "iHEX.h"
 
-/* Initializes a new IHexRecord structure that the paramater ihexRecord points to with the passed
- * record type, 16-bit integer address, 8-bit data array, and size of 8-bit data array. */
-int New_IHexRecord(int type, uint16_t address, const uint8_t *data, int dataLen, IHexRecord *ihexRecord)
+// General definition of the Intel HEX8 specification
+enum _IHexDefinitions {
+	// 768 should be plenty of space to read in a Intel HEX8 record
+	IHEX_RECORD_BUFF_SIZE = 768,
+	// Offsets and lengths of various fields in an Intel HEX8 record
+	IHEX_COUNT_OFFSET = 1,
+	IHEX_COUNT_LEN = 2,
+	IHEX_ADDRESS_OFFSET = 3,
+	IHEX_ADDRESS_LEN = 4,
+	IHEX_TYPE_OFFSET = 7,
+	IHEX_TYPE_LEN = 2,
+	IHEX_DATA_OFFSET = 9,
+	IHEX_CHECKSUM_LEN = 2,
+	IHEX_MAX_DATA_LEN = 512,
+	// Ascii hex encoded length of a single byte
+	IHEX_ASCII_HEX_BYTE_LEN = 2,
+	// Start code offset and value
+	IHEX_START_CODE_OFFSET = 0,
+	IHEX_START_CODE = ':'
+};
+
+// Intel Record Types
+enum iHEX_RecordTypes {
+	Data_Rec = 0, // Data Record
+	End_of_file, // End of File Record
+	Extended_address, // Extended Segment Address Record
+	Start_Segmented_Address, // Start Segment Address Record
+	Extended_Linear_Address, // Extended Linear Address Record
+	Start_Linear_Address // Start Linear Address Record
+};
+
+// Structure to hold the fields of an Intel HEX8 record.
+typedef struct {
+	unsigned char dataLen; 						// The number of bytes of data stored in this record.
+	unsigned short address; 					// The 16-bit address field.
+	unsigned char type; 						// The Intel HEX8 record type of this record.
+	unsigned char data[IHEX_MAX_DATA_LEN/2]; 	// The 8-bit array data field, which has a maximum size of 256 bytes.
+	unsigned char checksum; 					// The checksum of this record.
+} iHEX_Record;
+
+
+			//--- Local Functions ---//
+int iHEX_Record_enc(const char recordBuff[], iHEX_Record *rec);
+//int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out);
+//void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
+unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
+
+int iHEX_read_file(const char *file_path, mem_bin *mem_table)
 {
-	/* Data length size check, assertion of ihexRecord pointer */
-	if (dataLen < 0 || dataLen > IHEX_MAX_DATA_LEN/2 || ihexRecord == NULL)
-		return IHEX_ERROR_INVALID_ARGUMENTS;
+	iHEX_Record curr_iHEX_Record;
+	FILE *fp;
+	char buff[IHEX_RECORD_BUFF_SIZE];
+	int last_error;
 
-	ihexRecord->type = type;
-	ihexRecord->address = address;
-	memcpy(ihexRecord->data, data, (unsigned int)dataLen);
-	ihexRecord->dataLen = dataLen;
-	ihexRecord->checksum = Checksum_IHexRecord(ihexRecord);
+	if(!file_path || !mem_table)
+		return EXIT_FAILURE;
 
-	return IHEX_OK;
+	if(!(fp = fopen(file_path, "r")))
+		return IHEX_ERROR_FILE;
+	while(fgets(buff, sizeof(buff), fp))
+	{
+		for(int i=0; i<strlen(buff);i++)
+		{
+			if(buff[i] == '\n' || buff[i] == '\r')
+				buff[i] = '0';
+			else
+				buff[i] = toupper(buff[i]);
+		}
+		if((last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
+		{
+			iHEX_error_print(last_error);
+			break;
+		}
+	}
+	fclose(fp);
+
+	return EXIT_SUCCESS;
 }
 
-/* Utility function to read an Intel HEX8 record from a file */
-int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in)
+void iHEX_error_print(int error_num)
 {
-	char recordBuff[IHEX_RECORD_BUFF_SIZE];
-	/* A temporary buffer to hold ASCII hex encoded data, set to the maximum length we would ever need */
+	switch(error_num)
+	{
+		case IHEX_OK:
+			puts("No error");
+			break;
+		case IHEX_ERROR_FILE:
+			puts("Error while reading from or writing to a file.");
+			break;
+		case IHEX_ERROR_EOF:
+			puts("Encountering end-of-file when reading from a file");
+			break;
+		case IHEX_ERROR_INVALID_RECORD:
+			puts("Invalid record was read");
+			break;
+		case IHEX_ERROR_INVALID_ARGUMENTS:
+			puts("Invalid arguments passed to function");
+			break;
+		case IHEX_ERROR_NEWLINE:
+			puts("Encountering a newline with no record when reading from a file");
+			break;
+		default:
+			puts("Unknown Error Code!!!");
+	}
+}
+
+	//--- Local Functions Implementation ---//
+int iHEX_Record_enc(const char recordBuff[], iHEX_Record *rec)
+{
+	unsigned char dataLen;
 	char hexBuff[IHEX_ADDRESS_LEN+1];
 	int dataCount, i;
 
-	/* Check our record pointer and file pointer */
-	if (ihexRecord == NULL || in == NULL)
+	if(!recordBuff)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
-
-	if (fgets(recordBuff, IHEX_RECORD_BUFF_SIZE, in) == NULL) 
+	if(!(dataCount = strlen(recordBuff)))
+		return IHEX_ERROR_NEWLINE;
+	if(recordBuff[IHEX_START_CODE_OFFSET] != IHEX_START_CODE)//Check if recordBuff does not start with ':'
+		return IHEX_ERROR_INVALID_RECORD;
+	for(i=0; i < dataCount; i++)//Check for illegal characters
 	{
-			/* In case we hit EOF, don't report a file error */
-			if (feof(in) != 0)
-				return IHEX_ERROR_EOF;
-			else
-				return IHEX_ERROR_FILE;
+		if((recordBuff[i] < '0' || recordBuff[i] > '9') && (recordBuff[i] < 'A' || recordBuff[i] > 'F') && recordBuff[i]!=':')
+			return IHEX_ERROR_INVALID_RECORD;
 	}
-	/* Null-terminate the string at the first sign of a \r or \n */
-	for (i = 0; i < (int)strlen(recordBuff); i++)
+
+	/* Copy the ASCII hex encoding of the count field into hexBuff, convert it to a usable integer */
+	strncpy(hexBuff, recordBuff+IHEX_COUNT_OFFSET, IHEX_COUNT_LEN);
+	hexBuff[IHEX_COUNT_LEN] = '\0';
+	dataLen = (int)strtoul(hexBuff, NULL, 16);
+	
+	// Size check for start code, count, address, and type fields
+	if(dataCount != (1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+dataLen*2+IHEX_CHECKSUM_LEN))
 	{
-		if (recordBuff[i] == '\r' || recordBuff[i] == '\n')
+		printf("dataCount=%d (%d)\n",dataCount, 1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+dataLen*2+IHEX_CHECKSUM_LEN);
+		return IHEX_ERROR_INVALID_RECORD;
+	}
+/*
+	// Null-terminate the string at the first sign of a \r or \n
+	for(int i = 0; i < dataCount; i++)
+	{
+		if(recordBuff[i] == '\r' || recordBuff[i] == '\n')
 		{
 			recordBuff[i] = 0;
 			break;
 		}
 	}
-
-	/* Check if we hit a newline */
-	if (strlen(recordBuff) == 0)
-		return IHEX_ERROR_NEWLINE;
-
-	/* Size check for start code, count, addess, and type fields */
-	if (strlen(recordBuff) < (unsigned int)(1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN))
-		return IHEX_ERROR_INVALID_RECORD;
-
-	/* Check the for colon start code */
-	if (recordBuff[IHEX_START_CODE_OFFSET] != IHEX_START_CODE)
-		return IHEX_ERROR_INVALID_RECORD;
-
-	/* Copy the ASCII hex encoding of the count field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_COUNT_OFFSET, IHEX_COUNT_LEN);
-	hexBuff[IHEX_COUNT_LEN] = 0;
-	dataCount = (int)strtoul(hexBuff, (char **)NULL, 16);
+	if (fgets(recordBuff, IHEX_RECORD_BUFF_SIZE, in) == NULL)
+	{
+		// In case we hit EOF, don't report a file error
+		if (feof(in) != 0)
+			return IHEX_ERROR_EOF;
+		else
+			return IHEX_ERROR_FILE;
+	}
+*/
 
 	/* Copy the ASCII hex encoding of the address field into hexBuff, convert it to a usable integer */
 	strncpy(hexBuff, recordBuff+IHEX_ADDRESS_OFFSET, IHEX_ADDRESS_LEN);
 	hexBuff[IHEX_ADDRESS_LEN] = 0;
-	ihexRecord->address = (uint16_t)strtoul(hexBuff, (char **)NULL, 16);
+	rec->address = (uint16_t)strtoul(hexBuff, NULL, 16);
 
 	/* Copy the ASCII hex encoding of the address field into hexBuff, convert it to a usable integer */
 	strncpy(hexBuff, recordBuff+IHEX_TYPE_OFFSET, IHEX_TYPE_LEN);
 	hexBuff[IHEX_TYPE_LEN] = 0;
-	ihexRecord->type = (int)strtoul(hexBuff, (char **)NULL, 16);
-
-	/* Size check for start code, count, address, type, data and checksum fields */
-	if (strlen(recordBuff) < (unsigned int)(1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+dataCount*2+IHEX_CHECKSUM_LEN))
-		return IHEX_ERROR_INVALID_RECORD;
+	rec->type = (int)strtoul(hexBuff, NULL, 16);
 
 	/* Loop through each ASCII hex byte of the data field, pull it out into hexBuff,
 	 * convert it and store the result in the data buffer of the Intel HEX8 record */
-	for (i = 0; i < dataCount; i++)
+	for (int i = 0; i < rec->dataLen; i++)
 	{
 		/* Times two i because every byte is represented by two ASCII hex characters */
 		strncpy(hexBuff, recordBuff+IHEX_DATA_OFFSET+2*i, IHEX_ASCII_HEX_BYTE_LEN);
 		hexBuff[IHEX_ASCII_HEX_BYTE_LEN] = 0;
-		ihexRecord->data[i] = (uint8_t)strtoul(hexBuff, (char **)NULL, 16);
+		rec->data[i] = (uint8_t)strtoul(hexBuff, NULL, 16);
 	}
-	ihexRecord->dataLen = dataCount;
 
 	/* Copy the ASCII hex encoding of the checksum field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_DATA_OFFSET+dataCount*2, IHEX_CHECKSUM_LEN);
+	strncpy(hexBuff, recordBuff+IHEX_DATA_OFFSET+rec->dataLen*2, IHEX_CHECKSUM_LEN);
 	hexBuff[IHEX_CHECKSUM_LEN] = 0;
-	ihexRecord->checksum = (uint8_t)strtoul(hexBuff, (char **)NULL, 16);
+	rec->checksum = (uint8_t)strtoul(hexBuff, NULL, 16);
 
-	if (ihexRecord->checksum != Checksum_IHexRecord(ihexRecord))
+	if (rec->checksum != Checksum_iHEX_Record(rec))
 		return IHEX_ERROR_INVALID_RECORD;
 
 	return IHEX_OK;
 }
 
-/* Utility function to write an Intel HEX8 record to a file */
-int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out)
+/*
+int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out)
 {
 	int i;
-
 	// Check our record pointer and file pointer
-	if(ihexRecord == NULL || out == NULL)
+	if(iHEX_Record == NULL || out == NULL)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
 	//Check that the data length is in range
-	if(ihexRecord->dataLen > IHEX_MAX_DATA_LEN/2)
+	if(iHEX_Record->dataLen > IHEX_MAX_DATA_LEN/2)
 		return IHEX_ERROR_INVALID_RECORD;
-	//Write the start code, data count, address, and type fields */
-	if(fprintf(out, "%c%2.2X%2.4X%2.2X", IHEX_START_CODE, ihexRecord->dataLen, ihexRecord->address, ihexRecord->type) < 0)
+	//Write the start code, data count, address, and type fields
+	if(fprintf(out, "%c%2.2X%2.4X%2.2X", IHEX_START_CODE, iHEX_Record->dataLen, iHEX_Record->address, iHEX_Record->type) < 0)
 		return IHEX_ERROR_FILE;
 	//Write the data bytes
-	for(i = 0; i < ihexRecord->dataLen; i++) 
-		if(fprintf(out, "%2.2X", ihexRecord->data[i]) < 0)
+	for(i = 0; i < iHEX_Record->dataLen; i++)
+		if(fprintf(out, "%2.2X", iHEX_Record->data[i]) < 0)
 			return IHEX_ERROR_FILE;
 	//Calculate and write the checksum field
-	if(fprintf(out, "%2.2X\r\n", Checksum_IHexRecord(ihexRecord)) < 0)
+	if(fprintf(out, "%2.2X\r\n", Checksum_iHEX_Record(iHEX_Record)) < 0)
 		return IHEX_ERROR_FILE;
 
 	return IHEX_OK;
 }
-
-/* Utility function to print the information stored in an Intel HEX8 record */
-void Print_IHexRecord(const IHexRecord *ihexRecord)
+*/
+/*
+void Print_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
 	int i;
-	printf("Intel HEX8 Record Type: \t%d\n", ihexRecord->type);
-	printf("Intel HEX8 Record Address: \t0x%2.4X\n", ihexRecord->address);
+	printf("Intel HEX8 Record Type: \t%d\n", iHEX_Record->type);
+	printf("Intel HEX8 Record Address: \t0x%2.4X\n", iHEX_Record->address);
 	printf("Intel HEX8 Record Data: \t{");
-	for(i = 0; i < ihexRecord->dataLen; i++) 
+	for(i = 0; i < iHEX_Record->dataLen; i++)
 	{
-		if(i+1 < ihexRecord->dataLen)
-			printf("0x%02X, ", ihexRecord->data[i]);
+		if(i+1 < iHEX_Record->dataLen)
+			printf("0x%02X, ", iHEX_Record->data[i]);
 		else
-			printf("0x%02X", ihexRecord->data[i]);
+			printf("0x%02X", iHEX_Record->data[i]);
 	}
 	printf("}\n");
-	printf("Intel HEX8 Record Checksum: \t0x%2.2X\n", ihexRecord->checksum);
+	printf("Intel HEX8 Record Checksum: \t0x%2.2X\n", iHEX_Record->checksum);
 }
-
-/* Utility function to calculate the checksum of an Intel HEX8 record */
-uint8_t Checksum_IHexRecord(const IHexRecord *ihexRecord)
+*/
+unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
-	uint8_t checksum;
-	int i;
+	unsigned char checksum, *addr_dec = (unsigned char*)&(iHEX_Record->address);
 
 	//Add the data count, type, address, and data bytes together
-	checksum = (uint8_t)ihexRecord->dataLen;
-	checksum += (uint8_t)ihexRecord->type;
-	checksum += (uint8_t)ihexRecord->address;
-	checksum += (uint8_t)((ihexRecord->address & 0xFF00)>>8);
-	for (i = 0; i < ihexRecord->dataLen; i++)
-		checksum += (uint8_t)ihexRecord->data[i];
-	//Two's complement on checksum
-	checksum = -(char)checksum;
-	return checksum;
+	checksum = iHEX_Record->dataLen;
+	checksum += iHEX_Record->type;
+	checksum += addr_dec[0];
+	checksum += addr_dec[1];
+	for (int i = 0; i < iHEX_Record->dataLen; i++)
+		checksum += iHEX_Record->data[i];
+	//Return the Two's complement of checksum
+	return -(char)checksum;
 }
