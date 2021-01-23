@@ -14,6 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#ifndef SDAQ_DRV_h
+#define SDAQ_DRV_h
 
 #define SDAQ_MAX_AMOUNT_OF_CHANNELS 16 //can be up to 63, from whitepaper
 #define MAX_AMOUNT_OF_POINTS 16
@@ -180,3 +182,5 @@ int p_calibration_date(int socket_fd, unsigned char dev_address, unsigned char c
 int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned char channel, sdaq_calibration_points_data *ch_cal_point_data);
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, unsigned char unit, float value, unsigned short timestamp);
 int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);
+
+#endif

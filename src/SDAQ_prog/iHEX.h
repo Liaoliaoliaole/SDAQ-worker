@@ -14,17 +14,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#ifndef iHEX_H
+#define iHEX_H
 
 #include <gmodule.h>
 
 // All possible error codes the Intel HEX8 record utility functions may return.
 enum iHEX_Errors {
-	IHEX_OK = 0, 				// Error code for success or no error.
-	IHEX_ERROR_FILE = 1, 			// Error code for error while reading from or writing to a file. You may check errno for the exact error if this error code is encountered.
-	IHEX_ERROR_EOF = 2, 			// Error code for encountering end-of-file when reading from a file.
-	IHEX_ERROR_INVALID_RECORD = 3, 	// Error code for error if an invalid record was read.
-	IHEX_ERROR_INVALID_ARGUMENTS = 4, 	// Error code for error from invalid arguments passed to function.
-	IHEX_ERROR_NEWLINE = 5, 		// Error code for encountering a newline with no record when reading from a file.
+	IHEX_OK = 0,
+	IHEX_ERROR_FILE,
+	IHEX_ERROR_EOF,
+	IHEX_ERROR_INVALID_RECORD,
+	IHEX_ERROR_INVALID_ARGUMENTS,
+	IHEX_ERROR_CHECKSUM,
+	IHEX_ERROR_NEWLINE,
+	IHEX_ERROR_MAX_NUM = IHEX_ERROR_NEWLINE
 };
 
 typedef struct{
@@ -35,4 +39,6 @@ typedef struct{
 int iHEX_read_file(const char *file_path, mem_bin *mem_table);
 
 //Function that decode an iHEX_Errors and print it.
-void iHEX_error_print(int error_num);
+void iHEX_error_print(unsigned int error_num);
+
+#endif

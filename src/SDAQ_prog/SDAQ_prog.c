@@ -84,18 +84,21 @@ int main(int argc, char *argv[])
 		printf("!!! CAN-IF and/or MODE argument Missing !!!\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
 	if(!strcmp(argv[optind+1],"download"))
 	{
 		printf("Not implemented\n");
 	}
 	else if(!strcmp(argv[optind+1],"upload"))
 	{
-		retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash);
+		if(iHEX_file_path)
+			retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash);
+		else
+			printf("File path is undefined!!!\n");
 	}
 	else
-		printf("Unknown mode argument\n");
-	
+		printf("Unknown mode argument!!!\n");
+
 	return retval;
 }
 

@@ -63,18 +63,28 @@ typedef struct {
 } iHEX_Record;
 
 
+static const char *ERROR_strings[] = {
+	"No error",
+	"Error while reading from or writing to a file.",
+	"Encountering end-of-file when reading from a file",
+	"Invalid record was read",
+	"Invalid arguments passed to function",
+	"Checksum Error",
+	"Encountering a newline with no record when reading from a file"
+};
+
 			//--- Local Functions ---//
-int iHEX_Record_enc(const char recordBuff[], iHEX_Record *rec);
+int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec);
 //int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out);
-//void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
+void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
 
 int iHEX_read_file(const char *file_path, mem_bin *mem_table)
 {
-	iHEX_Record curr_iHEX_Record;
-	FILE *fp;
 	char buff[IHEX_RECORD_BUFF_SIZE];
-	int last_error;
+	int last_error, line=1;
+	iHEX_Record curr_iHEX_Record={0};
+	FILE *fp;
 
 	if(!file_path || !mem_table)
 		return EXIT_FAILURE;
@@ -83,57 +93,41 @@ int iHEX_read_file(const char *file_path, mem_bin *mem_table)
 		return IHEX_ERROR_FILE;
 	while(fgets(buff, sizeof(buff), fp))
 	{
-		for(int i=0; i<strlen(buff);i++)
-		{
-			if(buff[i] == '\n' || buff[i] == '\r')
-				buff[i] = '0';
-			else
-				buff[i] = toupper(buff[i]);
-		}
-		if((last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
+		printf("%d%s", line, buff);
+		last_error = iHEX_Record_enc(buff, &curr_iHEX_Record);
+		Print_iHEX_Record(&curr_iHEX_Record);
+		if(last_error)
 		{
 			iHEX_error_print(last_error);
 			break;
 		}
+		line++;
 	}
 	fclose(fp);
-
 	return EXIT_SUCCESS;
 }
 
-void iHEX_error_print(int error_num)
+void iHEX_error_print(unsigned int error_num)
 {
-	switch(error_num)
-	{
-		case IHEX_OK:
-			puts("No error");
-			break;
-		case IHEX_ERROR_FILE:
-			puts("Error while reading from or writing to a file.");
-			break;
-		case IHEX_ERROR_EOF:
-			puts("Encountering end-of-file when reading from a file");
-			break;
-		case IHEX_ERROR_INVALID_RECORD:
-			puts("Invalid record was read");
-			break;
-		case IHEX_ERROR_INVALID_ARGUMENTS:
-			puts("Invalid arguments passed to function");
-			break;
-		case IHEX_ERROR_NEWLINE:
-			puts("Encountering a newline with no record when reading from a file");
-			break;
-		default:
-			puts("Unknown Error Code!!!");
-	}
+	if(error_num>IHEX_ERROR_MAX_NUM)
+		puts("Unknown Error Code!!!");
+	else
+		puts(ERROR_strings[error_num]);
 }
 
 	//--- Local Functions Implementation ---//
-int iHEX_Record_enc(const char recordBuff[], iHEX_Record *rec)
+unsigned short iHEX_field_to_val(char recordBuff[], size_t len)
 {
-	unsigned char dataLen;
 	char hexBuff[IHEX_ADDRESS_LEN+1];
-	int dataCount, i;
+
+	strncpy(hexBuff, recordBuff, len);
+	hexBuff[len] = '\0';
+	return strtoul(hexBuff, NULL, 16);
+}
+
+int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec)
+{
+	int dataCount;
 
 	if(!recordBuff)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
@@ -141,71 +135,25 @@ int iHEX_Record_enc(const char recordBuff[], iHEX_Record *rec)
 		return IHEX_ERROR_NEWLINE;
 	if(recordBuff[IHEX_START_CODE_OFFSET] != IHEX_START_CODE)//Check if recordBuff does not start with ':'
 		return IHEX_ERROR_INVALID_RECORD;
-	for(i=0; i < dataCount; i++)//Check for illegal characters
+	for(int i=0; i < dataCount; i++)//Check and condition the Record Buffer.
 	{
-		if((recordBuff[i] < '0' || recordBuff[i] > '9') && (recordBuff[i] < 'A' || recordBuff[i] > 'F') && recordBuff[i]!=':')
+		if(recordBuff[i]=='\r' || recordBuff[i]=='\n')//Replace <cr> and <lf> with null-termination
+			recordBuff[i] = '\0';
+		else if(!isxdigit(recordBuff[i]) && recordBuff[i]!=':')//Check for illegal characters
 			return IHEX_ERROR_INVALID_RECORD;
 	}
-
-	/* Copy the ASCII hex encoding of the count field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_COUNT_OFFSET, IHEX_COUNT_LEN);
-	hexBuff[IHEX_COUNT_LEN] = '\0';
-	dataLen = (int)strtoul(hexBuff, NULL, 16);
-	
-	// Size check for start code, count, address, and type fields
-	if(dataCount != (1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+dataLen*2+IHEX_CHECKSUM_LEN))
-	{
-		printf("dataCount=%d (%d)\n",dataCount, 1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+dataLen*2+IHEX_CHECKSUM_LEN);
+	if(!(dataCount = strlen(recordBuff)))
+		return IHEX_ERROR_NEWLINE;
+	rec->dataLen = iHEX_field_to_val(recordBuff+IHEX_COUNT_OFFSET, IHEX_COUNT_LEN);
+	if(dataCount != (1+IHEX_COUNT_LEN+IHEX_ADDRESS_LEN+IHEX_TYPE_LEN+rec->dataLen*2+IHEX_CHECKSUM_LEN))//Check record size
 		return IHEX_ERROR_INVALID_RECORD;
-	}
-/*
-	// Null-terminate the string at the first sign of a \r or \n
-	for(int i = 0; i < dataCount; i++)
-	{
-		if(recordBuff[i] == '\r' || recordBuff[i] == '\n')
-		{
-			recordBuff[i] = 0;
-			break;
-		}
-	}
-	if (fgets(recordBuff, IHEX_RECORD_BUFF_SIZE, in) == NULL)
-	{
-		// In case we hit EOF, don't report a file error
-		if (feof(in) != 0)
-			return IHEX_ERROR_EOF;
-		else
-			return IHEX_ERROR_FILE;
-	}
-*/
-
-	/* Copy the ASCII hex encoding of the address field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_ADDRESS_OFFSET, IHEX_ADDRESS_LEN);
-	hexBuff[IHEX_ADDRESS_LEN] = 0;
-	rec->address = (uint16_t)strtoul(hexBuff, NULL, 16);
-
-	/* Copy the ASCII hex encoding of the address field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_TYPE_OFFSET, IHEX_TYPE_LEN);
-	hexBuff[IHEX_TYPE_LEN] = 0;
-	rec->type = (int)strtoul(hexBuff, NULL, 16);
-
-	/* Loop through each ASCII hex byte of the data field, pull it out into hexBuff,
-	 * convert it and store the result in the data buffer of the Intel HEX8 record */
-	for (int i = 0; i < rec->dataLen; i++)
-	{
-		/* Times two i because every byte is represented by two ASCII hex characters */
-		strncpy(hexBuff, recordBuff+IHEX_DATA_OFFSET+2*i, IHEX_ASCII_HEX_BYTE_LEN);
-		hexBuff[IHEX_ASCII_HEX_BYTE_LEN] = 0;
-		rec->data[i] = (uint8_t)strtoul(hexBuff, NULL, 16);
-	}
-
-	/* Copy the ASCII hex encoding of the checksum field into hexBuff, convert it to a usable integer */
-	strncpy(hexBuff, recordBuff+IHEX_DATA_OFFSET+rec->dataLen*2, IHEX_CHECKSUM_LEN);
-	hexBuff[IHEX_CHECKSUM_LEN] = 0;
-	rec->checksum = (uint8_t)strtoul(hexBuff, NULL, 16);
-
-	if (rec->checksum != Checksum_iHEX_Record(rec))
-		return IHEX_ERROR_INVALID_RECORD;
-
+	for (int i=0; i < rec->dataLen; i++)//Convert data
+		rec->data[i] = iHEX_field_to_val(recordBuff+IHEX_DATA_OFFSET+2*i, IHEX_ASCII_HEX_BYTE_LEN);
+	rec->address = iHEX_field_to_val(recordBuff+IHEX_ADDRESS_OFFSET, IHEX_ADDRESS_LEN);
+	rec->type = iHEX_field_to_val(recordBuff+IHEX_TYPE_OFFSET, IHEX_TYPE_LEN);
+	rec->checksum = iHEX_field_to_val(recordBuff+IHEX_DATA_OFFSET+rec->dataLen*2, IHEX_CHECKSUM_LEN);
+	if (rec->checksum != Checksum_iHEX_Record(rec))//Check if record is valid by checksum
+		return IHEX_ERROR_CHECKSUM;
 	return IHEX_OK;
 }
 
@@ -233,24 +181,24 @@ int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out)
 	return IHEX_OK;
 }
 */
-/*
+
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
 	int i;
-	printf("Intel HEX8 Record Type: \t%d\n", iHEX_Record->type);
-	printf("Intel HEX8 Record Address: \t0x%2.4X\n", iHEX_Record->address);
-	printf("Intel HEX8 Record Data: \t{");
-	for(i = 0; i < iHEX_Record->dataLen; i++)
+	printf("\tRecord Type: %d\n", iHEX_Record->type);
+	if(!iHEX_Record->type)
+		printf("\tRecord Address: 0x%2.4X\n", iHEX_Record->address);
+	if(iHEX_Record->dataLen)
 	{
-		if(i+1 < iHEX_Record->dataLen)
-			printf("0x%02X, ", iHEX_Record->data[i]);
-		else
-			printf("0x%02X", iHEX_Record->data[i]);
+		printf("\tRecord Data Length: %d\n", iHEX_Record->dataLen);
+		printf("\tRecord Data:{");
+		for(i = 0; i < iHEX_Record->dataLen; i++)
+			printf("0x%02X%s", iHEX_Record->data[i],i+1<iHEX_Record->dataLen?", ":"");
+		printf("}\n");
 	}
-	printf("}\n");
-	printf("Intel HEX8 Record Checksum: \t0x%2.2X\n", iHEX_Record->checksum);
+	printf("\tRecord Checksum: 0x%2.2X\n", iHEX_Record->checksum);
 }
-*/
+
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
 	unsigned char checksum, *addr_dec = (unsigned char*)&(iHEX_Record->address);
