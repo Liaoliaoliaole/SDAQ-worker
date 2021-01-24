@@ -183,4 +183,4 @@ int p_calibration_points_data(int socket_fd, unsigned char dev_address, unsigned
 int p_measure(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, unsigned char unit, float value, unsigned short timestamp);
 int p_measure_raw(int socket_fd, unsigned char dev_address, unsigned char channel, unsigned char state, float value, unsigned short timestamp);
 
-#endif
+#endif //SDAQ_DRV_h

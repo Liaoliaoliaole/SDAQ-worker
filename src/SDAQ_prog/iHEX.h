@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <gmodule.h>
 
-// All possible error codes the Intel HEX8 record utility functions may return.
+//All possible error codes.
 enum iHEX_Errors {
 	IHEX_OK = 0,
 	IHEX_ERROR_FILE,
@@ -41,4 +41,4 @@ int iHEX_read_file(const char *file_path, mem_bin *mem_table);
 //Function that decode an iHEX_Errors and print it.
 void iHEX_error_print(unsigned int error_num);
 
-#endif
+#endif //iHEX_H

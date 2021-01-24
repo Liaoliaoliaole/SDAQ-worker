@@ -1,5 +1,5 @@
 CC=gcc -O3
-CFLAGS= -std=c99 -Wall #-g3 -Wextra
+CFLAGS= -std=c99 -Wall -g3 #-Wextra
 LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0)
 BUILD_dir=build
 WORK_dir=work
@@ -21,7 +21,7 @@ $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 
 $(BUILD_dir)/SDAQ_psim: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_psim.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
-	
+
 $(BUILD_dir)/SDAQ_prog: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_prog/*.h $(SRC_dir)/SDAQ_prog/SDAQ_prog.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
