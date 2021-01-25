@@ -17,7 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define VERSION "0.1" /*Release Version of SDAQ_prog*/
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,9 +91,12 @@ int main(int argc, char *argv[])
 	else if(!strcmp(argv[optind+1],"upload"))
 	{
 		if(iHEX_file_path)
-			retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash);
+		{
+			if((retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash)))
+				fputs(iHEX_strerror(retval), stderr);
+		}
 		else
-			printf("File path is undefined!!!\n");
+			fprintf(stderr, "File path is undefined!!!\n");
 	}
 	else
 		printf("Unknown mode argument!!!\n");

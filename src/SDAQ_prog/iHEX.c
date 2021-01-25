@@ -58,10 +58,18 @@ typedef struct {
 	unsigned char dataLen; 						// The number of bytes of data stored in this record.
 	unsigned short address; 					// The 16-bit address field.
 	unsigned char type; 						// The Intel HEX8 record type of this record.
-	unsigned char data[IHEX_MAX_DATA_LEN/2]; 	// The 8-bit array data field, which has a maximum size of 256 bytes.
+	unsigned char data[IHEX_MAX_DATA_LEN/2]; 	// The 8-bit array data field.
 	unsigned char checksum; 					// The checksum of this record.
 } iHEX_Record;
 
+static const char *iHEX_RecTypes_str[] = {
+	"Data_Record",
+	"End_of_file",
+	"Extended_address",
+	"Start_Segmented_Address",
+	"Extended_Linear_Address",
+	"Start_Linear_Address"
+};
 
 static const char *ERROR_strings[] = {
 	"No error",
@@ -75,7 +83,10 @@ static const char *ERROR_strings[] = {
 
 			//--- Local Functions ---//
 int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec);
+int iHEX_rec_to_mem_bin(iHEX_Record *rec, mem_bin *mem_table);
+
 //int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out);
+
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
 
@@ -87,35 +98,93 @@ int iHEX_read_file(const char *file_path, mem_bin *mem_table)
 	FILE *fp;
 
 	if(!file_path || !mem_table)
-		return EXIT_FAILURE;
+		return IHEX_ERROR_INVALID_ARGUMENTS;
 
 	if(!(fp = fopen(file_path, "r")))
 		return IHEX_ERROR_FILE;
 	while(fgets(buff, sizeof(buff), fp))
 	{
-		printf("%d%s", line, buff);
-		last_error = iHEX_Record_enc(buff, &curr_iHEX_Record);
-		Print_iHEX_Record(&curr_iHEX_Record);
-		if(last_error)
+		if(!(last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
 		{
-			iHEX_error_print(last_error);
+			iHEX_rec_to_mem_bin(&curr_iHEX_Record, mem_table);
+			printf("%d%s\n", line, buff);
+			Print_iHEX_Record(&curr_iHEX_Record);
+		} 
+		else 
 			break;
-		}
 		line++;
 	}
 	fclose(fp);
-	return EXIT_SUCCESS;
+	return last_error;
 }
-
-void iHEX_error_print(unsigned int error_num)
+/*
+int iHEX_read_mem(const char *ihex_str, mem_bin *mem_table)
 {
-	if(error_num>IHEX_ERROR_MAX_NUM)
-		puts("Unknown Error Code!!!");
+	int last_error, line=1;
+	size_t ihex_str_size;
+	iHEX_Record curr_iHEX_Record={0};
+	char *iHEX_str_buff, *iHEX_str_line;
+
+	if(!mem_table || !ihex_str || !(ihex_str_size = strlen(ihex_str)))
+		return IHEX_ERROR_INVALID_ARGUMENTS;
+	
+	if(!(iHEX_str_buff = malloc(ihex_str_size*sizeof(char)+1)))
+	{
+		fprintf(stderr, "Memory error!!!\n");
+		exit(EXIT_FAILURE);
+	}
+	strcpy(iHEX_str_buff, ihex_str);
+	
+	iHEX_str_line = strtok(iHEX_str_buff, "\n");
+	while(iHEX_str_line)
+	{
+		if(!(last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
+		{
+			append_iHEX_to_mem_bin(&curr_iHEX_Record, mem_table);
+			printf("%d%s\n", line, buff);
+			Print_iHEX_Record(&curr_iHEX_Record);
+		} 
+		else 
+			break;
+		line++;
+		iHEX_str_line = strtok(NULL, "\n");
+	}
+	free(iHEX_str_buff);
+	return last_error;
+}
+*/
+const char * iHEX_strerror(unsigned int error_num)
+{
+	if(error_num<0 || error_num>IHEX_ERROR_MAX_NUM)
+		return "Unknown Error Code!!!";
 	else
-		puts(ERROR_strings[error_num]);
+		return ERROR_strings[error_num];
 }
 
 	//--- Local Functions Implementation ---//
+int iHEX_rec_to_mem_bin(iHEX_Record *rec, mem_bin *mem_table)
+{
+	static unsigned int seg_offset=0;
+	if(!rec || !mem_table)
+		return IHEX_ERROR_INVALID_ARGUMENTS;
+	switch(rec->type)
+	{
+		case Data_Rec:
+			break;
+		case Extended_address:
+			break;
+		case Extended_Linear_Address:
+			break;
+		case End_of_file:
+			break;
+		case Start_Segmented_Address:
+			break;
+		case Start_Linear_Address:
+			break;			
+	}
+	return EXIT_SUCCESS;
+}
+
 unsigned short iHEX_field_to_val(char recordBuff[], size_t len)
 {
 	char hexBuff[IHEX_ADDRESS_LEN+1];
@@ -185,7 +254,7 @@ int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out)
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
 	int i;
-	printf("\tRecord Type: %d\n", iHEX_Record->type);
+	printf("\tRecord Type: %d (%s)\n", iHEX_Record->type, iHEX_RecTypes_str[iHEX_Record->type]);
 	if(!iHEX_Record->type)
 		printf("\tRecord Address: 0x%2.4X\n", iHEX_Record->address);
 	if(iHEX_Record->dataLen)

@@ -17,6 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef iHEX_H
 #define iHEX_H
 
+#define MEM_BIN_INIT {\
+\
+}
+
 #include <gmodule.h>
 
 //All possible error codes.
@@ -31,14 +35,16 @@ enum iHEX_Errors {
 	IHEX_ERROR_MAX_NUM = IHEX_ERROR_NEWLINE
 };
 
-typedef struct{
+typedef struct memory_binary_str{
 	GSList *mem_data_regions;
 } mem_bin;
 
 //Function that read a Intel hex file, decode the contents and populate the mem_table.
 int iHEX_read_file(const char *file_path, mem_bin *mem_table);
+//Function that read a Intel hex string, decode the contents and populate the mem_table.
+int iHEX_read_mem(const char *ihex_str, mem_bin *mem_table);
 
-//Function that decode an iHEX_Errors and print it.
-void iHEX_error_print(unsigned int error_num);
+//Function that decode an iHEX_Errors and return it as string.
+const char * iHEX_strerror(unsigned int error_num);
 
 #endif //iHEX_H
