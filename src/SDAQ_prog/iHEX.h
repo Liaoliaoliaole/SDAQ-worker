@@ -17,9 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef iHEX_H
 #define iHEX_H
 
-#define ROM_DATA_INIT {\
-	.data_reg=NULL\
-}
 
 #include <gmodule.h>
 
@@ -36,8 +33,16 @@ enum iHEX_Errors {
 };
 
 typedef struct memory_binary_str{
-	GList *data_reg;
+	unsigned short *cs,*ip;
+	unsigned int *iep;
+	GList *data_blks;
 } rom_data;
+
+//Struct for data of each node of GList data_reg
+typedef struct rom_data_block_struct{
+	unsigned int start_addr;
+	GByteArray blk_data;
+} rom_data_block;
 
 //Function that read a Intel hex file, decode the contents and populate the mem_table.
 int iHEX_read_file(const char *file_path, rom_data *mem_table);

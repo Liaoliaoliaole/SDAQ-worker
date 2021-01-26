@@ -47,7 +47,7 @@ void print_usage(char *prog_name);//Print the usage manual
 int main(int argc, char *argv[])
 {
 	char *iHEX_file_path = NULL;
-	rom_data SDAQ_flash = ROM_DATA_INIT;
+	rom_data SDAQ_flash = {0};
 	//Option parsing variables
 	int c, retval=EXIT_FAILURE;
 
