@@ -83,14 +83,14 @@ static const char *ERROR_strings[] = {
 
 			//--- Local Functions ---//
 int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec);
-int iHEX_rec_to_mem_bin(iHEX_Record *rec, mem_bin *mem_table);
+int iHEX_rec_to_mem_bin(iHEX_Record *rec, rom_data *mem_table);
 
 //int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out);
 
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
 
-int iHEX_read_file(const char *file_path, mem_bin *mem_table)
+int iHEX_read_file(const char *file_path, rom_data *mem_table)
 {
 	char buff[IHEX_RECORD_BUFF_SIZE];
 	int last_error, line=1;
@@ -162,7 +162,7 @@ const char * iHEX_strerror(unsigned int error_num)
 }
 
 	//--- Local Functions Implementation ---//
-int iHEX_rec_to_mem_bin(iHEX_Record *rec, mem_bin *mem_table)
+int iHEX_rec_to_mem_bin(iHEX_Record *rec, rom_data *mem_table)
 {
 	static unsigned int seg_offset=0;
 	if(!rec || !mem_table)
