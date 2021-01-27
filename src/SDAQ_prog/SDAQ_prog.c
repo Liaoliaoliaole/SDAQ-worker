@@ -84,23 +84,33 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	if(!strcmp(argv[optind+1],"download"))
+	if(!strcmp(argv[optind+1], "download"))
 	{
 		printf("Not implemented\n");
 	}
-	else if(!strcmp(argv[optind+1],"upload"))
+	else if(!strcmp(argv[optind+1], "upload"))
 	{
 		if(iHEX_file_path)
 		{
 			if((retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash)))
-				fputs(iHEX_strerror(retval), stderr);
+				fprintf(stderr, "%s\n", iHEX_strerror(retval));
+			else
+			{
+				if(SDAQ_flash.cs)
+					printf("CS = 0x%04x\n", *SDAQ_flash.cs);
+				if(SDAQ_flash.ip)
+					printf("IP = 0x%04x\n", *SDAQ_flash.ip);
+				if(SDAQ_flash.iep)
+					printf("IEP = 0x%08x\n", *SDAQ_flash.iep);
+				g_list_foreach(SDAQ_flash.data_blks, print_data_blks, NULL);
+			}
+			free_rom_data(&SDAQ_flash);
 		}
 		else
 			fprintf(stderr, "File path is undefined!!!\n");
 	}
 	else
 		printf("Unknown mode argument!!!\n");
-
 	return retval;
 }
 
