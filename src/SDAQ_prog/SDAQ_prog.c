@@ -92,9 +92,7 @@ int main(int argc, char *argv[])
 	{
 		if(iHEX_file_path)
 		{
-			if((retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash)))
-				fprintf(stderr, "%s\n", iHEX_strerror(retval));
-			else
+			if(!(retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash, TRUE)))
 			{
 				if(SDAQ_flash.cs)
 					printf("CS = 0x%04x\n", *SDAQ_flash.cs);

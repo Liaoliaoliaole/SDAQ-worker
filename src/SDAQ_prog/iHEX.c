@@ -94,7 +94,7 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *mem_table);
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
 
-int iHEX_read_file(const char *file_path, rom_data *mem_table)
+int iHEX_read_file(const char *file_path, rom_data *mem_table, unsigned char Print_error)
 {
 	char buff[IHEX_RECORD_BUFF_SIZE];
 	int last_error = IHEX_OK, line=1;
@@ -111,12 +111,21 @@ int iHEX_read_file(const char *file_path, rom_data *mem_table)
 		if(!(last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
 		{
 			if((last_error = iHEX_rec_to_rom_data(&curr_iHEX_Record, mem_table)))
+			{
+				if(Print_error)
+				{
+					fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, buff);
+					Print_iHEX_Record(&curr_iHEX_Record);
+				}
 				break;
-			//printf("%d%s\n", line, buff);
-			//Print_iHEX_Record(&curr_iHEX_Record);
+			}
 		}
 		else
+		{
+			if(Print_error)
+				fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, buff);
 			break;
+		}
 		line++;
 	}
 	fclose(fp);
@@ -171,19 +180,18 @@ void print_data_blks(gpointer data, gpointer user_data)
 {
 	rom_data_block *curr_node = (rom_data_block *)data;
 
-	printf("Block start Address: 0x%x\n", curr_node->start_addr);
+	//printf("Block start Address: 0x%x\n", curr_node->start_addr);
 	if(curr_node->blk_data && curr_node->blk_data->len)
 	{
-		printf("Block size: %u\n", curr_node->blk_data->len);
-		printf("Address range: 0x%X-0x%X\n", curr_node->start_addr, curr_node->start_addr+curr_node->blk_data->len);
-		printf("Block's data:\n{\t");
-		for(unsigned int i=0; i<curr_node->blk_data->len; i++)
+		printf("Block size: %u bytes\n", curr_node->blk_data->len);
+		printf("Address range: 0x%06X-0x%06X\n", curr_node->start_addr, curr_node->start_addr+curr_node->blk_data->len-1);
+		if(user_data)
 		{
-			if(i&&!(i%16))
-				printf("\n\t");
-			printf("0x%02X,", curr_node->blk_data->data[i]);
+			printf("Block's data:\n{\n\t");
+			for(unsigned int i=0; i<curr_node->blk_data->len; i++)
+				printf("0x%02X%s", curr_node->blk_data->data[i], !((i+1)%8)?"\n\t":", ");
+			printf("\n}\n");
 		}
-		printf("\n}\n");
 	}
 }
 
@@ -201,22 +209,16 @@ void free_rom_data(rom_data *ptr)
 	if(!ptr)
 		return;
 	if(ptr->cs)
-	{
 		free(ptr->cs);
-		ptr->cs = NULL;
-	}
 	if(ptr->ip)
-	{
 		free(ptr->ip);
-		ptr->ip = NULL;
-	}
 	if(ptr->iep)
-	{
 		free(ptr->iep);
-		ptr->iep = NULL;
-	}
 	g_list_free_full(ptr->data_blks, free_rom_data_block);
 	ptr->data_blks = NULL;
+	ptr->iep = NULL;
+	ptr->ip = NULL;
+	ptr->cs = NULL;
 }
 
 	//--- Local Functions Implementation ---//
@@ -229,27 +231,37 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 	switch(rec->type)
 	{
 		case Data_Rec:
-			if(!rec->dataLen || !rec->address)
+			if(!rec->dataLen)
 				return IHEX_ERROR_INVALID_RECORD;
-			if(!rom_data_ptr->data_blks)//Check if data_blks is empty, if so, add the data from rec.
-			{
-				new_rom_data_block = g_slice_new0(rom_data_block);
-				new_rom_data_block->start_addr = rec->address;
-				new_rom_data_block->blk_data = g_byte_array_new();
-				new_rom_data_block->blk_data = g_byte_array_append(new_rom_data_block->blk_data,
-																   rec->data,
-																   rec->dataLen);
-				rom_data_ptr->data_blks = g_list_append(rom_data_ptr->data_blks, new_rom_data_block);
-			}
-			else
+			if(rom_data_ptr->data_blks)
 			{
 				curr_rom_data_block = (rom_data_block *)(g_list_last(rom_data_ptr->data_blks)->data);
-				if(!curr_rom_data_block->blk_data->len)
+				if(!curr_rom_data_block->blk_data->len)//Check if blk_data of current node is empty.
+				{
 					curr_rom_data_block->start_addr += rec->address;
-				curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
-																    rec->data,
-																	rec->dataLen);
+					curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
+																		rec->data,
+																		rec->dataLen);
+					break;
+				}
+				else if(rec->address == curr_rom_data_block->blk_data->len)//Check if blk_data of current node is empty.
+				{
+					curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
+																		rec->data,
+																		rec->dataLen);
+					break;
+				}
+				else
+					printf("Block Split @ 0x%04X\n", rec->address);
 			}
+			new_rom_data_block = g_slice_new0(rom_data_block);
+			new_rom_data_block->start_addr = rec->address;
+			new_rom_data_block->blk_addr = new_rom_data_block->start_addr;
+			new_rom_data_block->blk_data = g_byte_array_new();
+			new_rom_data_block->blk_data = g_byte_array_append(new_rom_data_block->blk_data,
+															   rec->data,
+															   rec->dataLen);
+			rom_data_ptr->data_blks = g_list_append(rom_data_ptr->data_blks, new_rom_data_block);
 			break;
 		case Extended_Segmented_address:
 		case Extended_Linear_Address:
@@ -259,12 +271,13 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 			switch(rec->type)
 			{
 				case Extended_Segmented_address:
-					new_rom_data_block->start_addr = ntohs(*(unsigned short*)rec->data)<<4;
+					new_rom_data_block->blk_addr = ntohs(*(unsigned short*)rec->data)<<4;
 					break;
 				case Extended_Linear_Address:
-					new_rom_data_block->start_addr = ntohs(*(unsigned short*)rec->data)<<8;
+					new_rom_data_block->blk_addr = ntohs(*(unsigned short*)rec->data)<<16;
 					break;
 			}
+			new_rom_data_block->start_addr = new_rom_data_block->blk_addr;
 			new_rom_data_block->blk_data = g_byte_array_new();
 			rom_data_ptr->data_blks = g_list_append(rom_data_ptr->data_blks, new_rom_data_block);
 			break;

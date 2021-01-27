@@ -40,21 +40,22 @@ typedef struct memory_binary_str{
 
 //Struct for data of each node of GList data_reg
 typedef struct rom_data_block_struct{
-	unsigned int start_addr;
+	unsigned int blk_addr, start_addr;
 	GByteArray *blk_data;
 } rom_data_block;
 
-//Function that printing data_blks list, called from g_list_foreach().
-void print_data_blks(gpointer data, gpointer user_data);
-
-//Function that read a Intel hex file, decode the contents and populate the mem_table.
-int iHEX_read_file(const char *file_path, rom_data *mem_table);
-//Function that read a Intel hex string, decode the contents and populate the mem_table.
+/*
+ * Function that read a Intel hex from file or from memory.
+ * Return IHEX_OK on success, or the iHEX_Errors code on failure.
+*/
+int iHEX_read_file(const char *file_path, rom_data *mem_table, unsigned char Print_error);
 int iHEX_read_mem(const char *ihex_str, rom_data *mem_table);
 
 
-//Function that free contents of rom_data  
+//Function that free contents of rom_data
 void free_rom_data(rom_data *ptr);
+//Function that printing data_blks list, called from g_list_foreach().
+void print_data_blks(gpointer data, gpointer user_data);
 
 //Function that decode an iHEX_Errors and return it as string.
 const char * iHEX_strerror(unsigned int error_num);
