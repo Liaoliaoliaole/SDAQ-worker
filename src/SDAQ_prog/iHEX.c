@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define CHECK_ADDR_EQU(addr, node) addr-(node->start_addr-node->blk_addr) == node->blk_data->len? 1:0
+#define CHECK_ADDR_RANGE(addr, node) addr-(node->start_addr-node->blk_addr) < node->blk_data->len? 1:0
 
 #include <stdio.h>
 #include <stdint.h>
@@ -26,7 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "iHEX.h"
 
-const int print_on[1] = {1}, *PRINT_OFF = NULL;
+void *DATA_PRINT_ON, *DATA_PRINT_OFF = NULL;
 
 // General definition of the Intel HEX8 specification
 enum _IHexDefinitions {
@@ -84,6 +85,7 @@ static const char *ERROR_strings[] = {
 	"Error while reading from or writing to a file.",
 	"Encountering end-of-file when reading from a file",
 	"Invalid record was read",
+	"Address of record is out of range.",
 	"Invalid arguments passed to function",
 	"Checksum Error",
 	"Encountering a newline with no record when reading from a file"
@@ -241,6 +243,8 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 			if(rom_data_ptr->data_blks)
 			{
 				curr_rom_data_block = (rom_data_block *)(g_list_last(rom_data_ptr->data_blks)->data);
+				if(CHECK_ADDR_RANGE(rec->address, curr_rom_data_block))
+					return IHEX_ERROR_ADDRESS_OUT_OF_RANGE;
 				start_addr = curr_rom_data_block->start_addr;
 				if(!curr_rom_data_block->blk_data->len || CHECK_ADDR_EQU(rec->address, curr_rom_data_block))
 				{
@@ -252,7 +256,6 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 					break;
 				}	
 			}
-			printf("start_addr=0x%04X\n", start_addr);
 			new_rom_data_block = g_slice_new0(rom_data_block);
 			new_rom_data_block->blk_addr = start_addr;
 			new_rom_data_block->start_addr = new_rom_data_block->blk_addr + rec->address;

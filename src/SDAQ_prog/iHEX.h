@@ -19,8 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <gmodule.h>
 
-#define PRINT_ON (void *)print_on
-extern const int print_on[1], *PRINT_OFF;
+extern void *DATA_PRINT_ON, *DATA_PRINT_OFF;
 
 //All possible error codes.
 enum iHEX_Errors {
@@ -28,6 +27,7 @@ enum iHEX_Errors {
 	IHEX_ERROR_FILE,
 	IHEX_ERROR_EOF,
 	IHEX_ERROR_INVALID_RECORD,
+	IHEX_ERROR_ADDRESS_OUT_OF_RANGE,
 	IHEX_ERROR_INVALID_ARGUMENTS,
 	IHEX_ERROR_CHECKSUM,
 	IHEX_ERROR_NEWLINE,
@@ -52,7 +52,6 @@ typedef struct rom_data_block_struct{
 */
 int iHEX_read_file(const char *file_path, rom_data *mem_table, unsigned char Print_error);
 int iHEX_read_mem(const char *ihex_str, rom_data *mem_table);
-
 
 //Function that free contents of rom_data
 void free_rom_data(rom_data *ptr);
