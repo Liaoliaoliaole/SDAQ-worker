@@ -17,8 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef iHEX_H
 #define iHEX_H
 
-
 #include <gmodule.h>
+
+#define PRINT_ON (void *)print_on
+extern const int print_on[1], *PRINT_OFF;
 
 //All possible error codes.
 enum iHEX_Errors {
@@ -55,7 +57,7 @@ int iHEX_read_mem(const char *ihex_str, rom_data *mem_table);
 //Function that free contents of rom_data
 void free_rom_data(rom_data *ptr);
 //Function that printing data_blks list, called from g_list_foreach().
-void print_data_blks(gpointer data, gpointer user_data);
+void print_data_blks(gpointer data, gpointer print_flag);
 
 //Function that decode an iHEX_Errors and return it as string.
 const char * iHEX_strerror(unsigned int error_num);

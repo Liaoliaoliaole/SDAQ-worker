@@ -14,6 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+#define CHECK_ADDR_EQU(addr, node) addr-(node->start_addr-node->blk_addr) == node->blk_data->len? 1:0
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -23,6 +25,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <arpa/inet.h>
 
 #include "iHEX.h"
+
+const int print_on[1] = {1}, *PRINT_OFF = NULL;
 
 // General definition of the Intel HEX8 specification
 enum _IHexDefinitions {
@@ -183,7 +187,7 @@ void print_data_blks(gpointer data, gpointer user_data)
 	//printf("Block start Address: 0x%x\n", curr_node->start_addr);
 	if(curr_node->blk_data && curr_node->blk_data->len)
 	{
-		printf("Block size: %u bytes\n", curr_node->blk_data->len);
+		printf("\nBlock size: %u bytes\n", curr_node->blk_data->len);
 		printf("Address range: 0x%06X-0x%06X\n", curr_node->start_addr, curr_node->start_addr+curr_node->blk_data->len-1);
 		if(user_data)
 		{
@@ -225,6 +229,7 @@ void free_rom_data(rom_data *ptr)
 int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 {
 	rom_data_block *new_rom_data_block = NULL, *curr_rom_data_block = NULL;
+	unsigned char start_addr = 0;
 
 	if(!rec || !rom_data_ptr)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
@@ -236,27 +241,21 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 			if(rom_data_ptr->data_blks)
 			{
 				curr_rom_data_block = (rom_data_block *)(g_list_last(rom_data_ptr->data_blks)->data);
-				if(!curr_rom_data_block->blk_data->len)//Check if blk_data of current node is empty.
+				start_addr = curr_rom_data_block->start_addr;
+				if(!curr_rom_data_block->blk_data->len || CHECK_ADDR_EQU(rec->address, curr_rom_data_block))
 				{
-					curr_rom_data_block->start_addr += rec->address;
+					if(!curr_rom_data_block->blk_data->len)
+						curr_rom_data_block->start_addr = curr_rom_data_block->blk_addr + rec->address;
 					curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
 																		rec->data,
 																		rec->dataLen);
 					break;
-				}
-				else if(rec->address == curr_rom_data_block->blk_data->len)//Check if blk_data of current node is empty.
-				{
-					curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
-																		rec->data,
-																		rec->dataLen);
-					break;
-				}
-				else
-					printf("Block Split @ 0x%04X\n", rec->address);
+				}	
 			}
+			printf("start_addr=0x%04X\n", start_addr);
 			new_rom_data_block = g_slice_new0(rom_data_block);
-			new_rom_data_block->start_addr = rec->address;
-			new_rom_data_block->blk_addr = new_rom_data_block->start_addr;
+			new_rom_data_block->blk_addr = start_addr;
+			new_rom_data_block->start_addr = new_rom_data_block->blk_addr + rec->address;
 			new_rom_data_block->blk_data = g_byte_array_new();
 			new_rom_data_block->blk_data = g_byte_array_append(new_rom_data_block->blk_data,
 															   rec->data,
