@@ -16,6 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define CHECK_ADDR_EQU(addr, node) addr - (node->start_addr - node->ext_addr) == node->blk_data->len? 1:0
 #define CHECK_ADDR_RANGE(addr, node) addr - (node->start_addr - node->ext_addr) < node->blk_data->len? 1:0
+#define IHEX_REC_LEN_CALC(len, index) (len - index) > IHEX_RECORD_DATA_SIZE ? IHEX_RECORD_DATA_SIZE : len - index
 
 #include <stdio.h>
 #include <stdint.h>
@@ -193,7 +194,7 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem
 		curr_rom_blk = (rom_data_block *)curr_node->data;
 		if(curr_rom_blk->ext_addr != prev_ext_addr)
 		{
-			if(curr_rom_blk->ext_addr & 0xFFFFF)//Check if ext_addr is more than 20bits
+			if(curr_rom_blk->ext_addr & ~0xFFFFF)//Check if ext_addr is more than 20bits
 				Append_Extended_Address(iHEX_file_data, curr_rom_blk->ext_addr, Extended_Linear_Address);
 			else
 				Append_Extended_Address(iHEX_file_data, curr_rom_blk->ext_addr, Extended_Segment_address);
@@ -203,10 +204,7 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem
 		addr = curr_rom_blk->start_addr - curr_rom_blk->ext_addr;
 		for(i=0; i<block_data->len; i+=IHEX_RECORD_DATA_SIZE)
 		{
-			Append_Data(iHEX_file_data,
-						addr,
-						block_data->data+i,
-						(i-block_data->len) > IHEX_RECORD_DATA_SIZE ? IHEX_RECORD_DATA_SIZE : (i-block_data->len) > IHEX_RECORD_DATA_SIZE);
+			Append_Data(iHEX_file_data,	addr, block_data->data+i, IHEX_REC_LEN_CALC(block_data->len, i));
 			addr+=IHEX_RECORD_DATA_SIZE;
 		}
 		curr_node = g_list_next(curr_node);
