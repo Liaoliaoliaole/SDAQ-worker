@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	{
 		if(iHEX_file_path)
 		{
-			if(!(retval = iHEX_read_file(iHEX_file_path, &SDAQ_flash, TRUE)))
+			if(!(retval = iHEX_read(iHEX_file_path, NULL, &SDAQ_flash, TRUE)))
 			{
 				if(SDAQ_flash.cs)
 					printf("CS = 0x%04x\n", *SDAQ_flash.cs);
@@ -100,7 +100,9 @@ int main(int argc, char *argv[])
 					printf("IP = 0x%04x\n", *SDAQ_flash.ip);
 				if(SDAQ_flash.iep)
 					printf("IEP = 0x%08x\n", *SDAQ_flash.iep);
-				g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_ON);
+				g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
+				
+				iHEX_write(&SDAQ_flash, "./test.hex", NULL);
 			}
 			free_rom_data(&SDAQ_flash);
 		}

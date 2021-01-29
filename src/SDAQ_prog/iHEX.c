@@ -14,8 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define CHECK_ADDR_EQU(addr, node) addr-(node->start_addr-node->blk_addr) == node->blk_data->len? 1:0
-#define CHECK_ADDR_RANGE(addr, node) addr-(node->start_addr-node->blk_addr) < node->blk_data->len? 1:0
+#define CHECK_ADDR_EQU(addr, node) addr - (node->start_addr - node->ext_addr) == node->blk_data->len? 1:0
+#define CHECK_ADDR_RANGE(addr, node) addr - (node->start_addr - node->ext_addr) < node->blk_data->len? 1:0
 
 #include <stdio.h>
 #include <stdint.h>
@@ -27,13 +27,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include "iHEX.h"
 
-void *DATA_PRINT_ON, *DATA_PRINT_OFF = NULL;
-
-// General definition of the Intel HEX8 specification
+// General definition of the Intel specification
 enum _IHexDefinitions {
-	// 768 should be plenty of space to read in a Intel HEX8 record
-	IHEX_RECORD_BUFF_SIZE = 768,
-	// Offsets and lengths of various fields in an Intel HEX8 record
+	// SIZE for data field in iHEX_record. Used in iHEX_write.
+	IHEX_RECORD_DATA_SIZE = 16,
+	// Offsets and lengths of various fields in an iHEX_record
 	IHEX_COUNT_OFFSET = 1,
 	IHEX_COUNT_LEN = 2,
 	IHEX_ADDRESS_OFFSET = 3,
@@ -45,7 +43,7 @@ enum _IHexDefinitions {
 	IHEX_DATA_OFFSET = 9,
 	IHEX_CHECKSUM_LEN = 2,
 	IHEX_MAX_DATA_LEN = 512,
-	// Ascii hex encoded length of a single byte
+	// ASCII hex encoded length of a single byte
 	IHEX_ASCII_HEX_BYTE_LEN = 2,
 	// Start code offset and value
 	IHEX_START_CODE_OFFSET = 0,
@@ -56,17 +54,17 @@ enum _IHexDefinitions {
 enum iHEX_RecordTypes {
 	Data_Rec = 0, // Data Record
 	End_of_file, // End of File Record
-	Extended_Segmented_address, // Extended Segment Address Record
-	Start_Segmented_Address, // Start Segment Address Record
+	Extended_Segment_address, // Extended Segment Address Record
+	Start_Segment_Address, // Start Segment Address Record
 	Extended_Linear_Address, // Extended Linear Address Record
 	Start_Linear_Address // Start Linear Address Record
 };
 
-// Structure to hold the fields of an Intel HEX8 record.
+// Structure to hold the fields of an Intel record.
 typedef struct {
 	unsigned char dataLen; 						// The number of bytes of data stored in this record.
 	unsigned short address; 					// The 16-bit address field.
-	unsigned char type; 						// The Intel HEX8 record type of this record.
+	unsigned char type; 						// The Intel  record type of this record.
 	unsigned char data[IHEX_MAX_DATA_LEN/2]; 	// The 8-bit array data field.
 	unsigned char checksum; 					// The checksum of this record.
 } iHEX_Record;
@@ -75,7 +73,7 @@ static const char *iHEX_RecTypes_str[] = {
 	"Data_Record",
 	"End_of_file",
 	"Extended_address",
-	"Start_Segmented_Address",
+	"Start_Segment_Address",
 	"Extended_Linear_Address",
 	"Start_Linear_Address"
 };
@@ -85,42 +83,70 @@ static const char *ERROR_strings[] = {
 	"Error while reading from or writing to a file.",
 	"Encountering end-of-file when reading from a file",
 	"Invalid record was read",
+	"No EOF record found",
 	"Address of record is out of range.",
 	"Invalid arguments passed to function",
 	"Checksum Error",
 	"Encountering a newline with no record when reading from a file"
 };
-
+		//--- Variables that define extern ---//
+gpointer DATA_PRINT_OFF = NULL, DATA_PRINT_ON = &DATA_PRINT_OFF;
 			//--- Local Functions ---//
-int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec);
 int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *mem_table);
-
-//int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out);
-
+int iHEX_Record_dec(char recordBuff[], iHEX_Record *rec);
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record);
 unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record);
+//GString in application append functions
+void Append_Start_Segment_Address(GString *iHEX_file_data, unsigned short cs, unsigned short ip);
+void Append_Start_Linear_Address(GString *iHEX_file_data, unsigned int iep);
+void Append_Extended_Address(GString *iHEX_file_data, unsigned int addr, unsigned char rec_type);
+void Append_Data(GString *iHEX_file_data, unsigned short addr, unsigned char *data, unsigned char len);
 
-int iHEX_read_file(const char *file_path, rom_data *mem_table, unsigned char Print_error)
+			//--- Implementation of Share Functions ---//
+int iHEX_read(const char *iHEX_file_path, const char *iHEX_file_mem, rom_data *out_ptr, _Bool Print_error)
 {
-	char buff[IHEX_RECORD_BUFF_SIZE];
-	int last_error = IHEX_OK, line=1;
+	int last_error = IHEX_OK, line=1, c;
+	char *iHEX_str_line;
+	GString *iHEX_file_data = NULL;
 	iHEX_Record curr_iHEX_Record={0};
-	FILE *fp;
+	FILE *iHEX_fp;
 
-	if(!file_path || !mem_table)
+	if(!out_ptr || (iHEX_file_path && iHEX_file_mem))
 		return IHEX_ERROR_INVALID_ARGUMENTS;
 
-	if(!(fp = fopen(file_path, "r")))
-		return IHEX_ERROR_FILE;
-	while(fgets(buff, sizeof(buff), fp))
+	//Check iHEX_file input source, and load it to iHEX_file_data.
+	if(iHEX_file_path)
 	{
-		if(!(last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
+		if(!(iHEX_fp = fopen(iHEX_file_path, "r")))
+			return IHEX_ERROR_FILE;
+		fseek(iHEX_fp, 0, SEEK_END);//Go to end of file.
+		iHEX_file_data = g_string_sized_new(ftell(iHEX_fp));//Allocate iHEX_file_data.
+		rewind(iHEX_fp);
+		while((c = fgetc(iHEX_fp)) != EOF)
+			iHEX_file_data = g_string_append_c(iHEX_file_data, c);
+		fclose(iHEX_fp);
+	}
+	else if(iHEX_file_mem && strlen(iHEX_file_mem))
+	{
+		if(!(iHEX_file_data = g_string_new(iHEX_file_mem)))
 		{
-			if((last_error = iHEX_rec_to_rom_data(&curr_iHEX_Record, mem_table)))
+			fprintf(stderr, "Memory Error!!!\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+		return IHEX_ERROR_INVALID_ARGUMENTS;
+	//Analyze and convert iHEX_file_data, and store it to rom_data
+	iHEX_str_line = strtok(iHEX_file_data->str, "\n");
+	while(iHEX_str_line && !out_ptr->file_ended)
+	{
+		if(!(last_error = iHEX_Record_dec(iHEX_str_line, &curr_iHEX_Record)))
+		{
+			if((last_error = iHEX_rec_to_rom_data(&curr_iHEX_Record, out_ptr)))
 			{
 				if(Print_error)
 				{
-					fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, buff);
+					fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, iHEX_str_line);
 					Print_iHEX_Record(&curr_iHEX_Record);
 				}
 				break;
@@ -129,74 +155,111 @@ int iHEX_read_file(const char *file_path, rom_data *mem_table, unsigned char Pri
 		else
 		{
 			if(Print_error)
-				fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, buff);
+				fprintf(stderr, "%s @ L%d -> %s\n", iHEX_strerror(last_error), line, iHEX_str_line);
 			break;
 		}
-		line++;
-	}
-	fclose(fp);
-	return last_error;
-}
-/*
-int iHEX_read_mem(const char *ihex_str, mem_bin *mem_table)
-{
-	int last_error, line=1;
-	size_t ihex_str_size;
-	iHEX_Record curr_iHEX_Record={0};
-	char *iHEX_str_buff, *iHEX_str_line;
-
-	if(!mem_table || !ihex_str || !(ihex_str_size = strlen(ihex_str)))
-		return IHEX_ERROR_INVALID_ARGUMENTS;
-
-	if(!(iHEX_str_buff = malloc(ihex_str_size*sizeof(char)+1)))
-	{
-		fprintf(stderr, "Memory error!!!\n");
-		exit(EXIT_FAILURE);
-	}
-	strcpy(iHEX_str_buff, ihex_str);
-
-	iHEX_str_line = strtok(iHEX_str_buff, "\n");
-	while(iHEX_str_line)
-	{
-		if(!(last_error = iHEX_Record_enc(buff, &curr_iHEX_Record)))
-		{
-			append_iHEX_to_mem_bin(&curr_iHEX_Record, mem_table);
-			printf("%d%s\n", line, buff);
-			Print_iHEX_Record(&curr_iHEX_Record);
-		}
-		else
-			break;
 		line++;
 		iHEX_str_line = strtok(NULL, "\n");
 	}
-	free(iHEX_str_buff);
+	g_string_free(iHEX_file_data, TRUE);
+	if(!out_ptr->file_ended)
+	{
+		if(Print_error)
+			fprintf(stderr, "%s\n", iHEX_strerror(IHEX_NO_EOF));
+		return IHEX_NO_EOF;
+	}
 	return last_error;
 }
-*/
+
+int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem)
+{
+	int i, retval = EXIT_SUCCESS;
+	unsigned int prev_ext_addr = 0;
+	unsigned short addr;
+	rom_data_block *curr_rom_blk;
+	GList *curr_node = NULL;
+	GByteArray *block_data = NULL;
+	GString *iHEX_file_data = NULL;
+	FILE *iHEX_fp;
+
+	if(!in_ptr || (iHEX_file_path && iHEX_file_mem) || (!iHEX_file_path && !iHEX_file_mem))
+		return IHEX_ERROR_INVALID_ARGUMENTS;
+	if(!(curr_node = in_ptr->data_blks))
+		return EXIT_FAILURE;
+	//Build iHEX_file_data and add iHEX records to it.
+	iHEX_file_data = g_string_new(NULL);
+	while(curr_node)
+	{
+		curr_rom_blk = (rom_data_block *)curr_node->data;
+		if(curr_rom_blk->ext_addr != prev_ext_addr)
+		{
+			if(curr_rom_blk->ext_addr & 0xFFFFF)//Check if ext_addr is more than 20bits
+				Append_Extended_Address(iHEX_file_data, curr_rom_blk->ext_addr, Extended_Linear_Address);
+			else
+				Append_Extended_Address(iHEX_file_data, curr_rom_blk->ext_addr, Extended_Segment_address);
+			prev_ext_addr = curr_rom_blk->ext_addr;
+		}
+		block_data = curr_rom_blk->blk_data;
+		addr = curr_rom_blk->start_addr - curr_rom_blk->ext_addr;
+		for(i=0; i<block_data->len; i+=IHEX_RECORD_DATA_SIZE)
+		{
+			Append_Data(iHEX_file_data,
+						addr,
+						block_data->data+i,
+						(i-block_data->len) > IHEX_RECORD_DATA_SIZE ? IHEX_RECORD_DATA_SIZE : (i-block_data->len) > IHEX_RECORD_DATA_SIZE);
+			addr+=IHEX_RECORD_DATA_SIZE;
+		}
+		curr_node = g_list_next(curr_node);
+	}
+	if(in_ptr->cs && in_ptr->ip)
+		Append_Start_Segment_Address(iHEX_file_data, *in_ptr->cs, *in_ptr->ip);
+	if(in_ptr->iep)
+		Append_Start_Linear_Address(iHEX_file_data, *in_ptr->iep);
+	g_string_append_printf(iHEX_file_data, ":00000001FF\n");//Append EOF record.
+	if(iHEX_file_path)
+	{
+		if((iHEX_fp = fopen(iHEX_file_path, "w")))
+		{
+			for(i=0; i<iHEX_file_data->len; i++)
+				fputc(iHEX_file_data->str[i], iHEX_fp);
+			fclose(iHEX_fp);
+		}
+		else
+			retval = EXIT_FAILURE;
+	}
+	else if(iHEX_file_mem)
+	{
+
+	}
+	g_string_free(iHEX_file_data, TRUE);
+	return retval;
+}
+
 const char * iHEX_strerror(unsigned int error_num)
 {
-	if(error_num<0 || error_num>IHEX_ERROR_MAX_NUM)
+	if(error_num>IHEX_ERROR_MAX_NUM)
 		return "Unknown Error Code!!!";
 	else
 		return ERROR_strings[error_num];
 }
 
 //Function that printing GList data_blks, called from g_list_foreach().
-void print_data_blks(gpointer data, gpointer user_data)
+void print_data_blks(gpointer data, gpointer data_print_flag)
 {
 	rom_data_block *curr_node = (rom_data_block *)data;
 
-	//printf("Block start Address: 0x%x\n", curr_node->start_addr);
 	if(curr_node->blk_data && curr_node->blk_data->len)
 	{
-		printf("\nBlock size: %u bytes\n", curr_node->blk_data->len);
-		printf("Address range: 0x%06X-0x%06X\n", curr_node->start_addr, curr_node->start_addr+curr_node->blk_data->len-1);
-		if(user_data)
+		printf("\nBlock:%u\n", curr_node->blk_index);
+		printf("\tExtended address: 0x%08X\n", curr_node->ext_addr);
+		printf("\tBlock size: %u bytes\n", curr_node->blk_data->len);
+		printf("\tAddress range: 0x%08X-0x%08X\n", curr_node->start_addr, curr_node->start_addr+curr_node->blk_data->len-1);
+		if(data_print_flag)
 		{
-			printf("Block's data:\n{\n\t");
+			printf("\tBlock's data:\n\t{\n\t\t");
 			for(unsigned int i=0; i<curr_node->blk_data->len; i++)
-				printf("0x%02X%s", curr_node->blk_data->data[i], !((i+1)%8)?"\n\t":", ");
-			printf("\n}\n");
+				printf("0x%02X%s", curr_node->blk_data->data[i], !((i+1)%8)?"\n\t\t":i!=curr_node->blk_data->len-1?", ":"");
+			printf("\n\t}\n");
 		}
 	}
 }
@@ -227,11 +290,10 @@ void free_rom_data(rom_data *ptr)
 	ptr->cs = NULL;
 }
 
-	//--- Local Functions Implementation ---//
+			//--- Implementation of Local Functions  ---//
 int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 {
 	rom_data_block *new_rom_data_block = NULL, *curr_rom_data_block = NULL;
-	unsigned char start_addr = 0;
 
 	if(!rec || !rom_data_ptr)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
@@ -245,51 +307,52 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 				curr_rom_data_block = (rom_data_block *)(g_list_last(rom_data_ptr->data_blks)->data);
 				if(CHECK_ADDR_RANGE(rec->address, curr_rom_data_block))
 					return IHEX_ERROR_ADDRESS_OUT_OF_RANGE;
-				start_addr = curr_rom_data_block->start_addr;
 				if(!curr_rom_data_block->blk_data->len || CHECK_ADDR_EQU(rec->address, curr_rom_data_block))
 				{
 					if(!curr_rom_data_block->blk_data->len)
-						curr_rom_data_block->start_addr = curr_rom_data_block->blk_addr + rec->address;
+						curr_rom_data_block->start_addr = curr_rom_data_block->ext_addr + rec->address;
 					curr_rom_data_block->blk_data = g_byte_array_append(curr_rom_data_block->blk_data,
 																		rec->data,
 																		rec->dataLen);
 					break;
-				}	
+				}
 			}
 			new_rom_data_block = g_slice_new0(rom_data_block);
-			new_rom_data_block->blk_addr = start_addr;
-			new_rom_data_block->start_addr = new_rom_data_block->blk_addr + rec->address;
+			if(curr_rom_data_block)
+				new_rom_data_block->ext_addr = curr_rom_data_block->ext_addr;
+			new_rom_data_block->start_addr = new_rom_data_block->ext_addr + rec->address;
 			new_rom_data_block->blk_data = g_byte_array_new();
 			new_rom_data_block->blk_data = g_byte_array_append(new_rom_data_block->blk_data,
 															   rec->data,
 															   rec->dataLen);
+			new_rom_data_block->blk_index = g_list_length(rom_data_ptr->data_blks);
 			rom_data_ptr->data_blks = g_list_append(rom_data_ptr->data_blks, new_rom_data_block);
 			break;
-		case Extended_Segmented_address:
+		case Extended_Segment_address:
 		case Extended_Linear_Address:
 			if(rec->dataLen!=IHEX_EXTENTED_ADDR_TYPE_LEN || rec->address)
 				return IHEX_ERROR_INVALID_RECORD;
 			new_rom_data_block = g_slice_new0(rom_data_block);
 			switch(rec->type)
 			{
-				case Extended_Segmented_address:
-					new_rom_data_block->blk_addr = ntohs(*(unsigned short*)rec->data)<<4;
+				case Extended_Segment_address:
+					new_rom_data_block->ext_addr = ntohs(*(unsigned short*)rec->data)<<4;
 					break;
 				case Extended_Linear_Address:
-					new_rom_data_block->blk_addr = ntohs(*(unsigned short*)rec->data)<<16;
+					new_rom_data_block->ext_addr = ntohs(*(unsigned short*)rec->data)<<16;
 					break;
 			}
-			new_rom_data_block->start_addr = new_rom_data_block->blk_addr;
 			new_rom_data_block->blk_data = g_byte_array_new();
+			new_rom_data_block->blk_index = g_list_length(rom_data_ptr->data_blks);
 			rom_data_ptr->data_blks = g_list_append(rom_data_ptr->data_blks, new_rom_data_block);
 			break;
-		case Start_Segmented_Address:
+		case Start_Segment_Address:
 		case Start_Linear_Address:
 			if(rec->dataLen!=IHEX_START_ADDR_TYPE_LEN || rec->address)
 				return IHEX_ERROR_INVALID_RECORD;
 			switch(rec->type)
 			{
-				case Start_Segmented_Address:
+				case Start_Segment_Address:
 					if(!rom_data_ptr->cs && !rom_data_ptr->ip)
 					{
 						rom_data_ptr->cs = malloc(sizeof(unsigned short));
@@ -324,6 +387,7 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 		case End_of_file:
 			if(rec->dataLen || rec->address)
 				return IHEX_ERROR_INVALID_RECORD;
+			rom_data_ptr->file_ended = TRUE;
 			break;
 	}
 	return IHEX_OK;
@@ -337,7 +401,7 @@ unsigned short iHEX_field_to_val(char recordBuff[], size_t len)
 	return strtoul(hexBuff, NULL, 16);
 }
 
-int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec)
+int iHEX_Record_dec(char recordBuff[], iHEX_Record *rec)
 {
 	int dataCount;
 
@@ -370,34 +434,6 @@ int iHEX_Record_enc(char recordBuff[], iHEX_Record *rec)
 	return IHEX_OK;
 }
 
-/*
-int Write_iHEX_Record(const iHEX_Record *iHEX_Record, FILE *out)
-{
-	int i;
-	// Check our record pointer and file pointer
-	if(iHEX_Record == NULL || out == NULL)
-		return IHEX_ERROR_INVALID_ARGUMENTS;
-	//Check that the data length is in range
-	if(iHEX_Record->dataLen > IHEX_MAX_DATA_LEN/2)
-		return IHEX_ERROR_INVALID_RECORD;
-	//Write the start code, data count, address, and type fields
-	if(fprintf(out, "%c%2.2X%2.4X%2.2X", IHEX_START_CODE,
-										 iHEX_Record->dataLen,
-										 iHEX_Record->address,
-										 iHEX_Record->type) < 0)
-		return IHEX_ERROR_FILE;
-	//Write the data bytes
-	for(i = 0; i < iHEX_Record->dataLen; i++)
-		if(fprintf(out, "%2.2X", iHEX_Record->data[i]) < 0)
-			return IHEX_ERROR_FILE;
-	//Calculate and write the checksum field
-	if(fprintf(out, "%2.2X\r\n", Checksum_iHEX_Record(iHEX_Record)) < 0)
-		return IHEX_ERROR_FILE;
-
-	return IHEX_OK;
-}
-*/
-
 void Print_iHEX_Record(const iHEX_Record *iHEX_Record)
 {
 	int i;
@@ -428,4 +464,87 @@ unsigned char Checksum_iHEX_Record(const iHEX_Record *iHEX_Record)
 		checksum += iHEX_Record->data[i];
 	//Return the Two's complement of checksum
 	return -(char)checksum;
+}
+
+void Append_Extended_Address(GString *iHEX_file_data, unsigned int addr, unsigned char rec_type)
+{
+	unsigned short iHEX_ext_addr;
+	iHEX_Record iHEX_Rec;
+
+	if(!iHEX_file_data)
+		return;
+	iHEX_Rec.dataLen = sizeof(unsigned short);
+	iHEX_Rec.address = 0;
+	switch(rec_type)
+	{
+		case Extended_Segment_address:
+			iHEX_ext_addr = addr>>4;
+			break;
+		case Extended_Linear_Address:
+			iHEX_ext_addr = addr>>16;
+			break;
+		default: return;
+	}
+	iHEX_Rec.type = rec_type;
+	memcpy(iHEX_Rec.data, &iHEX_ext_addr, sizeof(unsigned short));
+	iHEX_Rec.checksum = Checksum_iHEX_Record(&iHEX_Rec);
+	g_string_append_printf(iHEX_file_data, ":%02X%04X%02X%04X%02X\n", iHEX_Rec.dataLen,
+																	  iHEX_Rec.address,
+																	  iHEX_Rec.type,
+																	  iHEX_ext_addr,
+																	  iHEX_Rec.checksum);
+}
+
+void Append_Start_Segment_Address(GString *iHEX_file_data, unsigned short cs, unsigned short ip)
+{
+	iHEX_Record iHEX_Rec;
+
+	if(!iHEX_file_data)
+		return;
+	iHEX_Rec.dataLen = 2*sizeof(unsigned short);
+	iHEX_Rec.address = 0;
+	iHEX_Rec.type = Start_Segment_Address;
+	memcpy(iHEX_Rec.data, &cs, sizeof(unsigned short));
+	memcpy(iHEX_Rec.data+sizeof(unsigned short), &ip, sizeof(unsigned short));
+	iHEX_Rec.checksum = Checksum_iHEX_Record(&iHEX_Rec);
+	g_string_append_printf(iHEX_file_data, ":%02X%04X%02X%04X%04X%02X\n", iHEX_Rec.dataLen,
+																		  iHEX_Rec.address,
+																		  iHEX_Rec.type,
+																		  cs,ip,
+																		  iHEX_Rec.checksum);
+}
+
+void Append_Start_Linear_Address(GString *iHEX_file_data, unsigned int iep)
+{
+	iHEX_Record iHEX_Rec;
+
+	if(!iHEX_file_data)
+		return;
+	iHEX_Rec.dataLen = sizeof(unsigned int);
+	iHEX_Rec.address = 0;
+	iHEX_Rec.type = Start_Linear_Address;
+	memcpy(iHEX_Rec.data, &iep, sizeof(unsigned int));
+	iHEX_Rec.checksum = Checksum_iHEX_Record(&iHEX_Rec);
+	g_string_append_printf(iHEX_file_data, ":%02X%04X%02X%08X%02X\n", iHEX_Rec.dataLen,
+																	  iHEX_Rec.address,
+																	  iHEX_Rec.type,
+																	  iep,
+																	  iHEX_Rec.checksum);
+}
+
+void Append_Data(GString *iHEX_file_data, unsigned short addr, unsigned char *data, unsigned char len)
+{
+	iHEX_Record iHEX_Rec;
+
+	if(!iHEX_file_data)
+		return;
+	iHEX_Rec.dataLen = len;
+	iHEX_Rec.address = addr;
+	iHEX_Rec.type = Data_Rec;
+	memcpy(iHEX_Rec.data, data, sizeof(unsigned char)*len);
+	iHEX_Rec.checksum = Checksum_iHEX_Record(&iHEX_Rec);
+	g_string_append_printf(iHEX_file_data, ":%02X%04X%02X", iHEX_Rec.dataLen, iHEX_Rec.address,iHEX_Rec.type);
+	for(int i=0; i<len; i++)
+		g_string_append_printf(iHEX_file_data, "%02X", iHEX_Rec.data[i]);
+	g_string_append_printf(iHEX_file_data, "%02X\n", iHEX_Rec.checksum);
 }
