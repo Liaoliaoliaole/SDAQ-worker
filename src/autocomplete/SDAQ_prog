@@ -1,10 +1,10 @@
 #/usr/bin/env bash
 #
-# Bash completion script for SDAQ_psim
+# Bash completion script for SDAQ_prog
 #
-_SDAQ_psim()
+_SDAQ_prog()
 {
-    local cur prev firstword ifs_names
+    local cur prev firstword ifs_names modes
 
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
@@ -13,7 +13,9 @@ _SDAQ_psim()
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
     # The options we'll complete.
-	default_opts="-V -h -l -c -s"
+	modes="upload \
+           download"
+	default_opts="-V -h -l"
 
     # Complete the options
     case "${COMP_CWORD}" in
@@ -35,4 +37,4 @@ _SDAQ_psim()
 }
 
 # Bind completion to SDAQ_psim
-complete -F _SDAQ_psim SDAQ_psim
+complete -F _SDAQ_prog SDAQ_prog

@@ -14,7 +14,7 @@ DEP=$(WORK_dir)/Discover_and_autoconfig.o \
 	$(WORK_dir)/iHEX.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim $(BUILD_dir)/SDAQ_prog
-install:install-SDAQ_worker install-SDAQ_psim
+install:install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
 
 $(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
@@ -68,9 +68,24 @@ install-SDAQ_worker:
 install-SDAQ_psim:
 	install $(BUILD_dir)/SDAQ_psim -t /usr/local/bin/
 	install $(SRC_dir)/autocomplete/SDAQ_psim -t /usr/share/bash-completion/completions/
+install-SDAQ_prog:
+	install $(BUILD_dir)/SDAQ_prog -t /usr/local/bin/
+	install $(SRC_dir)/autocomplete/SDAQ_prog -t /usr/share/bash-completion/completions/
+install-manuals:
+	install ./man_pages/SDAQ_worker.1 -t /usr/share/man/man1/
+	install ./man_pages/SDAQ_psim.1 -t /usr/share/man/man1/
+	install ./man_pages/SDAQ_prog.1 -t /usr/share/man/man1/
+	sudo mandb
 uninstall:
+ifeq ($(shell ls /usr/local/bin/SDAQ* > /dev/null 2>&1; echo $$?), 0)
 	rm /usr/local/bin/SDAQ_*
+endif
+ifeq ($(shell ls /usr/share/bash-completion/completions/SDAQ* > /dev/null 2>&1; echo $$?), 0)
 	rm /usr/share/bash-completion/completions/SDAQ*
-.PHONY: all clean delete-the-tree tree
+endif
+ifeq ($(shell ls /usr/share/man/man1/SDAQ* > /dev/null 2>&1; echo $$?), 0)
+	rm /usr/share/man/man1/SDAQ* &&	sudo mandb
+endif
+.PHONY: all clean delete-the-tree tree install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
 
 
