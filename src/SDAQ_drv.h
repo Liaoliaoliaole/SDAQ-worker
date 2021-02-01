@@ -57,7 +57,7 @@ enum Calibration_Point_Data_type_byte{
 };
 // enumerator for payload_type
 enum payload_type{
-/*Messages payload_type. Master -> SDAQ*/
+/* Messages payload_type. Master -> SDAQ */
 	Synchronization_command = 1,
 	Start_command = 2,
 	Stop_command = 3,
@@ -68,13 +68,26 @@ enum payload_type{
 	Write_calibration_Point_Data = 10,
 	Change_SDAQ_baudrate = 11,
 	Configure_Additional_data = 12,
-/*Messages payload_type. SDAQ -> Master*/
+	Query_system_variables = 13,
+	Write_system_variable = 14,
+	//Bootloader related.
+	goto_bootloader = 0x20,
+	Erase_flash = 0x21,
+	Write_to_page_buff = 0x22,
+	Write_page_buff_to_flash = 0x23,
+	Query_flash_data = 0x24,
+	goto_application = 0x25,
+/* Messages payload_type. SDAQ -> Master */
 	Measurement_value = 0x84,
 	Device_status = 0x86,
 	Device_info = 0x88,
 	Calibration_Date = 0x89,
 	Calibration_Point_Data = 0x8a,
 	Uncalibrated_meas = 0x8b,
+	//Bootloader related
+	Bootloader_reply = 0xa0,
+	Page_buff = 0xa1,
+	//Debug message
 	Sync_Info = 0xc0
 };
 

@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 					printf("IEP = 0x%08x\n", *SDAQ_flash.iep);
 				g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
 				
-				iHEX_write(&SDAQ_flash, "./test.hex", NULL);
+				//iHEX_write(&SDAQ_flash, "./test.hex", NULL);
 			}
 			free_rom_data(&SDAQ_flash);
 		}

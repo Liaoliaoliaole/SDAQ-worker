@@ -172,7 +172,7 @@ int iHEX_read(const char *iHEX_file_path, const char *iHEX_file_mem, rom_data *o
 	return last_error;
 }
 
-int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem)
+int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, GString *iHEX_file_mem)
 {
 	int i, retval = EXIT_SUCCESS;
 	unsigned int prev_ext_addr = 0;
@@ -187,8 +187,10 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem
 		return IHEX_ERROR_INVALID_ARGUMENTS;
 	if(!(curr_node = in_ptr->data_blks))
 		return EXIT_FAILURE;
-	//Build iHEX_file_data and add iHEX records to it.
-	iHEX_file_data = g_string_new(NULL);
+	if(iHEX_file_mem)
+		iHEX_file_data = iHEX_file_mem;
+	else 
+	iHEX_file_data = g_string_new(NULL);//Build iHEX_file_data and add iHEX records to it.
 	while(curr_node)
 	{
 		curr_rom_blk = (rom_data_block *)curr_node->data;
@@ -224,12 +226,8 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, char *iHEX_file_mem
 		}
 		else
 			retval = EXIT_FAILURE;
+		g_string_free(iHEX_file_data, TRUE);
 	}
-	else if(iHEX_file_mem)
-	{
-
-	}
-	g_string_free(iHEX_file_data, TRUE);
 	return retval;
 }
 
