@@ -123,10 +123,9 @@ const char * status_byte_dec(unsigned char status_byte,unsigned char field)
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, unsigned short time_seed)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for synchronization measure message
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
@@ -141,10 +140,9 @@ int Sync(int socket_fd, unsigned short time_seed)
 //Request start of measure from the SDAQ device. For all dev_addr=0
 int Start(int socket_fd,unsigned char dev_address)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for start measure message
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
@@ -158,10 +156,9 @@ int Start(int socket_fd,unsigned char dev_address)
 //Request stop of measure from the SDAQ device. For all dev_addr=0
 int Stop(int socket_fd,unsigned char dev_address)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for stop measure message
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
@@ -175,10 +172,9 @@ int Stop(int socket_fd,unsigned char dev_address)
 //request change of device address with the specific serial number.
 int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_address)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for change of device address message
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
@@ -195,10 +191,9 @@ int SetDeviceAddress(int socket_fd,unsigned int dev_SN, unsigned char new_dev_ad
 //request device info. Device answer with 3 messages: Device ID/status, Device Info and Calibration Date.
 int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for device info request command
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
@@ -212,10 +207,9 @@ int QueryDeviceInfo(int socket_fd,unsigned char dev_address)
 
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for Query_Calibration_Data message
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
@@ -231,10 +225,9 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 //Control Configure Additional data. If Device is in measure will transmit raw measurement message
 int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Config)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for "Configure Additional data" command
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
@@ -251,12 +244,11 @@ int Req_Raw_meas(int socket_fd,unsigned char dev_address,const unsigned char Con
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
 	struct tm *date = date_ptr;
 	sdaq_calibration_date *sdaq_cal_date_enc = (sdaq_calibration_date*) frame_tx.data;
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for "Write_calibration_Date" command
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
@@ -279,11 +271,10 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char point_num, unsigned char type)
 {
-	sdaq_can_id *sdaq_id_ptr;
 	struct can_frame frame_tx = {0};
 	sdaq_calibration_points_data *sdaq_cal_point_data_enc = (sdaq_calibration_points_data*) frame_tx.data;
-	sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
-	memset(sdaq_id_ptr, 0, sizeof(sdaq_can_id));
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
 	//construct identifier for "Write_calibration_Date" command
 	sdaq_id_ptr->flags = 4;//set the EFF
 	sdaq_id_ptr->priority = 4;//From the SDAQ White paper
@@ -301,6 +292,69 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 	return 0;
 }
 
+		/*--- SDAQ's Bootloader related functions ---*/
+//Set execution code of SDAQ's uC.
+int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl)
+{
+	struct can_frame frame_tx = {0};
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
+	//construct identifier for "GOTO" command.
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 0;
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = code_reg_fl ? goto_bootloader : goto_application;
+	sdaq_id_ptr->device_addr = dev_address;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+//Erase SDAQ's Flash memory region.
+int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range)
+{
+	struct can_frame frame_tx = {0};
+	sdaq_flash_erase *sdaq_flash_erase_enc = (sdaq_flash_erase*) frame_tx.data;
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
+	//construct identifier for "Erase_flash" command.
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 0;
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Erase_flash;
+	sdaq_id_ptr->device_addr = dev_address;
+	//construct payload
+	frame_tx.can_dlc = sizeof(sdaq_flash_erase);//Payload size
+	sdaq_flash_erase_enc->Start_addr = start_addr;
+	sdaq_flash_erase_enc->End_addr = start_addr + range;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+//Transfer page buffer to Flash memory.
+int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr)
+{
+	struct can_frame frame_tx = {0};
+	sdaq_transfer_buffer *sdaq_transfer_buffer_enc = (sdaq_transfer_buffer*) frame_tx.data;
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
+	//construct identifier for "Write_page_buff_to_flash" command.
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 0;
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Write_page_buff_to_flash;
+	sdaq_id_ptr->device_addr = dev_address;
+	//construct payload
+	frame_tx.can_dlc = sizeof(sdaq_transfer_buffer);//Payload size
+	sdaq_transfer_buffer_enc->addr = addr;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+//Write to page buffer.
+int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data, unsigned char len)
+{
+
+}
 
 /*-----------------------------------------------------------------------------------------------------------------*/
 

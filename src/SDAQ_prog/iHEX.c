@@ -189,8 +189,8 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, GString *iHEX_file_
 		return EXIT_FAILURE;
 	if(iHEX_file_mem)
 		iHEX_file_data = iHEX_file_mem;
-	else 
-	iHEX_file_data = g_string_new(NULL);//Build iHEX_file_data and add iHEX records to it.
+	else //Build iHEX_file_data and add iHEX records to it.
+		iHEX_file_data = g_string_new(NULL);
 	while(curr_node)
 	{
 		curr_rom_blk = (rom_data_block *)curr_node->data;

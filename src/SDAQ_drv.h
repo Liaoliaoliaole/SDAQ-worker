@@ -145,6 +145,26 @@ typedef struct SDAQ_calibration_points_data_Decoder{
 	unsigned char points_num;
 }sdaq_calibration_points_data;
 
+	//--- SDAQ's Bootloader related messages---//
+/* SDAQ's Bootloader response message decoder */
+typedef struct SDAQ_bootloader_response_Decoder{
+	unsigned char error_code;
+	unsigned char command;
+	unsigned char reserved[2];
+	unsigned int IAP_ret;
+}sdaq_bootloader_response;
+
+/* SDAQ's Erase Flash memory message encoder */
+typedef struct SDAQ_Erase_Flash_Encoder{
+	unsigned int Start_addr;
+	unsigned int End_addr;
+}sdaq_flash_erase;
+
+/* SDAQ's transfer page buffer to flash message encoder */
+typedef struct SDAQ_Write_Buffer_Encoder{
+	unsigned int addr;
+}sdaq_transfer_buffer;
+
 //The following RX Decoders used on the pseudo_SDAQ Simulator
 /* SDAQ's CAN Set Device Address message decoder */
 typedef struct pSDAQ_Set_new_address{
@@ -167,9 +187,9 @@ const char * Channel_status_byte_dec(unsigned char status_byte);
 
 				/*Master -> SDAQ Functions*/
 /*All the functions return 0 in success and 1 on failure */
-//Request start of measure from the SDAQ device. For all dev_addr=0
+//Request start of measure from the SDAQ device. For all: dev_addr=0
 int Start(int socket_fd, unsigned char dev_address);
-//Request stop of measure from the SDAQ device. For all dev_addr=0
+//Request stop of measure from the SDAQ device. For all: dev_addr=0
 int Stop(int socket_fd, unsigned char dev_address);
 //Synchronize the SDAQ devices. Requested by broadcast only.
 int Sync(int socket_fd, unsigned short time_seed);
@@ -185,6 +205,16 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit);
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned char channel_num, float point_val, unsigned char Point_num, unsigned char type);
+		/*SDAQ's Bootloader related functions*/
+//Set execution code of SDAQ's uC.
+int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl);
+//Erase SDAQ's Flash memory region.
+int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range);
+//Write to page buffer.
+int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data, unsigned char len);
+//Transfer page buffer to Flash memory.
+int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr);
+
 
 //The following RX Functions used on the pseudo_SDAQ Simulator
 				/*pseudo_SDAQ -> Master Functions*/
