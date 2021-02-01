@@ -13,14 +13,13 @@ _SDAQ_worker()
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
     # The options we'll complete.
-    modes="
-    	  discover \
-          autoconfig \
-          setaddress \
-		  getinfo \
-	      setinfo \
-	      measure \
-	      logging"
+    modes="discover \
+		   autoconfig \
+		   setaddress \
+		   getinfo \
+		   setinfo \
+		   measure \
+		   logging"
 
 	default_opts="-V -h -l"
 

@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 	opterr = 1;
 	while ((c = getopt (argc, argv, "hVlf:")) != -1)
 	{
-		switch (c)
+		switch(c)
 		{
 			case 'h'://Help
 				print_usage(argv[0]);
@@ -101,7 +101,6 @@ int main(int argc, char *argv[])
 				if(SDAQ_flash.iep)
 					printf("IEP = 0x%08x\n", *SDAQ_flash.iep);
 				g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
-				
 				//iHEX_write(&SDAQ_flash, "./test.hex", NULL);
 			}
 			free_rom_data(&SDAQ_flash);

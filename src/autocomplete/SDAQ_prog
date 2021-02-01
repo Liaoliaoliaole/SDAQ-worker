@@ -4,35 +4,29 @@
 #
 _SDAQ_prog()
 {
-    local cur prev firstword ifs_names modes
+	local cur prev firstword ifs_names modes
 
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
+	COMPREPLY=()
+	cur="${COMP_WORDS[COMP_CWORD]}"
+	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
-    # The options we'll complete.
-	modes="upload \
-           download"
-	default_opts="-V -h -l"
+	# The options we'll complete.
+	default_opts="-V -h -l -f"
 
-    # Complete the options
-    case "${COMP_CWORD}" in
-        1)
-            COMPREPLY=( $(compgen -W "${ifs_names} ${default_opts}" -- ${cur}) )
-            ;;
+	# Complete the options
+	case "${COMP_CWORD}" in
+		1)
+			COMPREPLY=( $(compgen -W "${ifs_names} ${default_opts}" -- ${cur}) )
+			;;
 		2)
-			COMPREPLY=( $(compgen -W "Amount_of_pSDAQ ${default_opts}" -- ${cur}) )
-            ;;
-        3)
+			COMPREPLY=( $(compgen -W "SDAQ_address ${default_opts}" -- ${cur}) )
+			;;
+		*)
 			COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )
-            ;;
-        *)
-            COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )
-            ;;
-    esac
-
+			;;
+	esac
     return 0
 }
 
