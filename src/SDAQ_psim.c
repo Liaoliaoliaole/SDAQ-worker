@@ -126,6 +126,11 @@ int main(int argc, char *argv[])
 		printf("!!! CAN-IF and/or Num_of_pSDAQ argument Missing !!!\n");
 		exit(EXIT_FAILURE);
 	}
+	if(strlen(argv[optind]) >= IFNAMSIZ)//Check length of CAN-if name
+	{
+		fprintf(stderr, "CAN-IF name too big (>=%d)\n", IFNAMSIZ);
+		exit(EXIT_FAILURE);
+	}
 	//init pseudo random generator
 	srand(time(NULL));
 

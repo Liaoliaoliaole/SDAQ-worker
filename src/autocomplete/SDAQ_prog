@@ -4,11 +4,10 @@
 #
 _SDAQ_prog()
 {
-	local cur prev firstword ifs_names modes
+	local cur ifs_names
 
 	COMPREPLY=()
 	cur="${COMP_WORDS[COMP_CWORD]}"
-	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
@@ -23,6 +22,9 @@ _SDAQ_prog()
 		2)
 			COMPREPLY=( $(compgen -W "SDAQ_address ${default_opts}" -- ${cur}) )
 			;;
+		3)
+			COMPREPLY=()
+			;;
 		*)
 			COMPREPLY=( $(compgen -W "${default_opts}" -- ${cur}) )
 			;;
@@ -31,4 +33,4 @@ _SDAQ_prog()
 }
 
 # Bind completion to SDAQ_psim
-complete -o filenames -o nospace -o bashdefault -o default -F _SDAQ_prog SDAQ_prog
+complete -o default -F _SDAQ_prog SDAQ_prog

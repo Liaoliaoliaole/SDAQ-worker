@@ -157,13 +157,19 @@ int main(int argc, char *argv[])
 		printf("!!! CAN-IF and/or MODE argument Missing !!!\n");
 		exit(EXIT_FAILURE);
 	}
+	//Reference CANif_name and check the length of it.
+	usr_opt.CANif_name = argv[optind];
+	if(strlen(usr_opt.CANif_name) >= IFNAMSIZ)
+	{
+		fprintf(stderr, "CAN-IF name too big (>=%d)\n", IFNAMSIZ);
+		exit(EXIT_FAILURE);
+	}
 	//CAN Socket Opening
 	if((socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
 	{
 		perror("Error while opening socket");
 		exit(EXIT_FAILURE);
 	}
-	usr_opt.CANif_name = argv[optind];
 	//Link interface name to socket
 	strcpy(ifr.ifr_name, usr_opt.CANif_name); // get value from CAN-IF arguments
 	if(ioctl(socket_num, SIOCGIFINDEX, &ifr))
