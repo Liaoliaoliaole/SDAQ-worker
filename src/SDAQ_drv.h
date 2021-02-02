@@ -211,7 +211,7 @@ int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl);
 //Erase SDAQ's Flash memory region.
 int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range);
 //Write to page buffer.
-int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data, unsigned char len);
+int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data);
 //Transfer page buffer to Flash memory.
 int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr);
 

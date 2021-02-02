@@ -61,7 +61,7 @@ int iHEX_read(const char *iHEX_file_path, const char *iHEX_file_mem, rom_data *m
  * Function that create and write a Intel hex with data from (rom_data) *mem_table.
  * 	file_path or iHEX_file_mem set the destination.
  * 	  Only one destination allowed to be set, otherwise an error will be occur.
- *    In case of call with iHEX_file_mem, The iHEX_file_mem must be initialized. 
+ *    In case of call with iHEX_file_mem, The iHEX_file_mem must be initialized.
  * 	Function will return EXIT_SUCCESS on success, or EXIT_FAILURE at failure.
 */
 int iHEX_write(rom_data *mem_table, const char *iHEX_file_path, GString *iHEX_file_mem);

@@ -13,7 +13,7 @@ _SDAQ_prog()
 	#Network interfaces names
 	ifs_names=$(ls "/sys/class/net")
 	# The options we'll complete.
-	default_opts="-V -h -l -f"
+	default_opts="-V -h -l -i -s"
 
 	# Complete the options
 	case "${COMP_CWORD}" in
@@ -31,4 +31,4 @@ _SDAQ_prog()
 }
 
 # Bind completion to SDAQ_psim
-complete -F _SDAQ_prog SDAQ_prog
+complete -o filenames -o nospace -o bashdefault -o default -F _SDAQ_prog SDAQ_prog

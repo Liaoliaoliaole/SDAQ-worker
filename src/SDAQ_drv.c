@@ -351,9 +351,27 @@ int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned in
 	return 0;
 }
 //Write to page buffer.
-int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data, unsigned char len)
+int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data)
 {
+	struct can_frame frame_tx = {0};
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 
+	//construct identifier for "Write_to_page_buff" command.
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 0;
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Write_to_page_buff;
+	sdaq_id_ptr->device_addr = dev_address;
+	frame_tx.can_dlc = 8;//Maximum Payload size
+	//Load data to payload and send
+	do{
+		memcpy(frame_tx.data, data, frame_tx.can_dlc);
+		if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+			return 1;
+		sdaq_id_ptr->channel_num++;
+		data += frame_tx.can_dlc;
+	}while(sdaq_id_ptr->channel_num<32);
+	return 0;
 }
 
 /*-----------------------------------------------------------------------------------------------------------------*/

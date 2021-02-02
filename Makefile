@@ -1,28 +1,35 @@
 CC=gcc -O3
-CFLAGS= -std=c99 -Wall -g3 #-Wextra
+CFLAGS= -std=c99 -Wall #-g3 #-Wextra
 LDLIBS=-lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0)
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src
-DEP=$(WORK_dir)/Discover_and_autoconfig.o \
-    $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o \
-    $(WORK_dir)/getinfo.o $(WORK_dir)/setinfo.o\
-    $(WORK_dir)/SDAQ_drv.o \
-    $(WORK_dir)/SDAQ_xml.o \
-    $(WORK_dir)/SDAQ_psim_UI.o \
-    $(WORK_dir)/CANif_discovery.o \
-	$(WORK_dir)/iHEX.o
+DEPs_SDAQ_worker=$(WORK_dir)/Discover_and_autoconfig.o \
+				 $(WORK_dir)/Measure.o $(WORK_dir)/Logging.o \
+				 $(WORK_dir)/getinfo.o $(WORK_dir)/setinfo.o\
+				 $(WORK_dir)/SDAQ_drv.o \
+				 $(WORK_dir)/SDAQ_xml.o \
+				 $(WORK_dir)/SDAQ_psim_UI.o \
+				 $(WORK_dir)/CANif_discovery.o
+
+DEPs_SDAQ_psim=$(WORK_dir)/SDAQ_drv.o \
+			   $(WORK_dir)/SDAQ_psim_UI.o \
+			   $(WORK_dir)/CANif_discovery.o
+
+DEPs_SDAQ_prog=$(WORK_dir)/SDAQ_drv.o \
+			   $(WORK_dir)/CANif_discovery.o \
+			   $(WORK_dir)/iHEX.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim $(BUILD_dir)/SDAQ_prog
 install:install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
 
-$(BUILD_dir)/SDAQ_worker: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
+$(BUILD_dir)/SDAQ_worker: $(DEPs_SDAQ_worker) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(BUILD_dir)/SDAQ_psim: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_psim.c
+$(BUILD_dir)/SDAQ_psim: $(DEPs_SDAQ_psim) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_psim.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
-$(BUILD_dir)/SDAQ_prog: $(DEP) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_prog/*.h $(SRC_dir)/SDAQ_prog/SDAQ_prog.c
+$(BUILD_dir)/SDAQ_prog: $(DEPs_SDAQ_prog) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_prog/*.h $(SRC_dir)/SDAQ_prog/SDAQ_prog.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
 
 #Dependents for binaries
@@ -63,12 +70,15 @@ delete-the-tree:
 clean:
 	rm -f $(WORK_dir)/* $(BUILD_dir)/*
 install-SDAQ_worker:
+	@echo "\nInstallation of SDAQ_worker..."
 	install $(BUILD_dir)/SDAQ_worker -t /usr/local/bin/
 	install $(SRC_dir)/autocomplete/SDAQ_worker -t /usr/share/bash-completion/completions/
 install-SDAQ_psim:
+	@echo "\nInstallation of SDAQ_psim..."
 	install $(BUILD_dir)/SDAQ_psim -t /usr/local/bin/
 	install $(SRC_dir)/autocomplete/SDAQ_psim -t /usr/share/bash-completion/completions/
 install-SDAQ_prog:
+	@echo "\nInstallation of SDAQ_prog..."
 	install $(BUILD_dir)/SDAQ_prog -t /usr/local/bin/
 	install $(SRC_dir)/autocomplete/SDAQ_prog -t /usr/share/bash-completion/completions/
 install-manuals:
@@ -78,13 +88,16 @@ install-manuals:
 	sudo mandb
 uninstall:
 ifeq ($(shell ls /usr/local/bin/SDAQ* > /dev/null 2>&1; echo $$?), 0)
-	rm /usr/local/bin/SDAQ_*
+	@echo "Uninstall SDAQ_worker's binaries..."
+	@rm /usr/local/bin/SDAQ_*
 endif
 ifeq ($(shell ls /usr/share/bash-completion/completions/SDAQ* > /dev/null 2>&1; echo $$?), 0)
-	rm /usr/share/bash-completion/completions/SDAQ*
+	@echo "Uninstall SDAQ_worker's completion scripts..."
+	@rm /usr/share/bash-completion/completions/SDAQ*
 endif
 ifeq ($(shell ls /usr/share/man/man1/SDAQ* > /dev/null 2>&1; echo $$?), 0)
-	rm /usr/share/man/man1/SDAQ* &&	sudo mandb
+	@echo "Uninstall SDAQ_worker's manuals..."
+	@rm /usr/share/man/man1/SDAQ* && sudo mandb
 endif
 .PHONY: all clean delete-the-tree tree install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
 
