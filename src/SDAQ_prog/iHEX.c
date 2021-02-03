@@ -120,8 +120,7 @@ int iHEX_read(const char *iHEX_file_path, const char *iHEX_file_mem, rom_data *o
 	{
 		if(!(iHEX_fp = fopen(iHEX_file_path, "r")))
 		{
-			if(Print_error)
-				fprintf(stderr, "%s\n", iHEX_strerror(IHEX_ERROR_FILE));
+			fprintf(stderr, "%s\n", iHEX_strerror(IHEX_ERROR_FILE));
 			return IHEX_ERROR_FILE;
 		}
 		fseek(iHEX_fp, 0, SEEK_END);//Go to end of file.

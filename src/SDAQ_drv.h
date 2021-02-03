@@ -91,6 +91,11 @@ enum payload_type{
 	Sync_Info = 0xc0
 };
 
+enum SDAQ_goto_code{
+	application = 0,
+	bootloader = 1
+};
+
 #pragma pack(push, 1)//use pragma pack() to pack the following structs to 1 byte size (aka no zero padding)
 
 /* SDAQ's CAN identifier encoder/decoder */
