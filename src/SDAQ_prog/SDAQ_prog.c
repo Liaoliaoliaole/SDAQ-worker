@@ -14,8 +14,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
-#define VERSION "0.1" /*Release Version of SDAQ_prog*/
+#define RETRY_LIMIT 2 /*Amount of failure CANBUS message receptions*/
+#define VERSION "0.5" /*Release Version of SDAQ_prog*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,7 +177,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	struct can_filter RX_filter = {0};
 	struct can_frame frame_rx;
 	sdaq_can_id *sdaq_id_dec;
-	int CAN_socket_num, RX_bytes, retval = EXIT_SUCCESS;
+	int CAN_socket_num, RX_bytes, retry_times = 0, retval = EXIT_SUCCESS;
 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
@@ -234,6 +234,18 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		if(RX_bytes==sizeof(frame_rx))
 		{
 			printf("Msg received!!!\n");
+			
+			retry_times = 0;
+		}
+		else
+		{
+			retry_times++;
+			if(retry_times >= RETRY_LIMIT)
+			{
+				fprintf(stderr, "Error: SDAQ not responding!!!\n");
+				run = FALSE;
+				retval = EXIT_FAILURE;
+			}			
 		}
 	}
 /*
