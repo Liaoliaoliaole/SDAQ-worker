@@ -170,7 +170,7 @@ typedef struct SDAQ_Write_Buffer_Encoder{
 	unsigned int addr;
 }sdaq_transfer_buffer;
 
-//The following RX Decoders used on the pseudo_SDAQ Simulator
+	//--- The following RX Decoders used on the pseudo_SDAQ Simulator ---//
 /* SDAQ's CAN Set Device Address message decoder */
 typedef struct pSDAQ_Set_new_address{
 	unsigned int  dev_sn;

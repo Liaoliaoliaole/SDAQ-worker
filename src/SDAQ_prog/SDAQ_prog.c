@@ -170,14 +170,19 @@ void print_usage(char *prog_name)
 
 int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool Print_error)
 {
+	int retry_times = 0, retval = EXIT_SUCCESS;
 	//Variables for Socket CAN
 	struct timeval tv = {0};
 	struct ifreq ifr = {0};
 	struct sockaddr_can addr = {0};
 	struct can_filter RX_filter = {0};
 	struct can_frame frame_rx;
+	int CAN_socket_num, RX_bytes;
+	//SDAQ message Decoders
 	sdaq_can_id *sdaq_id_dec;
-	int CAN_socket_num, RX_bytes, retry_times = 0, retval = EXIT_SUCCESS;
+	sdaq_status *status_dec;
+	sdaq_bootloader_response *sdaq_bl_resp_dec;
+
 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
@@ -227,15 +232,45 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	}
 
 	//SDAQ_prog's FSM
+	sdaq_id_dec = (sdaq_can_id *)&frame_rx.can_id;
+	status_dec = (sdaq_status *)frame_rx.data;
+	sdaq_bl_resp_dec = (sdaq_bootloader_response *)frame_rx.data;
 	SDAQ_goto(CAN_socket_num, SDAQ_addr, bootloader);
 	while(run)
 	{
 		RX_bytes=read(CAN_socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
 		{
-			printf("Msg received!!!\n");
-			
-			retry_times = 0;
+			switch(sdaq_id_dec->payload_type)
+			{
+				case Device_status:
+					printf("Dev_type = %s(%d) Status = 0x%02X\n", dev_type_str[status_dec->dev_type], status_dec->dev_type, status_dec->status);
+					if(status_dec->status == 0x80)//bootloader, no error
+					{
+						SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, 0, 0);
+						retry_times = 0;
+					}
+					break;
+				case Bootloader_reply:
+					printf("Bootloader_reply:\n");
+					printf("error_code = %d command = 0x%X, IAP_ret = 0x%X\n", sdaq_bl_resp_dec->error_code,
+																			 sdaq_bl_resp_dec->command,
+																			 sdaq_bl_resp_dec->IAP_ret);
+					retry_times = 0;
+					break;
+				case Page_buff:
+					retry_times = 0;
+					break;
+				default:
+					retry_times++;
+					if(retry_times >= RETRY_LIMIT)
+					{
+						fprintf(stderr, "Error: SDAQ's bootloader not responding!!!\n");
+						run = FALSE;
+						retval = EXIT_FAILURE;
+					}
+			}
+
 		}
 		else
 		{
@@ -245,7 +280,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 				fprintf(stderr, "Error: SDAQ not responding!!!\n");
 				run = FALSE;
 				retval = EXIT_FAILURE;
-			}			
+			}
 		}
 	}
 /*
