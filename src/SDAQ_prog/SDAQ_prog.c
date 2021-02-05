@@ -14,8 +14,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#define RETRY_LIMIT 2 /*Amount of failure CANBUS message receptions*/
 #define VERSION "0.5" /*Release Version of SDAQ_prog*/
+
+#define status_in_Bootloader 0x80
+#define RETRY_LIMIT 2 /*Amount of failure CANBUS message receptions*/
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -170,7 +173,18 @@ void print_usage(char *prog_name)
 
 int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool Print_error)
 {
+	enum SDAQ_prog_FSM_states{
+		SDAQ_flash_erase,
+		SDAQ_write_to_page,
+		SDAQ_transfer_page,
+		SDAQ_cmp_resp,
+		SDAQ_prog_done
+	};
+	unsigned char FSM_curr_state = do_flash_erase;
+	unsigned char cmp_buff[256];
 	int retry_times = 0, retval = EXIT_SUCCESS;
+	GList *SDAQ_flash_blks_list;
+	rom_data_block *SDAQ_flash_blk;
 	//Variables for Socket CAN
 	struct timeval tv = {0};
 	struct ifreq ifr = {0};
@@ -187,6 +201,11 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
 		return EXIT_FAILURE;
+	//Load and check first SDAQ_flash data block.
+	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
+		return EXIT_FAILURE;
+	SDAQ_flash_blk = (rom_data_block*)SDAQ_flash_blks_list->data;
+
 	//CAN Socket Opening
 	if((CAN_socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
 	{
@@ -241,24 +260,35 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		RX_bytes=read(CAN_socket_num, &frame_rx, sizeof(frame_rx));
 		if(RX_bytes==sizeof(frame_rx))
 		{
-			switch(sdaq_id_dec->payload_type)
+			switch(sdaq_id_dec->payload_type)//Check the received message type.
 			{
 				case Device_status:
-					printf("Dev_type = %s(%d) Status = 0x%02X\n", dev_type_str[status_dec->dev_type], status_dec->dev_type, status_dec->status);
-					if(status_dec->status == 0x80)//bootloader, no error
+					if(status_dec->status == status_in_Bootloader)
 					{
-						SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, 0, 0);
+						if(FSM_curr_state == SDAQ_flash_erase)
+							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_flash_blk->start_addr, SDAQ_flash_blk->blk_data->len);
 						retry_times = 0;
 					}
 					break;
 				case Bootloader_reply:
-					printf("Bootloader_reply:\n");
-					printf("error_code = %d command = 0x%X, IAP_ret = 0x%X\n", sdaq_bl_resp_dec->error_code,
-																			 sdaq_bl_resp_dec->command,
-																			 sdaq_bl_resp_dec->IAP_ret);
+					if(!sdaq_bl_resp_dec->error_code)
+					{
+						if(FSM_curr_state == SDAQ_flash_erase)	
+							FSM_curr_state = write_to_page;
+					}
+					else
+					{
+						printf("Bootloader reply with Error:\n");
+						printf("error_code = %d command = 0x%X, IAP_ret = 0x%X\n", sdaq_bl_resp_dec->error_code,
+																				   sdaq_bl_resp_dec->command,
+																				   sdaq_bl_resp_dec->IAP_ret);
+						run = FALSE;
+						retval = EXIT_FAILURE;
+					}
 					retry_times = 0;
 					break;
 				case Page_buff:
+					
 					retry_times = 0;
 					break;
 				default:
