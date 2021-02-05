@@ -180,7 +180,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		SDAQ_cmp_resp,
 		SDAQ_prog_done
 	};
-	unsigned char FSM_curr_state = do_flash_erase;
+	unsigned char FSM_curr_state = SDAQ_flash_erase;
 	unsigned char cmp_buff[256];
 	int retry_times = 0, retval = EXIT_SUCCESS;
 	GList *SDAQ_flash_blks_list;
@@ -273,8 +273,8 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 				case Bootloader_reply:
 					if(!sdaq_bl_resp_dec->error_code)
 					{
-						if(FSM_curr_state == SDAQ_flash_erase)	
-							FSM_curr_state = write_to_page;
+						if(FSM_curr_state == SDAQ_flash_erase)
+							FSM_curr_state = SDAQ_write_to_page;
 					}
 					else
 					{
@@ -288,7 +288,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					retry_times = 0;
 					break;
 				case Page_buff:
-					
+
 					retry_times = 0;
 					break;
 				default:
