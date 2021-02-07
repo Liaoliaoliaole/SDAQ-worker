@@ -16,7 +16,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define VERSION "0.5" /*Release Version of SDAQ_prog*/
 
-#define status_in_Bootloader 0x80
+#define SDAQ_in_Bootloader 0x80
 #define RETRY_LIMIT 2 /*Amount of failure CANBUS message receptions*/
 
 
@@ -201,6 +201,16 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
 		return EXIT_FAILURE;
+
+	printf("SDAQ_flash's range length (17196) = %d\n", iHEX_taddr_range(SDAQ_flash));
+	if(SDAQ_flash->cs)
+		printf("CS = 0x%04x\n", *SDAQ_flash->cs);
+	if(SDAQ_flash->ip)
+		printf("IP = 0x%04x\n", *SDAQ_flash->ip);
+	if(SDAQ_flash->iep)
+		printf("IEP = 0x%08x\n", *SDAQ_flash->iep);
+	g_list_foreach(SDAQ_flash->data_blks, print_data_blks, DATA_PRINT_OFF);
+
 	//Load and check first SDAQ_flash data block.
 	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
 		return EXIT_FAILURE;
@@ -263,10 +273,10 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 			switch(sdaq_id_dec->payload_type)//Check the received message type.
 			{
 				case Device_status:
-					if(status_dec->status == status_in_Bootloader)
+					if(status_dec->status == SDAQ_in_Bootloader)
 					{
 						if(FSM_curr_state == SDAQ_flash_erase)
-							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_flash_blk->start_addr, SDAQ_flash_blk->blk_data->len);
+							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_flash_blk->start_addr, iHEX_taddr_range(SDAQ_flash));
 						retry_times = 0;
 					}
 					break;
@@ -288,7 +298,10 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					retry_times = 0;
 					break;
 				case Page_buff:
-
+					memcpy(cmp_buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc);
+					if(sdaq_id_dec->channel_num == 32)//Last transmitted frame.
+					{
+					}
 					retry_times = 0;
 					break;
 				default:
@@ -313,15 +326,6 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 			}
 		}
 	}
-/*
-	if(SDAQ_flash->cs)
-		printf("CS = 0x%04x\n", *SDAQ_flash->cs);
-	if(SDAQ_flash->ip)
-		printf("IP = 0x%04x\n", *SDAQ_flash->ip);
-	if(SDAQ_flash->iep)
-		printf("IEP = 0x%08x\n", *SDAQ_flash->iep);
-	g_list_foreach(SDAQ_flash->data_blks, print_data_blks, DATA_PRINT_OFF);
-*/
 	close(CAN_socket_num);//Close CAN_socket
 	return retval;
 }

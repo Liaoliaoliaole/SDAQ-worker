@@ -325,7 +325,7 @@ int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int star
 	//construct payload
 	frame_tx.can_dlc = sizeof(sdaq_flash_erase);//Payload size
 	sdaq_flash_erase_enc->Start_addr = start_addr;
-	sdaq_flash_erase_enc->End_addr = start_addr + range;
+	sdaq_flash_erase_enc->End_addr = start_addr + (range-1);
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;

@@ -234,6 +234,30 @@ int iHEX_write(rom_data *in_ptr, const char *iHEX_file_path, GString *iHEX_file_
 	return retval;
 }
 
+unsigned int iHEX_taddr_range(const rom_data *mem_table)
+{
+	unsigned int cnt = 0;
+	GList *blks_list_node;
+	rom_data_block *curr_blk_data, *prev_blk_data = NULL;
+
+	if(!mem_table)
+		return 0;
+	blks_list_node = mem_table->data_blks;
+	while(blks_list_node)
+	{
+		curr_blk_data = (rom_data_block*)blks_list_node->data;
+		if(prev_blk_data)
+		{
+			if(prev_blk_data->blk_data->len != (curr_blk_data->start_addr - prev_blk_data->start_addr))
+				cnt += curr_blk_data->start_addr - prev_blk_data->start_addr - prev_blk_data->blk_data->len;
+		}
+		cnt += curr_blk_data->blk_data->len;
+		blks_list_node = g_list_next(blks_list_node);
+		prev_blk_data = curr_blk_data;
+	}
+	return cnt;
+}
+
 const char * iHEX_strerror(unsigned int error_num)
 {
 	if(error_num>IHEX_ERROR_MAX_NUM)
