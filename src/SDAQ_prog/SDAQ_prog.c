@@ -201,7 +201,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
 		return EXIT_FAILURE;
-
+/*
 	printf("SDAQ_flash's range length (17196) = %d\n", iHEX_taddr_range(SDAQ_flash));
 	if(SDAQ_flash->cs)
 		printf("CS = 0x%04x\n", *SDAQ_flash->cs);
@@ -210,7 +210,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	if(SDAQ_flash->iep)
 		printf("IEP = 0x%08x\n", *SDAQ_flash->iep);
 	g_list_foreach(SDAQ_flash->data_blks, print_data_blks, DATA_PRINT_OFF);
-
+*/
 	//Load and check first SDAQ_flash data block.
 	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
 		return EXIT_FAILURE;
@@ -223,7 +223,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		return EXIT_FAILURE;
 	}
 	//Link interface name to socket
-	strcpy(ifr.ifr_name, CAN_IF_name); // get value from CAN-IF arguments
+	strcpy(ifr.ifr_name, CAN_IF_name);
 	if(ioctl(CAN_socket_num, SIOCGIFINDEX, &ifr))
 	{
 		perror("CAN-IF");
@@ -276,7 +276,10 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					if(status_dec->status == SDAQ_in_Bootloader)
 					{
 						if(FSM_curr_state == SDAQ_flash_erase)
+						{
+							
 							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_flash_blk->start_addr, iHEX_taddr_range(SDAQ_flash));
+						}
 						retry_times = 0;
 					}
 					break;
@@ -298,11 +301,20 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					retry_times = 0;
 					break;
 				case Page_buff:
-					memcpy(cmp_buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc);
-					if(sdaq_id_dec->channel_num == 32)//Last transmitted frame.
+					if(memcmp(cmp_buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc))
 					{
+						fprintf(stderr, "SDAQ's flash verification error!!!\n");
+						run = FALSE;
+						retval = EXIT_FAILURE;
 					}
-					retry_times = 0;
+					else
+					{
+						if(FSM_curr_state == SDAQ_write_to_page)
+						{
+							
+						}
+						retry_times = 0;
+					}
 					break;
 				default:
 					retry_times++;
