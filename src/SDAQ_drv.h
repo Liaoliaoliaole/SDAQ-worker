@@ -23,6 +23,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define PROTOCOL_ID 0x35
 
+#define PAGE_SIZE 256
+
 extern const char *unit_str[];
 extern const char *dev_type_str[];
 extern const char *dev_status_str[][8];
@@ -215,7 +217,7 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl);
 //Erase SDAQ's Flash memory region.
 int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range);
-//Write to page buffer.
+//Write to page buffer. Data must be PAGE_SIZE bytes long.
 int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data);
 //Transfer page buffer to Flash memory.
 int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr);

@@ -48,7 +48,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 static volatile _Bool run = TRUE;
 
 //Application functions
-int SDAQ_prog(char *CAN_IF, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool Print_error);
+int SDAQ_prog(char *CAN_IF, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool report);
 void print_usage(char *prog_name);//Print the usage manual
 //Handler function for quit signals
 inline static void quit_signal_handler(int signum)
@@ -171,20 +171,53 @@ void print_usage(char *prog_name)
 	return;
 }
 
-int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool Print_error)
+unsigned int SDAQ_get_start_addr(rom_data *SDAQ_flash)
+{
+	GList *SDAQ_flash_blks_list;
+	rom_data_block *SDAQ_flash_blk;
+
+	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
+		return EXIT_FAILURE;
+	SDAQ_flash_blk = (rom_data_block*)SDAQ_flash_blks_list->data;
+	return SDAQ_flash_blk->start_addr;
+}
+
+/*
+ * Function that copy PAGE_SIZE amount of bytes from rom_data's first block to buff_out, started from last_addr position.
+ * Return: Zero if data remain in rom_data's first block, one if all are copied, or negative one on error;
+ */
+int SDAQ_get_page(rom_data *SDAQ_flash, unsigned char *buff_out, unsigned int last_addr)
+{
+	GList *SDAQ_flash_blks_list;
+	rom_data_block *SDAQ_flash_blk;
+	GByteArray *blk_data;
+
+	//Checks
+	if(!SDAQ_flash || !buff_out)
+		return -1;
+	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
+		return -1;
+
+	SDAQ_flash_blk = (rom_data_block*)SDAQ_flash_blks_list->data;
+	blk_data = SDAQ_flash_blk->blk_data;
+	if(last_addr < SDAQ_flash_blk->start_addr)
+		return -1;
+
+	last_addr -= SDAQ_flash_blk->start_addr;
+	memcpy(buff_out, blk_data->data+last_addr, PAGE_SIZE);
+	return last_addr < blk_data->len ? 0 : 1;
+}
+
+int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool report)
 {
 	enum SDAQ_prog_FSM_states{
 		SDAQ_flash_erase,
-		SDAQ_write_to_page,
-		SDAQ_transfer_page,
-		SDAQ_cmp_resp,
+		SDAQ_flash_prog,
+		SDAQ_goto_app,
 		SDAQ_prog_done
 	};
-	unsigned char FSM_curr_state = SDAQ_flash_erase;
-	unsigned char cmp_buff[256];
-	int retry_times = 0, retval = EXIT_SUCCESS;
-	GList *SDAQ_flash_blks_list;
-	rom_data_block *SDAQ_flash_blk;
+	unsigned int sdaq_page_addr;
+	unsigned char FSM_state = SDAQ_flash_erase, buff[PAGE_SIZE], retry_times = 0;
 	//Variables for Socket CAN
 	struct timeval tv = {0};
 	struct ifreq ifr = {0};
@@ -211,10 +244,9 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		printf("IEP = 0x%08x\n", *SDAQ_flash->iep);
 	g_list_foreach(SDAQ_flash->data_blks, print_data_blks, DATA_PRINT_OFF);
 */
-	//Load and check first SDAQ_flash data block.
-	if(!(SDAQ_flash_blks_list = SDAQ_flash->data_blks))
+	//Check if SDAQ_flash have data block.
+	if(!SDAQ_flash->data_blks)
 		return EXIT_FAILURE;
-	SDAQ_flash_blk = (rom_data_block*)SDAQ_flash_blks_list->data;
 
 	//CAN Socket Opening
 	if((CAN_socket_num = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0)
@@ -260,10 +292,12 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 		return EXIT_FAILURE;
 	}
 
-	//SDAQ_prog's FSM
+	//Initialize SDAQ related variables
 	sdaq_id_dec = (sdaq_can_id *)&frame_rx.can_id;
 	status_dec = (sdaq_status *)frame_rx.data;
 	sdaq_bl_resp_dec = (sdaq_bootloader_response *)frame_rx.data;
+	sdaq_page_addr = SDAQ_get_start_addr(SDAQ_flash);
+	//SDAQ_prog's FSM
 	SDAQ_goto(CAN_socket_num, SDAQ_addr, bootloader);
 	while(run)
 	{
@@ -275,10 +309,14 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 				case Device_status:
 					if(status_dec->status == SDAQ_in_Bootloader)
 					{
-						if(FSM_curr_state == SDAQ_flash_erase)
+						if(FSM_state == SDAQ_flash_erase)
 						{
-							
-							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_flash_blk->start_addr, iHEX_taddr_range(SDAQ_flash));
+							if(report)
+							{
+								printf("Erase SDAQ's Flash... ");
+								fflush(stdout);
+							}
+							SDAQ_Erase_flash(CAN_socket_num, SDAQ_addr, sdaq_page_addr, iHEX_taddr_range(SDAQ_flash));
 						}
 						retry_times = 0;
 					}
@@ -286,35 +324,62 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 				case Bootloader_reply:
 					if(!sdaq_bl_resp_dec->error_code)
 					{
-						if(FSM_curr_state == SDAQ_flash_erase)
-							FSM_curr_state = SDAQ_write_to_page;
+						if(FSM_state == SDAQ_flash_erase)
+						{
+							if(report)
+							{
+								printf("Okay\nProgram SDAQ's Flash");
+								fflush(stdout);
+							}
+							FSM_state = SDAQ_flash_prog;
+						}
+						if(FSM_state == SDAQ_goto_app)
+						{
+							if(report)
+								printf("Okay\n");
+							SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
+						}
+						if(FSM_state == SDAQ_flash_prog)
+						{
+							if(SDAQ_get_page(SDAQ_flash, buff, sdaq_page_addr))
+								FSM_state = SDAQ_goto_app;
+							if(!SDAQ_Write_page_buff(CAN_socket_num, SDAQ_addr, buff))
+							{
+								if(report)
+								{
+									putchar('.');
+									fflush(stdout);
+								}
+								SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, sdaq_page_addr);
+								sdaq_page_addr += PAGE_SIZE;
+							}
+							else
+							{
+								fprintf(stderr, " Error at SDAQ flash's page loading!!!\n");
+								run = FALSE;
+							}
+						}
 					}
 					else
 					{
-						printf("Bootloader reply with Error:\n");
+						fprintf(stderr, " Bootloader reply with Error!!!\n");
+						/*
 						printf("error_code = %d command = 0x%X, IAP_ret = 0x%X\n", sdaq_bl_resp_dec->error_code,
 																				   sdaq_bl_resp_dec->command,
 																				   sdaq_bl_resp_dec->IAP_ret);
+						*/
 						run = FALSE;
-						retval = EXIT_FAILURE;
 					}
 					retry_times = 0;
 					break;
 				case Page_buff:
-					if(memcmp(cmp_buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc))
+					if(memcmp(buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc))
 					{
-						fprintf(stderr, "SDAQ's flash verification error!!!\n");
+						fprintf(stderr, "Error: SDAQ's flash verification!!!\n");
 						run = FALSE;
-						retval = EXIT_FAILURE;
 					}
 					else
-					{
-						if(FSM_curr_state == SDAQ_write_to_page)
-						{
-							
-						}
 						retry_times = 0;
-					}
 					break;
 				default:
 					retry_times++;
@@ -322,10 +387,8 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					{
 						fprintf(stderr, "Error: SDAQ's bootloader not responding!!!\n");
 						run = FALSE;
-						retval = EXIT_FAILURE;
 					}
 			}
-
 		}
 		else
 		{
@@ -334,10 +397,9 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 			{
 				fprintf(stderr, "Error: SDAQ not responding!!!\n");
 				run = FALSE;
-				retval = EXIT_FAILURE;
 			}
 		}
 	}
 	close(CAN_socket_num);//Close CAN_socket
-	return retval;
+	return FSM_state != SDAQ_prog_done ? EXIT_FAILURE : EXIT_SUCCESS;
 }

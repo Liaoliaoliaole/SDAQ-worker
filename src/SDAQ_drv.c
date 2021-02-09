@@ -366,6 +366,7 @@ int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char
 	//Load data to payload and send
 	do{
 		memcpy(frame_tx.data, data, frame_tx.can_dlc);
+		usleep(1000);//Delay to prevent FIFO overflow.
 		if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 			return 1;
 		sdaq_id_ptr->channel_num++;
