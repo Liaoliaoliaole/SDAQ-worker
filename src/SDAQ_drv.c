@@ -87,6 +87,9 @@ const char *type_of_point_str[]={
 	"C3"
 };
 
+const char DEVID_indexer_str[] = "@DeviceId@";
+const char REV_indexer_str[] = "@Revision@";
+
 //Decoder for the status byte field from "Measure" message
 const char * Channel_status_byte_dec(unsigned char status_byte)
 {

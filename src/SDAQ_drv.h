@@ -34,6 +34,10 @@ extern const char *type_of_point_str[];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;
+
+extern const char DEVID_indexer_str[];
+extern const char REV_indexer_str[];
+
 // enumerator for Device Status byte
 enum status_byte{
 	State = 0,

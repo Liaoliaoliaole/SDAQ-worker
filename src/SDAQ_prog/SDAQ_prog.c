@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 {
 	_Bool Silent = FALSE, fl_stdin = FALSE;
 	char *iHEX_file_path = NULL, *CAN_if_name = NULL;
-	unsigned char SDAQ_addr;
+	unsigned char SDAQ_addr, *iHEX_dev_type, *iHEX_rev;
 	GString *iHEX_file_mem;
 	rom_data SDAQ_flash = {0};
 	//Option parsing variables
@@ -140,9 +140,33 @@ int main(int argc, char *argv[])
 		retval = iHEX_read(iHEX_file_path, NULL, &SDAQ_flash, !Silent);
 	else
 		fprintf(stderr, "File path is undefined!!!\n");
-
+/*
+	if(!(iHEX_dev_type = memmem()) ||
+	   !(iHEX_rev = memmem()))
+	{
+		fprintf(stderr, "No device type and/or revision reference found!!!\n");
+		retval = EXIT_FAILURE;
+	}
+	else
+	{
+		iHEX_dev_type += strlen(DEVID_indexer_str);
+		iHEX_rev += strlen(REV_indexer_str);
+		if(!dev_type_str[*iHEX_dev_type])
+		{
+			fprintf(stderr, "Device type from iHEX file in Unknown!!!\n");
+			retval = EXIT_FAILURE;
+		}
+	}
+*/
 	if(!retval)
-		retval = SDAQ_prog(CAN_if_name, SDAQ_addr, &SDAQ_flash,!Silent);
+	{
+		if(!Silent)
+		{
+			printf("SDAQ_flash's range length = %d\n", iHEX_taddr_range(&SDAQ_flash));
+			g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
+		}
+		retval = SDAQ_prog(CAN_if_name, SDAQ_addr, &SDAQ_flash, !Silent);
+	}
 	free_rom_data(&SDAQ_flash);
 	//printf("Bye bye.\n");
 	return retval;
@@ -207,7 +231,7 @@ int SDAQ_get_page(rom_data *SDAQ_flash, unsigned char *buff_out, unsigned int la
 	memcpy(buff_out, blk_data->data+last_addr, PAGE_SIZE);
 	if(last_addr+PAGE_SIZE >= blk_data->len)
 	{
-		
+
 		return 1;
 	}
 	return 0;
