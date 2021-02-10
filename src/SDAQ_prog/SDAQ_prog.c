@@ -205,13 +205,19 @@ int SDAQ_get_page(rom_data *SDAQ_flash, unsigned char *buff_out, unsigned int la
 
 	last_addr -= SDAQ_flash_blk->start_addr;
 	memcpy(buff_out, blk_data->data+last_addr, PAGE_SIZE);
-	return last_addr < blk_data->len ? 0 : 1;
+	if(last_addr+PAGE_SIZE >= blk_data->len)
+	{
+		
+		return 1;
+	}
+	return 0;
 }
 
 int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, _Bool report)
 {
 	enum SDAQ_prog_FSM_states{
 		SDAQ_flash_erase,
+		SDAQ_image_header,
 		SDAQ_flash_prog,
 		SDAQ_goto_app,
 		SDAQ_prog_done
@@ -234,16 +240,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 	//Chech arguments for invalid entry.
 	if(!CAN_IF_name || !SDAQ_flash || (!SDAQ_addr || SDAQ_addr>=Parking_address))
 		return EXIT_FAILURE;
-/*
-	printf("SDAQ_flash's range length (17196) = %d\n", iHEX_taddr_range(SDAQ_flash));
-	if(SDAQ_flash->cs)
-		printf("CS = 0x%04x\n", *SDAQ_flash->cs);
-	if(SDAQ_flash->ip)
-		printf("IP = 0x%04x\n", *SDAQ_flash->ip);
-	if(SDAQ_flash->iep)
-		printf("IEP = 0x%08x\n", *SDAQ_flash->iep);
-	g_list_foreach(SDAQ_flash->data_blks, print_data_blks, DATA_PRINT_OFF);
-*/
+
 	//Check if SDAQ_flash have data block.
 	if(!SDAQ_flash->data_blks)
 		return EXIT_FAILURE;
@@ -322,7 +319,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					}
 					break;
 				case Bootloader_reply:
-					if(!sdaq_bl_resp_dec->error_code)
+					if(!sdaq_bl_resp_dec->error_code && !sdaq_bl_resp_dec->IAP_ret)
 					{
 						if(FSM_state == SDAQ_flash_erase)
 						{
@@ -331,13 +328,24 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 								printf("Okay\nProgram SDAQ's Flash");
 								fflush(stdout);
 							}
-							FSM_state = SDAQ_flash_prog;
+							FSM_state = SDAQ_image_header;
 						}
 						if(FSM_state == SDAQ_goto_app)
 						{
 							if(report)
 								printf("Okay\n");
 							SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
+						}
+						if(FSM_state == SDAQ_image_header)
+						{
+							if(!SDAQ_write_header(CAN_socket_num, SDAQ_addr, sdaq_page_addr, iHEX_taddr_range(SDAQ_flash)))
+								SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, sdaq_page_addr);
+							else
+							{
+								fprintf(stderr, " Error at image header writing!!!\n");
+								run = FALSE;
+							}
+							FSM_state = SDAQ_flash_prog;
 						}
 						if(FSM_state == SDAQ_flash_prog)
 						{
@@ -363,11 +371,6 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 					else
 					{
 						fprintf(stderr, " Bootloader reply with Error!!!\n");
-						/*
-						printf("error_code = %d command = 0x%X, IAP_ret = 0x%X\n", sdaq_bl_resp_dec->error_code,
-																				   sdaq_bl_resp_dec->command,
-																				   sdaq_bl_resp_dec->IAP_ret);
-						*/
 						run = FALSE;
 					}
 					retry_times = 0;

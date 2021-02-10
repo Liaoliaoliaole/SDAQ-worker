@@ -26,6 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
+#include <libiberty/libiberty.h>
+
 #include "SDAQ_drv.h"
 
 const unsigned char Parking_address=63;
@@ -330,22 +332,22 @@ int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int star
 		return 1;
 	return 0;
 }
-//Transfer page buffer to Flash memory.
-int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr)
+//Write firmware image header to SDAQ.
+int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range)
 {
+	struct SDAQ_img_header_str{
+		unsigned int header_word;
+		unsigned int start_addr;
+		unsigned int end_addr;
+		unsigned int crc;
+		unsigned long reserved[30];
+	} __attribute__ ((aligned (8))) SDAQ_img_header;
 	struct can_frame frame_tx = {0};
-	sdaq_transfer_buffer *sdaq_transfer_buffer_enc = (sdaq_transfer_buffer*) frame_tx.data;
 	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 
-	//construct identifier for "Write_page_buff_to_flash" command.
-	sdaq_id_ptr->flags = 4;//set the EFF
-	sdaq_id_ptr->priority = 0;
-	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
-	sdaq_id_ptr->payload_type = Write_page_buff_to_flash;
-	sdaq_id_ptr->device_addr = dev_address;
-	//construct payload
-	frame_tx.can_dlc = sizeof(sdaq_transfer_buffer);//Payload size
-	sdaq_transfer_buffer_enc->addr = addr;
+	memset(&SDAQ_img_header, 0xff, sizeof(struct SDAQ_img_header_str));
+	SDAQ_img_header.header_word = 0x18281827;//Header_word value from white paper.
+
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
@@ -372,6 +374,26 @@ int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char
 		sdaq_id_ptr->channel_num++;
 		data += frame_tx.can_dlc;
 	}while(sdaq_id_ptr->channel_num<32);
+	return 0;
+}
+//Transfer page buffer to Flash memory.
+int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr)
+{
+	struct can_frame frame_tx = {0};
+	sdaq_transfer_buffer *sdaq_transfer_buffer_enc = (sdaq_transfer_buffer*) frame_tx.data;
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
+	//construct identifier for "Write_page_buff_to_flash" command.
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->priority = 0;
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Write_page_buff_to_flash;
+	sdaq_id_ptr->device_addr = dev_address;
+	//construct payload
+	frame_tx.can_dlc = sizeof(sdaq_transfer_buffer);//Payload size
+	sdaq_transfer_buffer_enc->addr = addr;
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
 	return 0;
 }
 
