@@ -1,6 +1,6 @@
 CC=gcc -O3
 CFLAGS= -std=c99 -Wall #-g3 #-Wextra
-LDLIBS=-liberty -lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0)
+LDLIBS= -lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0 zlib)
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src

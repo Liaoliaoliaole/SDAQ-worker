@@ -41,7 +41,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include <libiberty/libiberty.h>
+#include <zlib.h>
 
 #include "../SDAQ_drv.h"
 #include "../CANif_discovery.h"
@@ -170,13 +170,14 @@ int main(int argc, char *argv[])
 				{
 					if(!Silent)
 					{
-						printf("SDAQ firmware for %s(%d), SW_Rev:%d, Address_range: 0x%X - 0x%X (%d bytes)\n",
+						printf("SDAQ firmware for %s(%d), SW_Rev:%d, 0x%X - 0x%X (%d bytes), CRC:0x%X\n",
 																	 dev_type_str[*fw_dev_type],
 																	 *fw_dev_type,
 																	 *fw_rev,
 																	 iHEX_first_taddr(&SDAQ_flash),
 																	 iHEX_last_taddr(&SDAQ_flash),
-																	 iHEX_taddr_range(&SDAQ_flash));
+																	 iHEX_taddr_range(&SDAQ_flash),
+																	 SDAQ_flash_get_crc(&SDAQ_flash));
 						//g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
 					}
 					retval = SDAQ_prog(CAN_if_name, SDAQ_addr, &SDAQ_flash, !Silent);
@@ -208,12 +209,10 @@ GByteArray *SDAQ_flash_get_first_data_blk(rom_data *SDAQ_flash)
 unsigned int SDAQ_flash_get_crc(rom_data *SDAQ_flash)
 {
 	GByteArray *SDAQ_flash_data;
+
 	if(!(SDAQ_flash_data = SDAQ_flash_get_first_data_blk(SDAQ_flash)))
 		return 0;
-	unsigned int ret = ~xcrc32(SDAQ_flash_data->data, SDAQ_flash_data->len, -1);
-	printf(" len = %d, CRC32: 0x%X\n", SDAQ_flash_data->len, ret);
-	return ret;
-	//return ~xcrc32(SDAQ_flash_data->data, SDAQ_flash_data->len, -1);
+	return crc32(0, SDAQ_flash_data->data, SDAQ_flash_data->len);
 }
 
 void print_usage(char *prog_name)
@@ -390,7 +389,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 								if(!SDAQ_write_header(CAN_socket_num, SDAQ_addr,
 													  sdaq_page_addr,
 													  iHEX_taddr_range(SDAQ_flash),
-													  SDAQ_flash_get_crc(SDAQ_flash),//0x4e69d949
+													  SDAQ_flash_get_crc(SDAQ_flash),
 													  &bf_ptr))
 									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR);
 								else

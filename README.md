@@ -20,7 +20,7 @@ For compilation of this project the following dependencies are required.
 * [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
 * [libxml2](http://xmlsoft.org/) - Library for parsing XML documents
-* [libiberty](https://gcc.gnu.org/onlinedocs/libiberty/) - GNU project's tools library.
+* [zlib](https://www.zlib.net/zlib_how.html) - A free software library used for data compression.
 
 ##### Optionally
 * [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
