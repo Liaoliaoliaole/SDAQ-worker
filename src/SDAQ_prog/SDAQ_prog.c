@@ -377,56 +377,54 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, rom_data *SDAQ_flash, 
 				case Bootloader_reply:
 					if(!sdaq_bl_resp_dec->error_code && !sdaq_bl_resp_dec->IAP_ret)
 					{
-						if(FSM_state == SDAQ_flash_prog)
+						switch(FSM_state)
 						{
-							if(SDAQ_get_page(SDAQ_flash, buff, sdaq_page_addr))
-								FSM_state = SDAQ_goto_app;
-							bf_ptr = buff;
-							if(!SDAQ_write_page_buff(CAN_socket_num, SDAQ_addr, buff))
-							{
+							case SDAQ_flash_erase:
 								if(report)
 								{
-									putchar('.');
+									printf("Okay\nProgram SDAQ's Flash");
 									fflush(stdout);
 								}
-								SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, sdaq_page_addr);
-								sdaq_page_addr += PAGE_SIZE;
-							}
-							else
-							{
-								fprintf(stderr, " Error at SDAQ flash's page loading!!!\n");
-								run = FALSE;
-							}
-						}
-						if(FSM_state == SDAQ_flash_erase)
-						{
-							if(report)
-							{
-								printf("Okay\nProgram SDAQ's Flash");
-								fflush(stdout);
-							}
-							FSM_state = SDAQ_image_header;
-						}
-						if(FSM_state == SDAQ_image_header)
-						{
-							if(!SDAQ_write_header(CAN_socket_num, SDAQ_addr, 
-												  sdaq_page_addr,
-							                      iHEX_taddr_range(SDAQ_flash), 
-												  SDAQ_flash_get_crc(SDAQ_flash),//0x4e69d949
-												  &bf_ptr))
-								SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR);
-							else
-							{
-								fprintf(stderr, " Error at image header writing!!!\n");
-								run = FALSE;
-							}
-							FSM_state = SDAQ_flash_prog;
-						}
-						if(FSM_state == SDAQ_goto_app)
-						{
-							if(report)
-								printf("Okay\n");
-							SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
+								FSM_state = SDAQ_image_header;
+							case SDAQ_image_header:
+								if(!SDAQ_write_header(CAN_socket_num, SDAQ_addr,
+													  sdaq_page_addr,
+													  iHEX_taddr_range(SDAQ_flash),
+													  SDAQ_flash_get_crc(SDAQ_flash),//0x4e69d949
+													  &bf_ptr))
+									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR);
+								else
+								{
+									fprintf(stderr, " Error at image header writing!!!\n");
+									run = FALSE;
+								}
+								FSM_state = SDAQ_flash_prog;
+								break;
+							case SDAQ_flash_prog:
+								if(SDAQ_get_page(SDAQ_flash, buff, sdaq_page_addr))
+									FSM_state = SDAQ_goto_app;
+								bf_ptr = buff;
+								if(!SDAQ_write_page_buff(CAN_socket_num, SDAQ_addr, buff))
+								{
+									if(report)
+									{
+										putchar('.');
+										fflush(stdout);
+									}
+									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, sdaq_page_addr);
+									sdaq_page_addr += PAGE_SIZE;
+								}
+								else
+								{
+									fprintf(stderr, " Error at SDAQ flash's page loading!!!\n");
+									run = FALSE;
+								}
+								break;
+							case SDAQ_goto_app:
+								if(report)
+									printf("Okay\n");
+								SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
+								break;
 						}
 					}
 					else
