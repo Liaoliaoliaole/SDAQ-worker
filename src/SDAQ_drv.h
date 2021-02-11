@@ -37,6 +37,8 @@ extern const unsigned char Unit_code_base_region_size;
 
 extern const char DEVID_indexer_str[];
 extern const char REV_indexer_str[];
+extern const unsigned int DEVID_indexer_str_len;
+extern const unsigned int REV_indexer_str_len;
 
 // enumerator for Device Status byte
 enum status_byte{
@@ -221,11 +223,11 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 //Set execution code of SDAQ's uC.
 int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl);
 //Erase SDAQ's Flash memory region.
-int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range);
+int SDAQ_erase_flash(int socket_fd, unsigned char dev_address, unsigned int first_addr, unsigned int last_addr);
 //Write firmware image header to SDAQ.
-int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range);
+int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char **ret_buff);
 //Write to page buffer. Data must be PAGE_SIZE bytes long.
-int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data);
+int SDAQ_write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data);
 //Transfer page buffer to Flash memory.
 int SDAQ_Transfer_to_flash(int socket_fd, unsigned char dev_address, unsigned int addr);
 

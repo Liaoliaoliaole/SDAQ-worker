@@ -26,8 +26,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-#include <libiberty/libiberty.h>
-
 #include "SDAQ_drv.h"
 
 const unsigned char Parking_address=63;
@@ -87,9 +85,6 @@ const char *type_of_point_str[]={
 	"C3"
 };
 
-const char DEVID_indexer_str[] = "@DeviceId@";
-const char REV_indexer_str[] = "@Revision@";
-
 //Decoder for the status byte field from "Measure" message
 const char * Channel_status_byte_dec(unsigned char status_byte)
 {
@@ -105,6 +100,12 @@ const char * Channel_status_byte_dec(unsigned char status_byte)
 const char *dev_status_str[][8]={
 {"Stand-By","No","No","","","","","Normal"},
 {"Measuring","Yes","Yes","","","","","Booting"}};
+
+//Indexing Strings, used to get SW revision and device type from firmware.
+const char DEVID_indexer_str[] = "@DeviceId@";
+const char REV_indexer_str[] = "@Revision@";
+const unsigned int DEVID_indexer_str_len = strlen(DEVID_indexer_str);
+const unsigned int REV_indexer_str_len = strlen(REV_indexer_str);
 
 //Decoder for the status byte field from "Device_ID/Status" message
 const char * status_byte_dec(unsigned char status_byte,unsigned char field)
@@ -315,7 +316,7 @@ int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl)
 	return 0;
 }
 //Erase SDAQ's Flash memory region.
-int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range)
+int SDAQ_erase_flash(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int last_addr)
 {
 	struct can_frame frame_tx = {0};
 	sdaq_flash_erase *sdaq_flash_erase_enc = (sdaq_flash_erase*) frame_tx.data;
@@ -330,33 +331,33 @@ int SDAQ_Erase_flash(int socket_fd, unsigned char dev_address, unsigned int star
 	//construct payload
 	frame_tx.can_dlc = sizeof(sdaq_flash_erase);//Payload size
 	sdaq_flash_erase_enc->Start_addr = start_addr;
-	sdaq_flash_erase_enc->End_addr = start_addr + (range-1);
+	sdaq_flash_erase_enc->End_addr = last_addr;
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
 }
 //Write firmware image header to SDAQ.
-int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range)
+int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char **ret_buff)
 {
-	struct SDAQ_img_header_str{
+	static struct SDAQ_img_header_str{
 		unsigned int header_word;
 		unsigned int start_addr;
 		unsigned int end_addr;
 		unsigned int crc;
-		unsigned long reserved[30];
+		unsigned long long reserved[30];
 	} __attribute__ ((aligned (8))) SDAQ_img_header;
-	struct can_frame frame_tx = {0};
-	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
 
-	memset(&SDAQ_img_header, 0xff, sizeof(struct SDAQ_img_header_str));
+	if(*ret_buff)
+		*ret_buff = (unsigned char *)&SDAQ_img_header;
+	memset(&SDAQ_img_header, -1, sizeof(struct SDAQ_img_header_str));
 	SDAQ_img_header.header_word = 0x18281827;//Header_word value from white paper.
-
-	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
-		return 1;
-	return 0;
+	SDAQ_img_header.start_addr = start_addr;
+	SDAQ_img_header.end_addr = start_addr + range-1;
+	SDAQ_img_header.crc = crc;
+	return SDAQ_write_page_buff(socket_fd, dev_address, (unsigned char *)&SDAQ_img_header);
 }
 //Write to page buffer.
-int SDAQ_Write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data)
+int SDAQ_write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data)
 {
 	struct can_frame frame_tx = {0};
 	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);

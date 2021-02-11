@@ -66,10 +66,12 @@ int iHEX_read(const char *iHEX_file_path, const char *iHEX_file_mem, rom_data *m
 */
 int iHEX_write(rom_data *mem_table, const char *iHEX_file_path, GString *iHEX_file_mem);
 
-/*
- * Function that count and return the amount of bytes for all blk_data in data_blks list part of rom_data, including gaped areas.
- */
+//Function that count and return the amount of bytes for all blk_data in data_blks list part of rom_data, including gaped areas.
 unsigned int iHEX_taddr_range(const rom_data *mem_table);
+//Function that return the first address of the mem_table or -1 on error
+unsigned int iHEX_first_taddr(const rom_data *mem_table);
+//Function that return the last address of the mem_table or -1 on error
+unsigned int iHEX_last_taddr(const rom_data *mem_table);
 
 //Function that decode an iHEX_Errors and return it as string.
 const char * iHEX_strerror(unsigned int error_num);

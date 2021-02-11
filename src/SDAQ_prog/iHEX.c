@@ -258,6 +258,30 @@ unsigned int iHEX_taddr_range(const rom_data *mem_table)
 	return cnt;
 }
 
+unsigned int iHEX_first_taddr(const rom_data *mem_table)
+{
+	GList *blks_list_node;
+	rom_data_block *fisrt_blk_data;
+	
+	if(!mem_table || 
+	   !(blks_list_node = mem_table->data_blks) || 
+	   !(fisrt_blk_data = (rom_data_block*)blks_list_node->data))
+		return -1;
+	return fisrt_blk_data->start_addr;
+}
+
+unsigned int iHEX_last_taddr(const rom_data *mem_table)
+{
+	GList *blks_list_node;
+	rom_data_block *fisrt_blk_data;
+	
+	if(!mem_table || 
+	   !(blks_list_node = mem_table->data_blks) || 
+	   !(fisrt_blk_data = (rom_data_block*)blks_list_node->data))
+		return -1;
+	return fisrt_blk_data->start_addr + iHEX_taddr_range(mem_table)-1;
+}
+
 const char * iHEX_strerror(unsigned int error_num)
 {
 	if(error_num>IHEX_ERROR_MAX_NUM)
