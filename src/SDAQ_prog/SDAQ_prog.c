@@ -373,18 +373,15 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 						run = FALSE;
 						break;
 					}
-					if(status_dec->status == SDAQ_in_Bootloader)
+					if(status_dec->status == SDAQ_in_Bootloader && FSM_state == SDAQ_flash_erase)
 					{
-						if(FSM_state == SDAQ_flash_erase)
+						if(report)
 						{
-							if(report)
-							{
-								printf("\tErase SDAQ's Flash... ");
-								fflush(stdout);
-							}
-							SDAQ_erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR, SDAQ_flash_last_addr);
-							retry_times = 0;
+							printf("\tErase SDAQ's Flash... ");
+							fflush(stdout);
 						}
+						SDAQ_erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR, SDAQ_flash_last_addr);
+						retry_times = 0;
 					}
 					else if(FSM_state == SDAQ_goto_app)
 					{
@@ -457,6 +454,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 					{
 						fprintf(stderr, " Bootloader reply with Error!!!\n");
 						run = FALSE;
+						break;
 					}
 					retry_times = 0;
 					break;
@@ -466,8 +464,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 						fprintf(stderr, " Error: SDAQ's flash verification!!!\n");
 						run = FALSE;
 					}
-					else
-						retry_times = 0;
+					retry_times = 0;
 					break;
 				default:
 					retry_times++;
@@ -476,6 +473,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 						fprintf(stderr, "Error: SDAQ's bootloader not responding!!!\n");
 						run = FALSE;
 					}
+					break;
 			}
 		}
 		else
