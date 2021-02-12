@@ -85,6 +85,16 @@ const char *type_of_point_str[]={
 	"C3"
 };
 
+const char *dev_input_mode_str[20][8]={
+	{NULL},
+	{"B","E","J","K","N","R","S","T"},
+	{NULL},
+	{"PT100-2W","PT100-3W","PT100-4W",
+	 "PT1000-2W","PT1000-3W","PT1000-4W"},
+	{NULL},
+	{"2V","100V"}
+};
+
 //Decoder for the status byte field from "Measure" message
 const char * Channel_status_byte_dec(unsigned char status_byte)
 {

@@ -31,6 +31,7 @@ extern const char *dev_type_str[];
 extern const char *dev_status_str[][8];
 extern const char *channel_status_str[];
 extern const char *type_of_point_str[];
+extern const char *dev_input_mode_str[20][8];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;
