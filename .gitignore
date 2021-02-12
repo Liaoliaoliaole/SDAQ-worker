@@ -4,6 +4,7 @@
 !Makefile
 **/build/
 **/work/
+src/SDAQ_prog/test_hex
 #.gitignore
 
 
