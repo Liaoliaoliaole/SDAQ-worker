@@ -347,24 +347,21 @@ int SDAQ_erase_flash(int socket_fd, unsigned char dev_address, unsigned int star
 	return 0;
 }
 //Write firmware image header to SDAQ.
-int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char **ret_buff)
+int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char *ret_buff)
 {
-	static struct SDAQ_img_header_str{
-		unsigned int header_word;
-		unsigned int start_addr;
-		unsigned int end_addr;
-		unsigned int crc;
-		unsigned long long reserved[30];
-	} __attribute__ ((aligned (8))) SDAQ_img_header;
+	int retval;
+	SDAQ_img_header *header;
 
-	if(*ret_buff)
-		*ret_buff = (unsigned char *)&SDAQ_img_header;
-	memset(&SDAQ_img_header, -1, sizeof(struct SDAQ_img_header_str));
-	SDAQ_img_header.header_word = 0x18281827;//Header_word value from white paper.
-	SDAQ_img_header.start_addr = start_addr;
-	SDAQ_img_header.end_addr = start_addr + range-1;
-	SDAQ_img_header.crc = crc;
-	return SDAQ_write_page_buff(socket_fd, dev_address, (unsigned char *)&SDAQ_img_header);
+	header = !ret_buff ? malloc(sizeof(SDAQ_img_header)) : ret_buff;
+	memset(header, -1, PAGE_SIZE);
+	header->header_word = SDAQ_IMG_HEADER_WORD;
+	header->start_addr = start_addr;
+	header->end_addr = start_addr + range-1;
+	header->crc = crc;
+	retval = SDAQ_write_page_buff(socket_fd, dev_address, (unsigned char *)header);
+	if(!ret_buff)
+		free(header);
+	return retval;
 }
 //Write to page buffer.
 int SDAQ_write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data)
@@ -387,7 +384,7 @@ int SDAQ_write_page_buff(int socket_fd, unsigned char dev_address, unsigned char
 			return 1;
 		sdaq_id_ptr->channel_num++;
 		data += frame_tx.can_dlc;
-	}while(sdaq_id_ptr->channel_num<32);
+	}while(sdaq_id_ptr->channel_num<PAGE_SECTIONS);
 	return 0;
 }
 //Transfer page buffer to Flash memory.

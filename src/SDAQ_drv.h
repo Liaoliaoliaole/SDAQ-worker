@@ -17,14 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef SDAQ_DRV_h
 #define SDAQ_DRV_h
 
-#define SDAQ_MAX_AMOUNT_OF_CHANNELS 16 //can be up to 63, from whitepaper
+#define SDAQ_MAX_AMOUNT_OF_CHANNELS 16 //can be up to 63, from white paper.
 #define MAX_AMOUNT_OF_POINTS 16
-#define MAX_DATA_ON_POINT 6 //6 is the data in each point (ref, read, offset, gain and coefficients)
+#define MAX_DATA_ON_POINT 6 //6 is the amount of values in each point (ref, read, offset, gain and coefficients).
 
 #define PROTOCOL_ID 0x35
 
 #define SDAQ_IMG_ADDR 0x10000
-#define PAGE_SIZE 256
+#define SDAQ_IMG_HEADER_WORD 0x18281827 // Value from white paper'
+#define PAGE_SIZE 256 // Value from White paper.
+#define PAGE_SECTIONS 32 // 32 = 256/8, 8 is maximum Payload size.
 
 extern const char *unit_str[];
 extern const char *dev_type_str[];
@@ -161,6 +163,15 @@ typedef struct SDAQ_calibration_points_data_Decoder{
 }sdaq_calibration_points_data;
 
 	//--- SDAQ's Bootloader related messages---//
+/* SDAQ firmware image header */
+typedef struct SDAQ_img_header_str{
+	unsigned int header_word;
+	unsigned int start_addr;
+	unsigned int end_addr;
+	unsigned int crc;
+	unsigned char reserved[PAGE_SIZE-sizeof(unsigned int)*4];
+} SDAQ_img_header;
+
 /* SDAQ's Bootloader response message decoder */
 typedef struct SDAQ_bootloader_response_Decoder{
 	unsigned char error_code;
@@ -225,8 +236,12 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 int SDAQ_goto(int socket_fd, unsigned char dev_address, _Bool code_reg_fl);
 //Erase SDAQ's Flash memory region.
 int SDAQ_erase_flash(int socket_fd, unsigned char dev_address, unsigned int first_addr, unsigned int last_addr);
-//Write firmware image header to SDAQ.
-int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char **ret_buff);
+/*
+ * Function that write header of firmware image to SDAQ.
+ * "ret_buff" is nullable.
+ * if "ret_buff" is used, will be filled with PAGE_SIZE bytes of the header. Aka, need to have size at least PAGE_SIZE.
+ */
+int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char *ret_buff);
 //Write to page buffer. Data must be PAGE_SIZE bytes long.
 int SDAQ_write_page_buff(int socket_fd, unsigned char dev_address, unsigned char *data);
 //Transfer page buffer to Flash memory.

@@ -279,7 +279,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 		SDAQ_prog_done
 	};
 	unsigned int SDAQ_flash_first_addr, SDAQ_flash_last_addr, SDAQ_flash_addr_range, SDAQ_flash_page_addr;
-	unsigned char FSM_state = SDAQ_flash_erase, buff[PAGE_SIZE], *bf_ptr = buff, retry_times = 0;
+	unsigned char FSM_state = SDAQ_flash_erase, buff[PAGE_SIZE], retry_times = 0;
 	//Variables for Socket CAN
 	struct timeval tv = {0};
 	struct ifreq ifr = {0};
@@ -414,7 +414,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 													  SDAQ_flash_first_addr,
 													  SDAQ_flash_addr_range,
 													  SDAQ_flash_get_crc(SDAQ_flash),
-													  &bf_ptr))
+													  buff))
 									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR);
 								else
 								{
@@ -426,7 +426,6 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 							case SDAQ_flash_prog:
 								if(SDAQ_get_page(SDAQ_flash, buff, SDAQ_flash_page_addr))
 									FSM_state = SDAQ_goto_app;
-								bf_ptr = buff;
 								if(!SDAQ_write_page_buff(CAN_socket_num, SDAQ_addr, buff))
 								{
 									if(report)
@@ -459,7 +458,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 					retry_times = 0;
 					break;
 				case Page_buff:
-					if(memcmp(bf_ptr+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc))
+					if(memcmp(buff+(sdaq_id_dec->channel_num*frame_rx.can_dlc), frame_rx.data, frame_rx.can_dlc))
 					{
 						fprintf(stderr, " Error: SDAQ's flash verification!!!\n");
 						run = FALSE;
