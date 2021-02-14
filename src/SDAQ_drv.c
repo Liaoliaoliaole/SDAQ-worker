@@ -33,7 +33,7 @@ const unsigned char Broadcast=0;
 const unsigned char Unit_code_base_region_size=20;
 const char *unit_str[256]={
 //Base units
-"-","V","mA","°C","","","","","","","","","","","","","","","","",
+"-","V","mA","°C","Pa","mV","Ohm","","","","","","","","","","","","","",
 //Specific units
 "V","uV","mV","kV",//Voltage
 "A","uA","mA","kA",//Amperage
@@ -232,6 +232,23 @@ int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_id_ptr->payload_type = Query_Calibration_Data;//Payload type for Query_Calibration_Data message
 	sdaq_id_ptr->device_addr = dev_address;
 	sdaq_id_ptr->channel_num = channel;
+	frame_tx.can_dlc = 0;//No Payload
+	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
+		return 1;
+	return 0;
+}
+
+//Request system variables. Device answer with all the system variables of the SDAQ.
+int QuerySystemVariables(int socket_fd, unsigned char dev_address)
+{
+	struct can_frame frame_tx = {0};
+	sdaq_can_id *sdaq_id_ptr = (sdaq_can_id *)&(frame_tx.can_id);
+
+	//construct identifier for Query_Calibration_Data message
+	sdaq_id_ptr->flags = 4;//set the EFF
+	sdaq_id_ptr->protocol_id = PROTOCOL_ID;
+	sdaq_id_ptr->payload_type = Query_system_variables;//Payload type for Query_system_variables message
+	sdaq_id_ptr->device_addr = dev_address;
 	frame_tx.can_dlc = 0;//No Payload
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;

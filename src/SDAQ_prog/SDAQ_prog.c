@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #define _GNU_SOURCE
-#define VERSION "0.9" /*Release Version of SDAQ_prog*/
+#define VERSION "1.0" /*Release Version of SDAQ_prog*/
 
 #define SDAQ_in_Bootloader 0x80
 #define RETRY_LIMIT 2 /*Amount of failure CANBUS message receptions*/

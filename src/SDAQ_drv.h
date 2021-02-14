@@ -77,11 +77,11 @@ enum payload_type{
 	Query_Dev_info = 7,
 	Query_Calibration_Data = 8,
 	Write_calibration_Date = 9,
-	Write_calibration_Point_Data = 10,
-	Change_SDAQ_baudrate = 11,
-	Configure_Additional_data = 12,
-	Query_system_variables = 13,
-	Write_system_variable = 14,
+	Write_calibration_Point_Data = 0x0A,
+	Change_SDAQ_baudrate = 0x0B,
+	Configure_Additional_data = 0x0C,
+	Query_system_variables = 0x0D,
+	Write_system_variable = 0x0E,
 	//Bootloader related.
 	goto_bootloader = 0x20,
 	Erase_flash = 0x21,
@@ -96,6 +96,7 @@ enum payload_type{
 	Calibration_Date = 0x89,
 	Calibration_Point_Data = 0x8a,
 	Uncalibrated_meas = 0x8b,
+	System_variable = 0x8d,
 	//Bootloader related
 	Bootloader_reply = 0xa0,
 	Page_buff = 0xa1,
@@ -162,6 +163,15 @@ typedef struct SDAQ_calibration_points_data_Decoder{
 	unsigned char points_num;
 }sdaq_calibration_points_data;
 
+/* SDAQ's CAN System_variable message decoder */
+typedef struct SDAQ_system_variable_data_Decoder{
+	union variable_value_field{
+		unsigned int as_uint32;
+		float as_float;
+	} variable;
+	unsigned char type;
+}sdaq_system_variable_data;
+
 	//--- SDAQ's Bootloader related messages---//
 /* SDAQ firmware image header */
 typedef struct SDAQ_img_header_str{
@@ -227,6 +237,8 @@ int SetDeviceAddress(int socket_fd, unsigned int dev_SN, unsigned char new_dev_a
 int QueryDeviceInfo(int socket_fd, unsigned char dev_address);
 //Request calibration data. Device answer with 2 messages types: Calibration Date and Calibration Point Data for each channel
 int QueryCalibrationData(int socket_fd, unsigned char dev_address, unsigned char channel);
+//Request system variables. Device answer with all the system variables of the SDAQ.
+int QuerySystemVariables(int socket_fd, unsigned char dev_address);
 //Write the calibration date data of the channel 'channel_num' of the SDAQ with address 'dev_address'
 int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char channel_num, void *date_ptr, unsigned char period, unsigned char NumOfPoints, unsigned char unit);
 //Write the calibration point data 'NumOfPoint' of the channel 'channel_num' of the SDAQ with address 'dev_address'
@@ -239,7 +251,7 @@ int SDAQ_erase_flash(int socket_fd, unsigned char dev_address, unsigned int firs
 /*
  * Function that write header of firmware image to SDAQ.
  * "ret_buff" is nullable.
- * if "ret_buff" is used, will be filled with PAGE_SIZE bytes of the header. Aka, need to have size at least PAGE_SIZE.
+ * if "ret_buff" is used, will be filled with PAGE_SIZE bytes of the header. So it's need to be at least PAGE_SIZE in size.
  */
 int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int start_addr, unsigned int range, unsigned int crc, unsigned char *ret_buff);
 //Write to page buffer. Data must be PAGE_SIZE bytes long.
