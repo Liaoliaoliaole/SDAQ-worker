@@ -202,6 +202,7 @@ void * CAN_socket_RX(void *varg_pt)
 	sdaq_status *status_dec = (sdaq_status *)frame_rx.data;
 	sdaq_meas *meas_dec = (sdaq_meas *)frame_rx.data;
 	sdaq_info *info_dec = (sdaq_info *)frame_rx.data;
+	sdaq_sysvar *sysvar_dec = (sdaq_sysvar *)frame_rx.data;
 	sdaq_sync_debug_data *ts_dec = (sdaq_sync_debug_data *)frame_rx.data;
 	while(running)
 	{
@@ -267,6 +268,11 @@ void * CAN_socket_RX(void *varg_pt)
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							mvwprintw(arg->info_win,7,3,"Max Cal points = %d",info_dec->max_cal_point);
 							wrefresh(arg->info_win);
+							if(dev_input_mode_str[info_dec->dev_type])//Check if device have available input mode.
+								QuerySystemVariables(arg->socket_num, arg->dev_addr);
+							break;
+						case System_variable:
+							//sysvar_dec
 							break;
 						case Sync_Info:
 							sprintf(timediff_str, "%hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));

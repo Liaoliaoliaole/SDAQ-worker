@@ -168,9 +168,9 @@ typedef struct SDAQ_system_variable_data_Decoder{
 	union variable_value_field{
 		unsigned int as_uint32;
 		float as_float;
-	} variable;
+	} var_val;
 	unsigned char type;
-}sdaq_system_variable_data;
+}sdaq_sysvar;
 
 	//--- SDAQ's Bootloader related messages---//
 /* SDAQ firmware image header */
