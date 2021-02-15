@@ -195,7 +195,7 @@ void * CAN_socket_RX(void *varg_pt)
 	//passed arguments decoder
 	struct thread_arguments_passer *arg = (struct thread_arguments_passer *) varg_pt;
 	//local variables for CAN Socket frame and SDAQ messages decoders
-	unsigned char dev_type = 0; 
+	unsigned char dev_type = 0;
 	char timediff_str[20];
 	struct can_frame frame_rx;
 	int RX_bytes;
