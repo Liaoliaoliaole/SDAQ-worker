@@ -27,13 +27,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define SDAQ_IMG_HEADER_WORD 0x18281827 // Value from white paper'
 #define PAGE_SIZE 256 // Value from White paper.
 #define PAGE_SECTIONS 32 // 32 = 256/8, 8 is maximum Payload size.
+#define INP_MODE_MAX_COL 8
 
 extern const char *unit_str[];
 extern const char *dev_type_str[];
 extern const char *dev_status_str[][8];
 extern const char *channel_status_str[];
 extern const char *type_of_point_str[];
-extern const char *dev_input_mode_str[20][8];
+extern const char *dev_input_mode_str[20][INP_MODE_MAX_COL];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;

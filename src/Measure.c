@@ -195,6 +195,7 @@ void * CAN_socket_RX(void *varg_pt)
 	//passed arguments decoder
 	struct thread_arguments_passer *arg = (struct thread_arguments_passer *) varg_pt;
 	//local variables for CAN Socket frame and SDAQ messages decoders
+	unsigned char dev_type = 0; 
 	char timediff_str[20];
 	struct can_frame frame_rx;
 	int RX_bytes;
@@ -243,7 +244,7 @@ void * CAN_socket_RX(void *varg_pt)
 						case Device_status:
 							mvwprintw(arg->status_win,1,1,"Device_status & S/N:");
 							mvwprintw(arg->status_win,2,3,"S/N = %d",status_dec->dev_sn);
-							mvwprintw(arg->status_win,3,3,"Mode  : %3s",status_byte_dec(status_dec->status,Mode));
+							mvwprintw(arg->status_win,3,3,"Mode  : %3s ",status_byte_dec(status_dec->status,Mode));
 							mvwprintw(arg->status_win,4,3,"State : %9s",status_byte_dec(status_dec->status,State));
 							mvwprintw(arg->status_win,5,3,"Error?  : %3s",status_byte_dec(status_dec->status,Error));
 							mvwprintw(arg->status_win,6,3,"IsSync? : %3s",status_byte_dec(status_dec->status,In_sync));
@@ -254,25 +255,33 @@ void * CAN_socket_RX(void *varg_pt)
 								wclean_refresh(arg->raw_meas_win);
 							}
 							//clear "Error: Socket Timeout" print
-							term_col = getmaxx(stdscr);
-							move(term_min_height-3,term_col/2-10);
+							move(term_min_height-3,0);
 							clrtoeol();
 							refresh();
 							break;
 						case Device_info:
+							dev_type = info_dec->dev_type;
 							mvwprintw(arg->info_win,1,1,"Device_info:");
-							mvwprintw(arg->info_win,2,3,"Type = %s",dev_type_str[info_dec->dev_type]);
+							mvwprintw(arg->info_win,2,3,"Type = %s",dev_type_str[dev_type]);
 							mvwprintw(arg->info_win,3,3,"Firmware rev = %d",info_dec->firm_rev);
 							mvwprintw(arg->info_win,4,3,"Hardware rev = %d",info_dec->hw_rev);
 							mvwprintw(arg->info_win,5,3,"Channels = %-2d",info_dec->num_of_ch);
 							mvwprintw(arg->info_win,6,3,"Samplerate = %d",info_dec->sample_rate);
 							mvwprintw(arg->info_win,7,3,"Max Cal points = %d",info_dec->max_cal_point);
 							wrefresh(arg->info_win);
-							if(dev_input_mode_str[info_dec->dev_type])//Check if device have available input mode.
+							if(*dev_input_mode_str[dev_type])//Check if device have available input mode.
 								QuerySystemVariables(arg->socket_num, arg->dev_addr);
 							break;
 						case System_variable:
-							//sysvar_dec
+							if(*dev_input_mode_str[dev_type])
+							{
+								if(!sysvar_dec->type && sysvar_dec->var_val.as_uint32<INP_MODE_MAX_COL)
+								{
+									mvwprintw(arg->info_win,2,3,"Type = %s/%s", dev_type_str[dev_type],
+																			    dev_input_mode_str[dev_type][sysvar_dec->var_val.as_uint32]);
+									wrefresh(arg->info_win);
+								}
+							}
 							break;
 						case Sync_Info:
 							sprintf(timediff_str, "%hu msec",time_diff_cal(ts_dec->dev_time,ts_dec->ref_time));
@@ -287,6 +296,8 @@ void * CAN_socket_RX(void *varg_pt)
 		else
 		{
 			pthread_mutex_lock(&display_access);
+				move(term_min_height-3, 0);
+				clrtoeol();
 				term_col = getmaxx(stdscr);
 				mvprintw(term_min_height-3,term_col/2-10,"Error: Socket Timeout");
 				refresh();
