@@ -140,11 +140,11 @@ int main(int argc, char *argv[])
 		}
 		while((c = getchar()) != EOF)
 			iHEX_file_mem = g_string_append_c(iHEX_file_mem, c);
-		retval = iHEX_read(NULL, iHEX_file_mem->str, &SDAQ_flash, !Silent);
+		retval = iHEX_read(NULL, iHEX_file_mem->str, &SDAQ_flash, TRUE);
 		g_string_free(iHEX_file_mem, TRUE);
 	}
 	else if(iHEX_file_path)
-		retval = iHEX_read(iHEX_file_path, NULL, &SDAQ_flash, !Silent);
+		retval = iHEX_read(iHEX_file_path, NULL, &SDAQ_flash, TRUE);
 	else
 		fprintf(stderr, "File path is undefined!!!\n");
 	if(!retval)
