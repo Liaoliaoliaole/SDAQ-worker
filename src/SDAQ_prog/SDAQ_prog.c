@@ -365,10 +365,9 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 			switch(sdaq_id_dec->payload_type)//Check the received message type.
 			{
 				case Device_status:
-					if(fw_dev_type != (unsigned char)-1 && status_dec->dev_type != fw_dev_type)
+					if(status_dec->dev_type != fw_dev_type)
 					{
-						fprintf(stderr, "Error: Firmware's Dev_type(%s) differ from SDAQ's dev_type(%s)!!!\n", dev_type_str[fw_dev_type],
-																											   dev_type_str[status_dec->dev_type]);
+						fprintf(stderr, "Error: Firmware is not for this device type!!! (%u != %u)\n", fw_dev_type, status_dec->dev_type);
 						SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
 						run = FALSE;
 						break;
