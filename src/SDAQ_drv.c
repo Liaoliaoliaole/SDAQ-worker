@@ -95,6 +95,14 @@ const char *dev_input_mode_str[20][8]={
 	{"2V","100V"}
 };
 
+const char *SDAQ_reg_status_str[SDAQ_registeration_max_state+1]={
+	"Not register",
+	"Initial Registration",
+	"Pending Calibration data",
+	"Pending input mode",
+	"Done"
+};
+
 //Decoder for the status byte field from "Measure" message
 const char * Channel_status_byte_dec(unsigned char status_byte)
 {

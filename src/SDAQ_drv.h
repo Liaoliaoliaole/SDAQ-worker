@@ -35,6 +35,7 @@ extern const char *dev_status_str[][8];
 extern const char *channel_status_str[];
 extern const char *type_of_point_str[];
 extern const char *dev_input_mode_str[20][INP_MODE_MAX_COL];
+extern const char *SDAQ_reg_status_str[];
 extern const unsigned char Parking_address;
 extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;
@@ -44,7 +45,17 @@ extern const char REV_indexer_str[];
 extern const unsigned int DEVID_indexer_str_len;
 extern const unsigned int REV_indexer_str_len;
 
-// enumerator for Device Status byte
+// Enumerator of SDAQ registration status
+enum SDAQ_registeration_status{
+	Unregistered = 0,
+	Registered,
+	Pending_Calibration_data,
+	Pending_input_mode,
+	Ready,
+	SDAQ_registeration_max_state = Ready
+};
+
+// Enumerator for Device Status byte
 enum status_byte{
 	State = 0,
 	In_sync = 1,
@@ -52,14 +63,14 @@ enum status_byte{
 	Mode = 7
 };
 
-// enumerator for Device Status byte
+// Enumerator for Device Status byte
 enum channel_status_byte{
 	No_sensor = 0,
 	Out_of_range = 1,
 	Over_range = 2
 };
 
-// enumerator for Calibration Point Data type byte
+// Enumerator for Calibration Point Data type byte
 enum Calibration_Point_Data_type_byte{
 	meas = 1,
 	ref = 2,
@@ -68,7 +79,7 @@ enum Calibration_Point_Data_type_byte{
 	C2 = 5,
 	C3 = 6
 };
-// enumerator for payload_type
+// Enumerator for payload_type
 enum payload_type{
 /* Messages payload_type. Master -> SDAQ */
 	Synchronization_command = 1,
