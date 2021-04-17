@@ -46,7 +46,7 @@ extern const unsigned int DEVID_indexer_str_len;
 extern const unsigned int REV_indexer_str_len;
 
 // Enumerator of SDAQ registration status
-#define SDAQ_INFO_PENDING(reg_status) (reg_status && reg_status < SDAQ_registeration_max_state)
+#define SDAQ_INFO_PENDING_CHECK(reg_status) (reg_status && reg_status < SDAQ_registeration_max_state)
 enum SDAQ_registeration_status{
 	Registered = 1,
 	Pending_Calibration_data,
