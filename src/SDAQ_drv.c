@@ -57,7 +57,9 @@ const char *unit_str[256]={
 "W","kW","MW",//Power
 "J","kJ","MJ","Wh","kWh","MWh",//Energy
 "mV/V","mV/mA",//Ratio
-"l","m3"//Volume
+"l","m3",//Volume
+/*Extra*/
+"mbar",
 };
 
 const char *dev_type_str[20]={
