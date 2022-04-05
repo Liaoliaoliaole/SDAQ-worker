@@ -306,7 +306,7 @@ int WriteCalibrationDate(int socket_fd, unsigned char dev_address, unsigned char
 	sdaq_cal_date_enc->period = period;
 	sdaq_cal_date_enc->amount_of_points = NumOfPoints;
 	sdaq_cal_date_enc->cal_units = unit;
-	usleep(1000);
+	usleep(10000);
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
@@ -329,7 +329,7 @@ int WriteCalibrationPoint(int socket_fd, unsigned char dev_address, unsigned cha
 	sdaq_cal_point_data_enc->data_of_point = point_val;
 	sdaq_cal_point_data_enc->type = type;
 	sdaq_cal_point_data_enc->points_num = point_num;
-	usleep(1000);
+	usleep(10000);
 	if(write(socket_fd, &frame_tx, sizeof(struct can_frame))<0)
 		return 1;
 	return 0;
