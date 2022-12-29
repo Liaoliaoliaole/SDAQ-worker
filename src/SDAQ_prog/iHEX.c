@@ -262,9 +262,9 @@ unsigned int iHEX_first_taddr(const rom_data *mem_table)
 {
 	GList *blks_list_node;
 	rom_data_block *fisrt_blk_data;
-	
-	if(!mem_table || 
-	   !(blks_list_node = mem_table->data_blks) || 
+
+	if(!mem_table ||
+	   !(blks_list_node = mem_table->data_blks) ||
 	   !(fisrt_blk_data = (rom_data_block*)blks_list_node->data))
 		return -1;
 	return fisrt_blk_data->start_addr;
@@ -274,9 +274,9 @@ unsigned int iHEX_last_taddr(const rom_data *mem_table)
 {
 	GList *blks_list_node;
 	rom_data_block *fisrt_blk_data;
-	
-	if(!mem_table || 
-	   !(blks_list_node = mem_table->data_blks) || 
+
+	if(!mem_table ||
+	   !(blks_list_node = mem_table->data_blks) ||
 	   !(fisrt_blk_data = (rom_data_block*)blks_list_node->data))
 		return -1;
 	return fisrt_blk_data->start_addr + iHEX_taddr_range(mem_table)-1;
@@ -418,7 +418,7 @@ int iHEX_rec_to_rom_data(iHEX_Record *rec, rom_data *rom_data_ptr)
 				case Start_Linear_Address:
 					if(!rom_data_ptr->iep)
 					{
-						rom_data_ptr->iep = malloc(sizeof(unsigned short));
+						rom_data_ptr->iep = malloc(sizeof(unsigned int));
 						if(!rom_data_ptr->iep)
 						{
 							fprintf(stderr, "Memory Error!!!\n");
