@@ -43,7 +43,7 @@ const char *unit_str[256]={
 "N","kN","MN",//Force
 "m","um","mm","cm","dm",//Displacement
 "m/s","mm/s","km/h",//Velocity
-"m/s2","g",//Acceleration
+"m/s2","gee",//Acceleration
 "Ohm","kOhm","MOhm",//Resistance
 "Nm","kNm","MNm",//Torque
 "kg","gram","Tonn",//Mass
