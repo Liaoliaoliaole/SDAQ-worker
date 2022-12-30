@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 {
 	_Bool Silent = FALSE, fl_stdin = FALSE;
 	char *iHEX_file_path = NULL, *CAN_if_name = NULL;
-	unsigned char SDAQ_addr, *fw_dev_type, *fw_rev;
+	unsigned char SDAQ_addr, fw_dev_type, *fw_dev_type_550X_ptr, *fw_dev_type_ptr, *fw_rev_ptr;
 	GByteArray *SDAQ_flash_data;
 	GString *iHEX_file_mem;
 	rom_data SDAQ_flash = {0};
@@ -151,42 +151,45 @@ int main(int argc, char *argv[])
 	{
 		if((SDAQ_flash_data = SDAQ_flash_get_first_data_blk(&SDAQ_flash)))
 		{
-			if(!(fw_dev_type = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, DEVID_indexer_str, DEVID_indexer_str_len)) ||
-			   !(fw_rev = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, REV_indexer_str, REV_indexer_str_len)))
+			//fw_dev_type, *fw_dev_type_550X_ptr, *fw_dev_type_ptr, *fw_rev_ptr;
+			if(!((fw_dev_type_ptr = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, DEVID_indexer_str, DEVID_indexer_str_len)) ||
+			     (fw_dev_type_550X_ptr = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, DEVID_indexer_str_550X, DEVID_indexer_str_550X_len))))
 			{
-				fprintf(stderr, "No device type and/or revision reference found!!!\n");
+				fprintf(stderr, "No device type reference found!!!\n");
+				retval = EXIT_FAILURE;
+			}
+			if(!(fw_rev_ptr = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, REV_indexer_str, REV_indexer_str_len)))
+			{
+				fprintf(stderr, "No device revision reference found!!!\n");
+				retval = EXIT_FAILURE;
+			}
+			fw_dev_type = fw_dev_type_ptr ? *(fw_dev_type_ptr + DEVID_indexer_str_len) : strtol((char*)(fw_dev_type_550X_ptr+DEVID_indexer_str_550X_len), NULL, 16);
+			fw_rev_ptr += REV_indexer_str_len;
+			if(!dev_type_str[fw_dev_type])
+			{
+				fprintf(stderr, "Firmware's Device type is Unknown!!!\n");
 				retval = EXIT_FAILURE;
 			}
 			else
 			{
-				fw_dev_type += DEVID_indexer_str_len;
-				fw_rev += REV_indexer_str_len;
-				if(!dev_type_str[*fw_dev_type])
+				if(!Silent)
 				{
-					fprintf(stderr, "Firmware's Device type is Unknown!!!\n");
-					retval = EXIT_FAILURE;
+					printf("SDAQ firmware for %s(%d), SW_Rev:%d, 0x%X - 0x%X (%d bytes), CRC:0x%X\n",
+																 dev_type_str[fw_dev_type],
+																 fw_dev_type,
+																 *fw_rev_ptr,
+																 iHEX_first_taddr(&SDAQ_flash),
+																 iHEX_last_taddr(&SDAQ_flash),
+																 iHEX_taddr_range(&SDAQ_flash),
+																 SDAQ_flash_get_crc(&SDAQ_flash));
+					//g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
 				}
-				else
-				{
-					if(!Silent)
-					{
-						printf("SDAQ firmware for %s(%d), SW_Rev:%d, 0x%X - 0x%X (%d bytes), CRC:0x%X\n",
-																	 dev_type_str[*fw_dev_type],
-																	 *fw_dev_type,
-																	 *fw_rev,
-																	 iHEX_first_taddr(&SDAQ_flash),
-																	 iHEX_last_taddr(&SDAQ_flash),
-																	 iHEX_taddr_range(&SDAQ_flash),
-																	 SDAQ_flash_get_crc(&SDAQ_flash));
-						//g_list_foreach(SDAQ_flash.data_blks, print_data_blks, DATA_PRINT_OFF);
-					}
-					retval = SDAQ_prog(CAN_if_name, SDAQ_addr, *fw_dev_type, &SDAQ_flash, !Silent);
-				}
+				retval = SDAQ_prog(CAN_if_name, SDAQ_addr, fw_dev_type, &SDAQ_flash, !Silent);
 			}
 		}
 		else
 		{
-			fprintf(stderr, "Firmware's does not have data!!!\n");
+			fprintf(stderr, "Firmware does not have data!!!\n");
 			retval = EXIT_FAILURE;
 		}
 	}

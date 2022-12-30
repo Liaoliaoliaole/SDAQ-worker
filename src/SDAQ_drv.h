@@ -41,7 +41,9 @@ extern const unsigned char Broadcast;
 extern const unsigned char Unit_code_base_region_size;
 
 extern const char DEVID_indexer_str[];
+extern const char DEVID_indexer_str_550X[];
 extern const char REV_indexer_str[];
+extern const unsigned int DEVID_indexer_str_550X_len;
 extern const unsigned int DEVID_indexer_str_len;
 extern const unsigned int REV_indexer_str_len;
 

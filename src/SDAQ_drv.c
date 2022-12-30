@@ -122,8 +122,10 @@ const char *dev_status_str[][8]={
 {"Measuring","Yes","Yes","","","","","Booting"}};
 
 //Indexing Strings, used to get SW revision and device type from firmware.
+const char DEVID_indexer_str_550X[] = "SDAQ_550X_";
 const char DEVID_indexer_str[] = "@DeviceId@";
 const char REV_indexer_str[] = "@Revision@";
+const unsigned int DEVID_indexer_str_550X_len = strlen(DEVID_indexer_str_550X);
 const unsigned int DEVID_indexer_str_len = strlen(DEVID_indexer_str);
 const unsigned int REV_indexer_str_len = strlen(REV_indexer_str);
 
