@@ -62,7 +62,7 @@ const char *unit_str[256]={
 "mbar",
 };
 
-const char *dev_type_str[20]={
+const char *dev_type_str[SDAQ_MAX_DEV_NUM]={
 	"Pseudo_SDAQ",
 	"SDAQ-TC1",
 	"SDAQ-TC16",

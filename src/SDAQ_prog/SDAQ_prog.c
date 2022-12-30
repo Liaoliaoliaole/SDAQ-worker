@@ -151,7 +151,6 @@ int main(int argc, char *argv[])
 	{
 		if((SDAQ_flash_data = SDAQ_flash_get_first_data_blk(&SDAQ_flash)))
 		{
-			//fw_dev_type, *fw_dev_type_550X_ptr, *fw_dev_type_ptr, *fw_rev_ptr;
 			if(!((fw_dev_type_ptr = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, DEVID_indexer_str, DEVID_indexer_str_len)) ||
 			     (fw_dev_type_550X_ptr = memmem(SDAQ_flash_data->data, SDAQ_flash_data->len, DEVID_indexer_str_550X, DEVID_indexer_str_550X_len))))
 			{
@@ -165,7 +164,7 @@ int main(int argc, char *argv[])
 			}
 			fw_dev_type = fw_dev_type_ptr ? *(fw_dev_type_ptr + DEVID_indexer_str_len) : strtol((char*)(fw_dev_type_550X_ptr+DEVID_indexer_str_550X_len), NULL, 16);
 			fw_rev_ptr += REV_indexer_str_len;
-			if(!dev_type_str[fw_dev_type])
+			if(fw_dev_type>SDAQ_MAX_DEV_NUM || !dev_type_str[fw_dev_type])
 			{
 				fprintf(stderr, "Firmware's Device type is Unknown!!!\n");
 				retval = EXIT_FAILURE;

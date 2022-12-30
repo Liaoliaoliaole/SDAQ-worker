@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef SDAQ_DRV_h
 #define SDAQ_DRV_h
 
+#define SDAQ_MAX_DEV_NUM 20 //Maximum number for SDAQ Device type
 #define SDAQ_MAX_AMOUNT_OF_CHANNELS 16 //can be up to 63, from white paper.
 #define MAX_AMOUNT_OF_POINTS 16
 #define MAX_DATA_ON_POINT 6 //6 is the amount of values in each point (ref, read, offset, gain and coefficients).
