@@ -46,6 +46,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "../SDAQ_drv.h"
 #include "../CANif_discovery.h"
 #include "iHEX.h"
+#include "../ver.h"
 
 //Global variables.
 static volatile _Bool run = TRUE;
@@ -80,15 +81,15 @@ int main(int argc, char *argv[])
 	}
 
 	opterr = 1;
-	while((c = getopt(argc, argv, "hVlsi")) != -1)
+	while((c = getopt(argc, argv, "hvlsi")) != -1)
 	{
 		switch(c)
 		{
 			case 'h'://Help
 				print_usage(argv[0]);
 				exit(EXIT_SUCCESS);
-			case 'V'://Version
-				printf(VERSION"\n");
+			case 'v'://Version
+				printf("Release: %s (%s)\nCompile Date: %s\nVer: "VERSION"\n", get_curr_git_hash(), get_release_date(), get_compile_date());
 				exit(EXIT_SUCCESS);
 			case 'l'://List of CAN-IF
 				CANif_discovery();
@@ -230,7 +231,7 @@ void print_usage(char *prog_name)
 		"ADDRESS: A valid SDAQ address (Resolution:1..62).\n\n"
 		"Options:\n"
 		"           -h : Print help.\n"
-		"           -V : Version.\n"
+		"           -v : Version.\n"
 		"           -s : Silent mode.\n"
 		"           -l : Print a list of the available CAN-IFs.\n"
 		"           -i : In-line mode.\n"

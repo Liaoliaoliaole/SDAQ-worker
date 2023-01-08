@@ -1,6 +1,9 @@
 CC=gcc -O3
 CFLAGS= -std=c99 -Wall #-g3 #-Wextra
 LDLIBS= -lrt -lpthread $(shell pkg-config --cflags --libs ncurses glib-2.0 libxml-2.0 zlib)
+D_opt = -D RELEASE_HASH='"$(shell git log -1 --format=%h)"' \
+		-D RELEASE_DATE=$(shell git log -1 --format=%ct) \
+        -D COMPILE_DATE=$(shell date +%s)
 BUILD_dir=build
 WORK_dir=work
 SRC_dir=src
@@ -10,15 +13,18 @@ DEPs_SDAQ_worker=$(WORK_dir)/Discover_and_autoconfig.o \
 				 $(WORK_dir)/SDAQ_drv.o \
 				 $(WORK_dir)/SDAQ_xml.o \
 				 $(WORK_dir)/SDAQ_psim_UI.o \
-				 $(WORK_dir)/CANif_discovery.o
+				 $(WORK_dir)/CANif_discovery.o \
+				 $(WORK_dir)/ver.o
 
 DEPs_SDAQ_psim=$(WORK_dir)/SDAQ_drv.o \
 			   $(WORK_dir)/SDAQ_psim_UI.o \
-			   $(WORK_dir)/CANif_discovery.o
+			   $(WORK_dir)/CANif_discovery.o \
+			   $(WORK_dir)/ver.o
 
 DEPs_SDAQ_prog=$(WORK_dir)/SDAQ_drv.o \
 			   $(WORK_dir)/CANif_discovery.o \
-			   $(WORK_dir)/iHEX.o
+			   $(WORK_dir)/iHEX.o \
+			   $(WORK_dir)/ver.o
 
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim $(BUILD_dir)/SDAQ_prog
 install:install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
@@ -62,6 +68,10 @@ $(WORK_dir)/iHEX.o: $(SRC_dir)/SDAQ_prog/iHEX.c
 
 $(WORK_dir)/SDAQ_psim_UI.o: $(SRC_dir)/SDAQ_psim_UI.c
 	$(CC) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
+
+$(WORK_dir)/ver.o: $(SRC_dir)/ver.c
+	$(CC) $(D_opt) $(CFLAGS) $^ -c -o $@ $(LDLIBS)
+
 
 tree:
 	mkdir -p $(BUILD_dir) $(WORK_dir)

@@ -34,12 +34,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-//Include SDAQ Driver header
 #include "SDAQ_drv.h"
-//Include Functions implementation header
 #include "Modes.h"
-//Include CAN-if_discovery
 #include "CANif_discovery.h"
+#include "ver.h"
 
 //Application functions
 void print_usage(char *prog_name);//print the usage manual
@@ -85,7 +83,7 @@ int main(int argc, char *argv[])
 				print_usage(argv[0]);
 				exit(EXIT_SUCCESS);
 			case 'V'://Version
-				printf(VERSION"\n");
+				printf("Release: %s (%s)\nCompile Date: %s\nVer: "VERSION"\n", get_curr_git_hash(), get_release_date(), get_compile_date());
 				exit(EXIT_SUCCESS);
 			case 'l'://List of CAN-IF
 				CANif_discovery();

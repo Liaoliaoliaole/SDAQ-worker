@@ -43,6 +43,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Include SDAQ Driver header
 #include "SDAQ_psim_UI.h" // <-- #include "SDAQ_drv.h" and #include "SDAQ_psim_types.h"
 #include "CANif_discovery.h"
+#include "ver.h"
 
 //Global variables
 unsigned char active_threads=0;
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 				print_usage(argv[0]);
 				exit(EXIT_SUCCESS);
 			case 'v'://Version
-				printf(VERSION"\n");
+				printf("Release: %s (%s)\nCompile Date: %s\nVer: "VERSION"\n", get_curr_git_hash(), get_release_date(), get_compile_date());
 				exit(EXIT_SUCCESS);
 			case 'l'://List of CAN-IF
 				CANif_discovery();
