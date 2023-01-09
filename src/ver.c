@@ -14,25 +14,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-#include <time.h>
+#define BUFFER_SIZE 20
 
-static char buf[20];
+#include <stdio.h>
+#include <time.h>
 
 char* get_release_date(void)
 {
 #ifdef RELEASE_DATE
+	static char buffer[BUFFER_SIZE];
 	time_t release_date = RELEASE_DATE;
-	strftime(buf, sizeof(buf), "%x - %I:%M%p", localtime(&release_date));
-	return buf;
+	strftime(buffer, sizeof(buffer), "%x - %I:%M%p", localtime(&release_date));
+	return buffer;
 #endif
 	return "NO RELEASE_DATE";
 }
 char* get_compile_date(void)
 {
 #ifdef COMPILE_DATE
+	static char buffer[BUFFER_SIZE];
 	time_t compile_date = COMPILE_DATE;
-	strftime(buf, sizeof(buf), "%x - %I:%M%p", localtime(&compile_date));
-	return buf;
+	strftime(buffer, sizeof(buffer), "%x - %I:%M%p", localtime(&compile_date));
+	return buffer;
 #else
 	return "NO COMPILE_DATE";
 #endif
