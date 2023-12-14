@@ -281,7 +281,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 		SDAQ_goto_app,
 		SDAQ_prog_done
 	};
-	unsigned int SDAQ_flash_first_addr, SDAQ_flash_last_addr, SDAQ_flash_addr_range, SDAQ_flash_page_addr;
+	unsigned int SDAQ_img_addr, SDAQ_flash_first_addr, SDAQ_flash_last_addr, SDAQ_flash_addr_range, SDAQ_flash_page_addr;
 	unsigned char FSM_state = SDAQ_flash_erase, buff[PAGE_SIZE], retry_times = 0;
 	//Variables for Socket CAN
 	struct timeval tv = {0};
@@ -354,6 +354,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 	sdaq_bl_resp_dec = (sdaq_bootloader_response *)frame_rx.data;
 	SDAQ_flash_first_addr = iHEX_first_taddr(SDAQ_flash);
 	SDAQ_flash_page_addr = SDAQ_flash_first_addr;
+	SDAQ_img_addr = SDAQ_flash_first_addr-SDAQ_IMG_ADDR_OFFSET;
 	SDAQ_flash_last_addr = iHEX_last_taddr(SDAQ_flash);
 	SDAQ_flash_addr_range = iHEX_taddr_range(SDAQ_flash);
 	//SDAQ_prog's FSM
@@ -382,7 +383,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 							printf("\tErase SDAQ's Flash... ");
 							fflush(stdout);
 						}
-						SDAQ_erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR, SDAQ_flash_last_addr);
+						SDAQ_erase_flash(CAN_socket_num, SDAQ_addr, SDAQ_img_addr, SDAQ_flash_last_addr);
 						retry_times = 0;
 					}
 					else if(FSM_state == SDAQ_goto_app)
@@ -417,7 +418,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 													  SDAQ_flash_addr_range,
 													  SDAQ_flash_get_crc(SDAQ_flash),
 													  buff))
-									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_IMG_ADDR);
+									SDAQ_Transfer_to_flash(CAN_socket_num, SDAQ_addr, SDAQ_img_addr);
 								else
 								{
 									fprintf(stderr, " Error at image header writing!!!\n");
