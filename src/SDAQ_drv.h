@@ -24,8 +24,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #define PROTOCOL_ID 0x35
 
-//#define SDAQ_IMG_ADDR 0x10000
 #define SDAQ_IMG_ADDR_OFFSET 0x400
+#define SDAQ_IMG_PRE_PAGES 3
 #define SDAQ_IMG_HEADER_WORD 0x18281827 // Value from white paper'
 #define PAGE_SIZE 256 // Value from White paper.
 #define PAGE_SECTIONS 32 // 32 = 256/8, 8 is maximum Payload size.

@@ -382,11 +382,11 @@ int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int sta
 	SDAQ_img_header *header;
 
 	header = !ret_buff ? malloc(sizeof(SDAQ_img_header)) : ret_buff;
-	memset(header, -1, PAGE_SIZE);
-	header->header_word = SDAQ_IMG_HEADER_WORD;
+	header->header_word = SDAQ_IMG_HEADER_WORD + (start_addr<0x10000?1:0); // TODO investigate the reason that this needed.
 	header->start_addr = start_addr;
 	header->end_addr = start_addr + range-1;
 	header->crc = crc;
+	memset(header->reserved, -1, sizeof(header->reserved));
 	retval = SDAQ_write_page_buff(socket_fd, dev_address, (unsigned char *)header);
 	if(!ret_buff)
 		free(header);
