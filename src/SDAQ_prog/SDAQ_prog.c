@@ -410,7 +410,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 							case SDAQ_image_header:
 								if(report)
 								{
-									printf("Okay\n\tPrograming SDAQ's Flash predata[00%%]");
+									printf("Okay\n\tPrograming SDAQ's Flash P1 [00%%]");
 									fflush(stdout);
 								}
 								if(!SDAQ_write_header(CAN_socket_num, SDAQ_addr,
@@ -452,7 +452,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 								{
 									if(report)
 									{
-										printf("\n\tPrograming SDAQ's Flash [00%%]");
+										printf("\n\tPrograming SDAQ's Flash P2 [00%%]");
 										fflush(stdout);
 									}
 									FSM_state = SDAQ_flash_prog;
