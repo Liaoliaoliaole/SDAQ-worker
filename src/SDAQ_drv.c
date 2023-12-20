@@ -382,7 +382,7 @@ int SDAQ_write_header(int socket_fd, unsigned char dev_address, unsigned int sta
 	SDAQ_img_header *header;
 
 	header = !ret_buff ? malloc(sizeof(SDAQ_img_header)) : ret_buff;
-	header->header_word = SDAQ_IMG_HEADER_WORD + (start_addr<0x10000?1:0); // TODO investigate the reason that this needed.
+	header->header_word = SDAQ_IMG_HEADER_WORD + (start_addr<0x10000?1:0); // From whitepaper. New devices (program memory start @0x7000) have other magic number.
 	header->start_addr = start_addr;
 	header->end_addr = start_addr + range-1;
 	header->crc = crc;
