@@ -472,6 +472,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 					if(retry_times >= RETRY_LIMIT)
 					{
 						fprintf(stderr, "Error: SDAQ's bootloader not responding!!!\n");
+						SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
 						run = FALSE;
 					}
 					break;
