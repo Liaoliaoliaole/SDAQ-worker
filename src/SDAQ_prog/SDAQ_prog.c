@@ -453,6 +453,7 @@ int SDAQ_prog(char *CAN_IF_name, unsigned char SDAQ_addr, unsigned char fw_dev_t
 					else
 					{
 						fprintf(stderr, " Bootloader reply with Error!!!\n");
+						SDAQ_goto(CAN_socket_num, SDAQ_addr, application);
 						run = FALSE;
 						break;
 					}
