@@ -20,6 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
+#include <limits.h>
 #include <sys/time.h>
 #include <math.h>
 
@@ -43,6 +45,59 @@ enum contens_type{
 
 //Custom function that convert an type (contens_type) to a node with name name_mode
 xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *contents_ptr, unsigned char type);
+
+static int parse_unsigned_range(const xmlChar *content, unsigned long min,
+		unsigned long max, unsigned long *value)
+{
+	char *end = NULL;
+	unsigned long parsed;
+
+	if(!content || !value || *content < '0' || *content > '9')
+		return EXIT_FAILURE;
+	errno = 0;
+	parsed = strtoul((const char *)content, &end, 10);
+	if(errno == ERANGE || end == (char *)content || *end != '\0' || parsed < min || parsed > max)
+		return EXIT_FAILURE;
+	*value = parsed;
+	return EXIT_SUCCESS;
+}
+
+static int free_xml_content_and_fail(xmlChar **content)
+{
+	if(content && *content)
+	{
+		xmlFree(*content);
+		*content = NULL;
+	}
+	return EXIT_FAILURE;
+}
+
+static int parse_uchar_range(const xmlChar *content, unsigned char min,
+							 unsigned char max, unsigned char *value)
+{
+	unsigned long parsed;
+
+	if(parse_unsigned_range(content, min, max, &parsed))
+		return EXIT_FAILURE;
+	*value = (unsigned char)parsed;
+	return EXIT_SUCCESS;
+}
+
+static int parse_finite_float(const xmlChar *content, float *value)
+{
+	char *end = NULL;
+	float parsed;
+
+	if(!content || !*content)
+		return EXIT_FAILURE;
+	errno = 0;
+	parsed = strtof((const char *)content, &end);
+	if(end == (char *)content || *end != '\0' || !isfinite(parsed) ||
+	   (errno == ERANGE && parsed == 0.0f))
+		return EXIT_FAILURE;
+	*value = parsed;
+	return EXIT_SUCCESS;
+}
 
 int XML_info_file_write(char *file_path, void *arg, unsigned char exp_format_flag)
 {
@@ -122,7 +177,7 @@ xmlNodePtr xml_SDAQ_data(xmlNodePtr root_node , unsigned char *node_name, void *
 	switch(type)
 	{
 		case t_float:
-			sprintf((char*)buff,"%g",*((float *)contents_ptr));
+			snprintf((char*)buff, sizeof(buff), "%.9g", *((float *)contents_ptr));
 			break;
 		case t_integer_ubyte:
 			sprintf((char*)buff,"%u",*((unsigned char*)contents_ptr));
@@ -162,7 +217,7 @@ int find_appearances_of_a_XML_node(xmlNode *root_node, const char *Node_name)
 	int cnt=0;
 	xmlNode *cur_node;
 
-	if (root_node->type == XML_ELEMENT_NODE)
+	if(root_node && Node_name && root_node->type == XML_ELEMENT_NODE)
 	{
 		for (cur_node = root_node->children; cur_node; cur_node = cur_node->next)
 		{
@@ -212,7 +267,7 @@ int XML_info_file_read_and_validate(char *file_path, void *new_conf)
     {
 		/*Get the root element node */
 		SDAQ_root = xmlDocGetRootElement(doc);
-		if(!strcmp((const char*)(SDAQ_root->name), "SDAQ"))
+		if(SDAQ_root && !strcmp((const char*)(SDAQ_root->name), "SDAQ"))
 		{
 			SDAQ_info_cnt=find_appearances_of_a_XML_node(SDAQ_root, "SDAQ_info");
 			Calibration_Data_cnt=find_appearances_of_a_XML_node(SDAQ_root, "Calibration_Data");
@@ -256,7 +311,7 @@ int XML_info_file_read_and_validate(char *file_path, void *new_conf)
 xmlNode * get_XML_node_by_name(xmlNode *root_node, const char *Node_name)
 {
 	xmlNode *cur_node;
-	if (root_node->type == XML_ELEMENT_NODE)
+	if(root_node && Node_name && root_node->type == XML_ELEMENT_NODE)
 	{
 		for (cur_node = root_node->children; cur_node; cur_node = cur_node->next)
 		{
@@ -274,8 +329,10 @@ xmlChar * _xmlNodeGetContent(xmlChar *content, const xmlNode *cur)
 {
 	if(content)
 		xmlFree(content);
+	if(!cur)
+		return NULL;
 	content = xmlNodeGetContent(cur);
-	if(!(*content))
+	if(!content || !*content)
 	{
 		xmlFree(content);
 		content = NULL;
@@ -286,6 +343,7 @@ xmlChar * _xmlNodeGetContent(xmlChar *content, const xmlNode *cur)
 int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 {
 	unsigned char i;
+	unsigned long parsed;
 	xmlNode *SerialNumber = get_XML_node_by_name(SDAQ_info, "SerialNumber"),
 			*Type = get_XML_node_by_name(SDAQ_info, "Type"),
 			*Firmware_Rev = get_XML_node_by_name(SDAQ_info, "Firmware_Rev"),
@@ -294,14 +352,18 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 			*Samplerate = get_XML_node_by_name(SDAQ_info, "Samplerate"),
 			*Max_num_of_cal_points = get_XML_node_by_name(SDAQ_info, "Max_num_of_cal_points");
 	xmlChar *content = NULL;
+
+	if(!SDAQ_info || !SDAQs_new_config)
+		return EXIT_FAILURE;
 	if(SerialNumber&&Type&&Firmware_Rev&&Hardware_Rev&&Available_Channels&&Samplerate&&Max_num_of_cal_points)
 	{
-		if(*(content = _xmlNodeGetContent(content, SerialNumber)))
-			SDAQs_new_config->SDAQ_info.serial_number = atoi((const char *)(content));
+		if((content = _xmlNodeGetContent(content, SerialNumber)) &&
+		   !parse_unsigned_range(content, 0, UINT_MAX, &parsed))
+			SDAQs_new_config->SDAQ_info.serial_number = (unsigned int)parsed;
 		else
 		{
-			fprintf(stderr, "XML node SDAQ_info->SerialNumber does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->SerialNumber is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
 		if((content = _xmlNodeGetContent(content, Type)))
 		{
@@ -313,50 +375,44 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 			if(!dev_type_str[i])
 			{
 				fprintf(stderr, "Unknown type of SDAQ (%s)!!!\n",content);
-				xmlFree(content);
-				return EXIT_FAILURE;
+				return free_xml_content_and_fail(&content);
 			}
 			SDAQs_new_config->SDAQ_info.dev_type = dev_type_str[i];
 		}
 		else
 		{
 			fprintf(stderr, "XML node SDAQ_info->Type does not have content!!!\n");
-			return EXIT_FAILURE;
+			return free_xml_content_and_fail(&content);
 		}
-		if((content = _xmlNodeGetContent(content, Firmware_Rev)))
-			SDAQs_new_config->SDAQ_info.firm_rev = atoi((const char *)(content));
-		else
+		content = _xmlNodeGetContent(content, Firmware_Rev);
+		if(!content || parse_uchar_range(content, 0, UCHAR_MAX, &SDAQs_new_config->SDAQ_info.firm_rev))
 		{
-			fprintf(stderr, "XML node SDAQ_info->Firmware_Rev does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->Firmware_Rev is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
-		if((content = _xmlNodeGetContent(content, Hardware_Rev)))
-			SDAQs_new_config->SDAQ_info.hw_rev = atoi((const char *)(content));
-		else
+		content = _xmlNodeGetContent(content, Hardware_Rev);
+		if(!content || parse_uchar_range(content, 0, UCHAR_MAX, &SDAQs_new_config->SDAQ_info.hw_rev))
 		{
-			fprintf(stderr, "XML node SDAQ_info->Hardware_Rev does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->Hardware_Rev is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
-		if((content = _xmlNodeGetContent(content, Available_Channels)))
-			SDAQs_new_config->SDAQ_info.num_of_ch = atoi((const char *)(content));
-		else
+		content = _xmlNodeGetContent(content, Available_Channels);
+		if(!content || parse_uchar_range(content, 1, 63, &SDAQs_new_config->SDAQ_info.num_of_ch))
 		{
-			fprintf(stderr, "XML node SDAQ_info->Available_Channels does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->Available_Channels is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
-		if((content = _xmlNodeGetContent(content, Samplerate)))
-			SDAQs_new_config->SDAQ_info.sample_rate = atoi((const char *)(content));
-		else
+		content = _xmlNodeGetContent(content, Samplerate);
+		if(!content || parse_uchar_range(content, 0, UCHAR_MAX, &SDAQs_new_config->SDAQ_info.sample_rate))
 		{
-			fprintf(stderr, "XML node SDAQ_info->Samplerate does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->Samplerate is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
-		if((content = _xmlNodeGetContent(content, Max_num_of_cal_points)))
-			SDAQs_new_config->SDAQ_info.max_cal_point = atoi((const char *)(content));
-		else
+		content = _xmlNodeGetContent(content, Max_num_of_cal_points);
+		if(!content || parse_uchar_range(content, 1, MAX_AMOUNT_OF_POINTS, &SDAQs_new_config->SDAQ_info.max_cal_point))
 		{
-			fprintf(stderr, "XML node SDAQ_info->Max_num_of_cal_points does not have content!!!\n");
-			return EXIT_FAILURE;
+			fprintf(stderr, "XML node SDAQ_info->Max_num_of_cal_points is invalid!!!\n");
+			return free_xml_content_and_fail(&content);
 		}
 		xmlFree(content);
 	}
@@ -376,7 +432,7 @@ int populate_SDAQ_info(xmlNode *SDAQ_info, SDAQ_info_cal_data *SDAQs_new_config)
 			fprintf(stderr, "XML node SDAQ_info->Samplerate Not found!!!\n");
 		if(!Max_num_of_cal_points)
 			fprintf(stderr, "XML node SDAQ_info->Max_num_of_cal_points Not found!!!\n");
-		return EXIT_FAILURE;
+		return free_xml_content_and_fail(&content);
 	}
 	return EXIT_SUCCESS;
 }
@@ -400,9 +456,10 @@ GSList * Cal_points_data_list_conv_and_append(GSList *Cal_points_for_channel_lis
 int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDAQs_new_config)
 {
 	char point_name_buff[10];
-	unsigned char channel, amount_of_new_cal_ch;
+	unsigned char channel = 0, amount_of_new_cal_ch;
+	const unsigned char point_types[MAX_DATA_ON_POINT] = {meas, ref, offset, gain, C2, C3};
 	int i, j;
-	date_list_data_of_node l_new_date_note, *new_date_node; //date_list_data_of_node local_variable and work pointer for GSList;
+	date_list_data_of_node l_new_date_note = {0}, *new_date_node; //date_list_data_of_node local_variable and work pointer for GSList;
 	xmlChar *content = NULL;
 	xmlNode *XML_channel_root = NULL,
 			*XML_cal_date = NULL,
@@ -419,11 +476,11 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 			*XML_C3 = NULL;
 
 	if(!Calibration_Data || !SDAQs_new_config)
-		return EXIT_FAILURE;
+		return free_xml_content_and_fail(&content);
 	if(!SDAQs_new_config->SDAQ_info.num_of_ch)
 	{
 		fprintf(stderr, "SDAQ_info.num_of_ch is ZERO!!!\n");
-		return EXIT_FAILURE;
+		return free_xml_content_and_fail(&content);
 	}
 	if(!(SDAQs_new_config->Cal_points_data_lists = calloc(SDAQs_new_config->SDAQ_info.num_of_ch, sizeof(struct GSList *))))
 	{
@@ -435,14 +492,13 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 		amount_of_new_cal_ch = SDAQs_new_config->SDAQ_info.num_of_ch;
 	for(i=0, XML_channel_root=Calibration_Data->children; i<amount_of_new_cal_ch; XML_channel_root=XML_channel_root->next,i++)
 	{
-		sscanf((char *)(XML_channel_root->name),"CH%hhu",&channel);
-		if(!channel || channel>SDAQs_new_config->SDAQ_info.num_of_ch)
+		if(strncmp((char *)(XML_channel_root->name), "CH", 2) ||
+		   parse_uchar_range(XML_channel_root->name + 2, 1,
+						 SDAQs_new_config->SDAQ_info.num_of_ch, &channel))
 		{
-			if(!channel)
-				fprintf(stderr, "Name of Calibration_Data->%s is invalid!!!\n",XML_channel_root->name);
-			if(channel>SDAQs_new_config->SDAQ_info.num_of_ch)
-				fprintf(stderr, "Name of Calibration_Data->%s is Out of range (0<CHn<=%d)!!!\n", XML_channel_root->name, SDAQs_new_config->SDAQ_info.num_of_ch);
-			return EXIT_FAILURE;
+			fprintf(stderr, "Name of Calibration_Data->%s is invalid or out of range (0<CHn<=%d)!!!\n",
+					XML_channel_root->name, SDAQs_new_config->SDAQ_info.num_of_ch);
+			return free_xml_content_and_fail(&content);
 		}
 		if(g_slist_find_custom((GSList *)(SDAQs_new_config->Calibration_date_list), &channel, SDAQ_date_node_with_channel_b_find))//Check if channel is already registered.
 			continue;
@@ -456,9 +512,10 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 			l_new_date_note.ch_num = channel;
 			if((content = _xmlNodeGetContent(content, XML_cal_date)))
 			{
-				short year,month,day;
-				sscanf((char*)content,"%hd/%hd/%hd",&year,&month,&day);
-				if((year>=2000&&year<=2255)&&(month>=1&&month<=12)&&(day>=1&&day<=31))
+				short year = 0, month = 0, day = 0;
+				char trailing;
+				if(sscanf((char*)content,"%hd/%hd/%hd%c",&year,&month,&day,&trailing)==3 &&
+				   (year>=2000&&year<=2255)&&(month>=1&&month<=12)&&(day>=1&&day<=31))
 				{
 					l_new_date_note.year = year-2000;
 					l_new_date_note.month = month;
@@ -467,57 +524,54 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 				else
 				{
 					fprintf(stderr, "Content of XML node SDAQ_info.CH%d->Calibration_date(%d/%d/%d) is wrong!!!\n",channel,year,month,day);
-					xmlFree(content);
-					return EXIT_FAILURE;
+					return free_xml_content_and_fail(&content);
 				}
 			}
 			else
 			{
 				fprintf(stderr, "XML node SDAQ_info.CH%d->Calibration_date does not have content!!!\n", channel);
-				return EXIT_FAILURE;
+				return free_xml_content_and_fail(&content);
 			}
-			if((content = _xmlNodeGetContent(content, XML_period)))
-				l_new_date_note.period = atoi((char*)content);
-			else
+			content = _xmlNodeGetContent(content, XML_period);
+			if(!content || parse_uchar_range(content, 0, UCHAR_MAX, &l_new_date_note.period))
 			{
-				fprintf(stderr, "XML node SDAQ_info.CH%d->Calibration_Period does not have content!!!\n", channel);
-				return EXIT_FAILURE;
+				fprintf(stderr, "XML node SDAQ_info.CH%d->Calibration_Period is invalid (expected 0..255)!!!\n", channel);
+				return free_xml_content_and_fail(&content);
 			}
 			if((content = _xmlNodeGetContent(content, XML_used_Points)))
 			{
-				l_new_date_note.amount_of_points = atoi((char*)content);
-				if(l_new_date_note.amount_of_points>SDAQs_new_config->SDAQ_info.max_cal_point)
+				if(parse_uchar_range(content, 0, SDAQs_new_config->SDAQ_info.max_cal_point,
+								 &l_new_date_note.amount_of_points))
 				{
-					fprintf(stderr, "XML node SDAQ_info.CH%d->Used_Points > SDAQs_new_config->SDAQ_info.max_cal_point!!!\n", channel);
-					xmlFree(content);
-					return EXIT_FAILURE;
+					fprintf(stderr, "XML node SDAQ_info.CH%d->Used_Points is invalid (expected 0..%d)!!!\n",
+							channel, SDAQs_new_config->SDAQ_info.max_cal_point);
+					return free_xml_content_and_fail(&content);
 				}
 			}
 			else
 			{
 				fprintf(stderr, "XML node SDAQ_info.CH%d->Used_Points does not have content!!!\n", channel);
-				return EXIT_FAILURE;
+				return free_xml_content_and_fail(&content);
 			}
 			if((content = _xmlNodeGetContent(content, XML_CH_Unit)))
 			{
-				for(j=Unit_code_base_region_size;j<256;j++)
-				{
-					if(!unit_str[j]||!strcmp((char*)content, unit_str[j]))
-						break;
-				}
-				if(unit_str[j])
+			for(j=Unit_code_base_region_size; j<256; j++)
+			{
+				if(!unit_str[j]||!strcmp((char*)content, unit_str[j]))
+					break;
+			}
+			if(j < 256 && unit_str[j])
 					l_new_date_note.cal_unit = j;
 				else
 				{
 					fprintf(stderr, "Unit(%s) in content of XML node SDAQ_info.CH%d->Unit is unknown!!!\n",content,channel);
-					xmlFree(content);
-					return EXIT_FAILURE;
+					return free_xml_content_and_fail(&content);
 				}
 			}
 			else
 			{
 				fprintf(stderr, "XML node SDAQ_info.CH%d->XML_CH_Unit does not have content!!!\n", channel);
-				return EXIT_FAILURE;
+				return free_xml_content_and_fail(&content);
 			}
 			xmlFree(content); content = NULL;
 			//Append data to GSList: SDAQs_new_config->Calibration_date_list;
@@ -531,13 +585,14 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 			//Check if calibration point is set and if yes load them at SDAQs_new_config->Cal_points_data_lists[ch].
 			if(l_new_date_note.amount_of_points)
 			{
+				float previous_measure = 0.0f;
 				for(j=0, XML_point_data=XML_points_data->children; j<l_new_date_note.amount_of_points; XML_point_data=XML_point_data->next,j++)
 				{
 					sprintf(point_name_buff, "Point_%hhu",j);
 					if(!XML_point_data || strcmp((char*)(XML_point_data->name), point_name_buff))
 					{
 						fprintf(stderr, "XML node for calibration point %d for channel %d was not found or it's in wrong order!!!\n", j, channel);
-						return EXIT_FAILURE;
+						return free_xml_content_and_fail(&content);
 					}
 					XML_Meas = get_XML_node_by_name(XML_point_data, "Measure");
 					XML_Ref = get_XML_node_by_name(XML_point_data, "Reference");
@@ -547,47 +602,31 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 					XML_C3 = get_XML_node_by_name(XML_point_data, "C3");
 					if(XML_Meas && XML_Ref && XML_Offset && XML_Gain && XML_C2 && XML_C3)
 					{
-						if((content = _xmlNodeGetContent(content, XML_Meas)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), meas, j);
-						else
+						xmlNode *fields[MAX_DATA_ON_POINT] = {XML_Meas, XML_Ref, XML_Offset, XML_Gain, XML_C2, XML_C3};
+						const char *field_names[MAX_DATA_ON_POINT] = {"Measure", "Reference", "Offset", "Gain", "C2", "C3"};
+						float point_value;
+
+						for(int field=0; field<MAX_DATA_ON_POINT; field++)
 						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Measure does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
-						}
-						if((content = _xmlNodeGetContent(content, XML_Ref)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), ref, j);
-						else
-						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Reference does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
-						}
-						if((content = _xmlNodeGetContent(content, XML_Offset)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), offset, j);
-						else
-						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Offset does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
-						}
-						if((content = _xmlNodeGetContent(content, XML_Gain)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), gain, j);
-						else
-						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->Gain does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
-						}
-						if((content = _xmlNodeGetContent(content, XML_C2)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C2, j);
-						else
-						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C2 does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
-						}
-						if((content = _xmlNodeGetContent(content, XML_C3)))
-							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append((GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], atof((char*)content), C3, j);
-						else
-						{
-							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C3 does not have content!!!\n", channel, j);
-							return EXIT_FAILURE;
+							content = _xmlNodeGetContent(content, fields[field]);
+							if(!content || parse_finite_float(content, &point_value))
+							{
+								fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->%s is not a finite float!!!\n",
+										channel, j, field_names[field]);
+								return free_xml_content_and_fail(&content);
+							}
+							if(field == 0)
+							{
+								if(j && !(point_value > previous_measure))
+								{
+									fprintf(stderr, "Calibration_Data->CH%d Point_%d.Measure must be greater than Point_%d.Measure after float32 conversion!!!\n",
+											channel, j, j-1);
+									return free_xml_content_and_fail(&content);
+								}
+								previous_measure = point_value;
+							}
+							SDAQs_new_config->Cal_points_data_lists[channel-1] = (struct GSList *)Cal_points_data_list_conv_and_append(
+									(GSList *)SDAQs_new_config->Cal_points_data_lists[channel-1], point_value, point_types[field], j);
 						}
 						xmlFree(content); content = NULL;
 					}
@@ -605,7 +644,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C2 Not found!!!\n", channel, j);
 						if(!XML_C3)
 							fprintf(stderr, "XML node Calibration_Data->CH%d->Points->Point_%d->C3 Not found!!!\n", channel, j);
-						return EXIT_FAILURE;
+						return free_xml_content_and_fail(&content);
 					}
 				}
 			}
@@ -624,7 +663,7 @@ int populate_Calibration_Data(xmlNode *Calibration_Data, SDAQ_info_cal_data *SDA
 				fprintf(stderr, "XML node SDAQ_info.CH%d->Unit Not found!!!\n", channel);
 			if(!XML_points_data)
 				fprintf(stderr, "XML node SDAQ_info.CH%d->Points Not found!!!\n", channel);
-			return EXIT_FAILURE;
+			return free_xml_content_and_fail(&content);
 		}
 	}
 	return EXIT_SUCCESS;

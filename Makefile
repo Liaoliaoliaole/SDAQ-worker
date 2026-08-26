@@ -26,8 +26,24 @@ DEPs_SDAQ_prog=$(WORK_dir)/SDAQ_drv.o \
 			   $(WORK_dir)/iHEX.o \
 			   $(WORK_dir)/ver.o
 
+TEST_SRC=$(SRC_dir)/SDAQ_xml.c $(SRC_dir)/getinfo.c $(SRC_dir)/setinfo.c $(SRC_dir)/SDAQ_drv.c
+TEST_BIN=$(BUILD_dir)/test_calibration
+TEST_ASAN_BIN=$(BUILD_dir)/test_calibration_asan
+TEST_FLAGS=-O0 -g -std=c99 -Wall -Wextra
+ASAN_DETECT_LEAKS?=1
+
 all: $(BUILD_dir)/SDAQ_worker $(BUILD_dir)/SDAQ_psim $(BUILD_dir)/SDAQ_prog
 install:install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
+
+test: tree $(TEST_BIN)
+	G_SLICE=debug-blocks $(TEST_BIN)
+
+test-asan: tree
+	$(CC) $(TEST_FLAGS) -fsanitize=address,undefined -fno-omit-frame-pointer tests/test_calibration.c $(TEST_SRC) -o $(TEST_ASAN_BIN) $(LDLIBS)
+	G_SLICE=always-malloc ASAN_OPTIONS=detect_leaks=$(ASAN_DETECT_LEAKS):halt_on_error=1 UBSAN_OPTIONS=halt_on_error=1 $(TEST_ASAN_BIN)
+
+$(TEST_BIN): tests/test_calibration.c $(TEST_SRC) $(SRC_dir)/*.h
+	$(CC) $(TEST_FLAGS) tests/test_calibration.c $(TEST_SRC) -o $@ $(LDLIBS)
 
 $(BUILD_dir)/SDAQ_worker: $(DEPs_SDAQ_worker) $(SRC_dir)/*.h $(SRC_dir)/SDAQ_worker.c
 	$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
@@ -109,6 +125,4 @@ ifeq ($(shell ls /usr/share/man/man1/SDAQ* > /dev/null 2>&1; echo $$?), 0)
 	@echo "Uninstall SDAQ_worker's manuals..."
 	@rm /usr/share/man/man1/SDAQ* && sudo mandb
 endif
-.PHONY: all clean delete-the-tree tree install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog
-
-
+.PHONY: all clean delete-the-tree tree test test-asan install-SDAQ_worker install-SDAQ_psim install-SDAQ_prog

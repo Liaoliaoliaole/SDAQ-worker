@@ -89,7 +89,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 	{
 		for(int i=0; i<str.SDAQ_info.num_of_ch; i++)
 		{
-			g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_Date_node);
+			g_slist_free_full((GSList *)(str.Cal_points_data_lists[i]), free_SDAQ_cal_point_node);
 			str.Cal_points_data_lists[i]=NULL;
 		}
 		free(str.Cal_points_data_lists);
@@ -99,6 +99,7 @@ int getinfo(int socket_num, unsigned char dev_addr, opt_flags *usr_flag)
 
 void info_timer_handler (int signum)
 {
+	(void)signum;
 	TMR_exp = 0;
 	return;
 }
@@ -221,6 +222,10 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 	//CAN Socket and SDAQ related variables
 	struct can_frame frame_rx;
 	int RX_bytes, retry_cnt = RETRY_CNT_INIT;
+	unsigned char Channel;
+	unsigned char received_points[MAX_AMOUNT_OF_POINTS * MAX_DATA_ON_POINT];
+	unsigned int point_index;
+	_Bool date_seen;
 	GSList *list_node;
 	sdaq_can_id *id_dec = (sdaq_can_id *)&(frame_rx.can_id);
 	sdaq_calibration_date *date_dec = (sdaq_calibration_date *)frame_rx.data;
@@ -228,8 +233,10 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 	sdaq_calibration_points_data *point_node; //sdaq_calibration_points_data work pointer;
 	//Timers related Variables
 	struct itimerval timer;//Scan Timeout
+	(void)scanning_time;
 
-	if(str->SDAQ_info.num_of_ch<=0)
+	if(!str || str->SDAQ_info.num_of_ch<=0 || !str->SDAQ_info.max_cal_point ||
+	   str->SDAQ_info.max_cal_point>MAX_AMOUNT_OF_POINTS)
 		return EXIT_FAILURE;
 
 	if(!str->Cal_points_data_lists)
@@ -246,6 +253,8 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 	for(int i=0,cnt; i<str->SDAQ_info.num_of_ch; i++)
 	{
 		TMR_exp = 1;
+		date_seen = 0;
+		memset(received_points, 0, sizeof(received_points));
 		if(CH_Req)
 		{
 			list_node = ((GSList **)CH_Req)[i];
@@ -259,16 +268,21 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 		setitimer (ITIMER_REAL, &timer, NULL);
 		cnt=0;
 		QueryCalibrationData(socket_num, dev_addr, i+1);
-		while(TMR_exp && cnt < str->SDAQ_info.max_cal_point*6+1)//6 is the amount of data in a point (meas, ref, offset, gain, C2, C3) + 1 for the extra Calibration_Date message
+		while(TMR_exp && (cnt < str->SDAQ_info.max_cal_point*MAX_DATA_ON_POINT || !date_seen))
 		{
 			RX_bytes=read(socket_num, &frame_rx, sizeof(frame_rx));
 			if(RX_bytes==sizeof(frame_rx))
 			{
-				if(id_dec->device_addr == dev_addr)
+				if(id_dec->device_addr == dev_addr && id_dec->channel_num == (unsigned int)(i+1))
 				{
 					switch(id_dec->payload_type)
 					{
 						case Calibration_Point_Data:
+							if(frame_rx.can_dlc != sizeof(sdaq_calibration_points_data) ||
+							   ((sdaq_calibration_points_data *)frame_rx.data)->type < meas ||
+							   ((sdaq_calibration_points_data *)frame_rx.data)->type > C3 ||
+							   ((sdaq_calibration_points_data *)frame_rx.data)->points_num >= str->SDAQ_info.max_cal_point)
+								break;
 							//Check if Point is already in the Cal_points_data_lists[i].
 							if(!(list_node = g_slist_find_custom((GSList *)(str->Cal_points_data_lists[i]), frame_rx.data, SDAQ_point_node_with_type_and_num_find)))
 								point_node = new_SDAQ_cal_point_node();
@@ -277,31 +291,35 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 							memcpy(point_node, frame_rx.data, sizeof(sdaq_calibration_points_data));
 							if(!list_node)
 								str->Cal_points_data_lists[i] = (struct GSList *)g_slist_append((GSList *)(str->Cal_points_data_lists[i]), point_node);
-							cnt++;
+							point_index = point_node->points_num * MAX_DATA_ON_POINT +
+										  (point_node->type - meas);
+							if(!received_points[point_index])
+							{
+								received_points[point_index] = 1;
+								cnt++;
+							}
 							break;
 						case Calibration_Date:
-							if((new_date_node = g_slist_nth_data((GSList *)str->Calibration_date_list, i)))
+							if(frame_rx.can_dlc != sizeof(sdaq_calibration_date))
+								break;
+							Channel = i+1;
+							list_node = g_slist_find_custom((GSList *)str->Calibration_date_list,
+														&Channel, SDAQ_date_node_with_channel_b_find);
+							if(list_node)
 							{
-								if(new_date_node->ch_num == id_dec->channel_num)
+								new_date_node = (date_list_data_of_node *)list_node->data;
+								//Check diffs and Reload data from decoded "frame_rx" buffer to node
+								if(new_date_node->amount_of_points != date_dec->amount_of_points)
+									new_date_node->amount_of_points = date_dec->amount_of_points;
+								if(new_date_node->cal_unit != date_dec->cal_units)
+									new_date_node->cal_unit = date_dec->cal_units;
+								if(new_date_node->period != date_dec->period)
+									new_date_node->period = date_dec->period;
+								if(new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day)
 								{
-									//Check diffs and Reload data from decoded "frame_rx" buffer to node
-									if(new_date_node->amount_of_points != date_dec->amount_of_points)
-										new_date_node->amount_of_points = date_dec->amount_of_points;
-									if(new_date_node->cal_unit != date_dec->cal_units)
-										new_date_node->cal_unit = date_dec->cal_units;
-									if(new_date_node->period != date_dec->period)
-										new_date_node->period = date_dec->period;
-									if(new_date_node->year != date_dec->year || new_date_node->month != date_dec->month || new_date_node->day != date_dec->day)
-									{
-										new_date_node->year = date_dec->year;
-										new_date_node->month = date_dec->month;
-										new_date_node->day = date_dec->day;
-									}
-								}
-								else
-								{
-									printf("Fatal Error@Rx of CalibrationData: Data for CH_%02d received in wrong order!!!\n", i+1);
-									return EXIT_FAILURE;
+									new_date_node->year = date_dec->year;
+									new_date_node->month = date_dec->month;
+									new_date_node->day = date_dec->day;
 								}
 							}
 							else
@@ -317,7 +335,7 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 								new_date_node->cal_unit = date_dec->cal_units;
 								str->Calibration_date_list = (struct GSList *)g_slist_append((GSList *)str->Calibration_date_list, new_date_node);
 							}
-							cnt++;
+							date_seen = 1;
 							break;
 					}
 				}
@@ -326,7 +344,7 @@ int get_SDAQ_calibration_data(int socket_num, unsigned char dev_addr, unsigned i
 			{
 				if(str->Cal_points_data_lists[i])
 				{
-					g_slist_free_full((GSList *)(str->Cal_points_data_lists[i]), free_SDAQ_Date_node);
+					g_slist_free_full((GSList *)(str->Cal_points_data_lists[i]), free_SDAQ_cal_point_node);
 					str->Cal_points_data_lists[i] = NULL;
 				}
 				i--;
@@ -399,6 +417,7 @@ void free_SDAQ_cal_point_node(gpointer point_node)
 */
 gint SDAQ_date_node_with_nonzero_amount_of_points_find (gconstpointer a, gconstpointer b)
 {
+	(void)b;
 	return ((date_list_data_of_node *)a)->amount_of_points > 0 ?  0 : 1;
 }
 
