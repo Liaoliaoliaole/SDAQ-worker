@@ -41,6 +41,18 @@ The executable binaries located under the **./build** directory.
 ```
 $ sudo make install
 ```
+
+### Regression tests
+From the SDAQ-worker source root, run the maintained calibration regression suite with:
+```
+$ make test
+```
+For an AddressSanitizer/UndefinedBehaviorSanitizer run where the host supports it:
+```
+$ make test-asan
+```
+
+When this repository is used as the `LOG-core/src/sdaq-worker` submodule, do not independently pull a branch to update it. Use the parent `LOG-core` rebuild scripts so the worker remains at the reviewed submodule commit.
 ### Un-installation
 ```
 $ sudo make uninstall
