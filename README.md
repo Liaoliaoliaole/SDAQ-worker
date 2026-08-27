@@ -6,12 +6,14 @@ This repository related to a software control and emulate suite related to SDAQ 
 The SDAQ_worker project was started with the philosophy to make some software that can control this devices from a computer that is equip with CAN interface (Linux Socket CAN compatible) and runs GNU operating system.
 
 ## Executables
-After the compilation two executable files produced:
+After the compilation three executable files produced:
 * [SDAQ_worker](#usage-sdaq_worker)
 * [SDAQ_psim](#usage-sdaq_psim)
+* [SDAQ_prog](#usage-sdaq_prog)
 
 The SDAQ_worker is the SDAQ manipulation/controlling software.<br>
-The SDAQ_psim is a SDAQ software emulator.
+The SDAQ_psim is a SDAQ software emulator.<br>
+The SDAQ_prog is a firmware downloading (flashing) tool for SDAQ-CAN devices.
 
 ### Requirements
 For compilation of this project the following dependencies are required.
@@ -20,7 +22,8 @@ For compilation of this project the following dependencies are required.
 * [NCURSES](https://www.gnu.org/software/ncurses/ncurses.html) - A free (libre) software emulation library of curses.
 * [GLib](https://wiki.gnome.org/Projects/GLib) - GNOME core application building blocks libraries.
 * [libxml2](http://xmlsoft.org/) - Library for parsing XML documents
-* [zlib](https://www.zlib.net/zlib_how.html) - A free software library used for data compression.
+* [zlib](https://www.zlib.net/zlib_how.html) - A free software library used for data compression (CRC checking of firmware images by SDAQ_prog).
+* POSIX threads (pthread) - Used by SDAQ_psim to emulate multiple pseudo-SDAQ devices concurrently.
 
 ##### Optionally
 * [CAN-Utils](https://elinux.org/Can-utils) - CANBus utilities
@@ -29,8 +32,8 @@ For compilation of this project the following dependencies are required.
 To compile the programs (tested under GNU/Linux only)
 ```
 $ # Clone the project's source code
-$ git clone https://gitlab.com/fantomsam/sdaq-worker.git
-$ cd sdaq_worker
+$ git clone https://github.com/Liaoliaoliaole/SDAQ-worker.git
+$ cd SDAQ-worker
 $ # Make the compilation directory tree
 $ make tree
 $ make
@@ -40,6 +43,12 @@ The executable binaries located under the **./build** directory.
 ### Installation
 ```
 $ sudo make install
+```
+This installs all three executables (`SDAQ_worker`, `SDAQ_psim`, `SDAQ_prog`) to `/usr/local/bin/` along with their Bash completion scripts.
+
+To additionally install the man pages:
+```
+$ sudo make install-manuals
 ```
 
 ### Regression tests
@@ -89,7 +98,7 @@ Options:
            -r : resize terminal. Used with mode 'measure'
            -v : Address Verification. Used with mode 'setaddress'.
            -l : Print a list of the available CAN-IFs.
-           -f : Write/Read SDAQ info to/from file.
+           -f : Write/Read SDAQ info to/from a .xml file.
            -p : Formatted XML output. Used with mode 'getinfo'.
            -e : External command. Used with mode 'setinfo'.
   -t <Timeout>: Discover Timeout (sec). (0 < Timeout < 20) default: 2 Sec.
@@ -110,6 +119,7 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 	         -l : Print list of CAN-IFs
 	         -s : S/N of the first pseudo_SDAQ. (Default 1)
 	         -c : Initial Amount of channels of each pseudo_SDAQ, (default 1, Range:[1-16])
+	         -u : Print SDAQ UNITs as a JSON table
 
 			      -----SDAQ_psim Shell-----
 
@@ -141,6 +151,22 @@ Usage: SDAQ_psim CAN-IF Num_of_pSDAQ [Options]
 		set (S/N) ch# p(oint)# name Real_val = Set Channel's point value
         		name := Meas, Ref, Offset, Gain, C2, C3
 ```
+### Usage: SDAQ_prog
+```
+Usage: SDAQ_prog [Options] CAN-IF ADDRESS [Path to ROM File]
+
+CAN-IF: The name of the CANBUS interface.
+
+ADDRESS: A valid SDAQ address (Resolution:1..62).
+
+Options:
+           -h : Print help.
+           -v : Version.
+           -s : Silent mode.
+           -l : Print a list of the available CAN-IFs.
+           -i : In-line mode.
+```
+SDAQ_prog reads an Intel iHEX firmware image and downloads it to the SDAQ device found at `ADDRESS` on `CAN-IF`, driving the device's bootloader over CANBus.
 
 ## Examples
 ```
@@ -167,6 +193,10 @@ $ SDAQ_worker vcan0 autoconfig
 ```
 $ SDAQ_worker vcan0 measure 1
 ```
+###### Flash a new firmware image to the SDAQ with address '1' on "vcan0".
+```
+$ SDAQ_prog vcan0 1 /path/to/firmware.hex
+```
 #### TODO-list SDAQ_worker
 ##### Modes
 1. ~~'discover'~~
@@ -174,7 +204,7 @@ $ SDAQ_worker vcan0 measure 1
 3. ~~'setaddress'~~
 5. ~~'measure'~~
 4. ~~'getinfo'~~
-6. 'setinfo'
+6. ~~'setinfo'~~
 7. 'logging'
 
 #### TODO-list SDAQ_psim
@@ -182,6 +212,7 @@ $ SDAQ_worker vcan0 measure 1
 
 ## Authors
 * **Sam Harry Tzavaras** - *Initial work*
+* **Lili** - *Maintenance, calibration regression test suite*
 
 ## License
 The source code of the SDAQ_worker project is licensed under GPLv3 or later - see the [License](LICENSE) file for details.
